@@ -1,0 +1,23 @@
+# Node modules  
+node_modules/  
+  
+# Build outputs  
+dist/  
+  
+# TypeScript compiled files  
+*.js  
+*.js.map  
+  
+# Logs  
+logs  
+*.log  
+  
+# OS generated files  
+.DS_Store  
+  
+# IDE files  
+.vscode/  
+.idea/  
+  
+# Environment variables  
+.env  
