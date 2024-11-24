@@ -5,30 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graph Visualization</title>
   <style>
-    #debug-info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      border: 1px solid #ccc;
-      max-width: 300px;
-      font-size: 12px;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
     }
-    #node-details {
-      max-height: 200px;
+    #ui-panel {
+      width: 300px;
+      background: #f4f4f4;
+      border-left: 1px solid #ccc;
+      padding: 10px;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    #debug-info {
+      flex: 1;
       overflow-y: auto;
+    }
+    #status-bar {
+      height: 30px;
+      background: #333;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+    }
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      margin: 10px;
+      position: relative;
+    }
+    svg {
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
-  <div id="debug-info">
-    <h4>Debug Information</h4>
-    <p id="node-count">Nodes: 0</p>
-    <div id="node-details"></div>
-    <p id="change-table">Change Table: Not loaded</p>
+  <div id="canvas-container">
+    <svg></svg>
+  </div>
+  <div id="ui-panel">
     <label for="gene-select">Select Gene:</label>
     <select id="gene-select"></select>
+    <div id="debug-info">
+      <h4>Debug Information</h4>
+      <p id="node-count">Nodes: 0</p>
+      <div id="node-details"></div>
+      <p id="change-table">Change Table: Not loaded</p>
+    </div>
+  </div>
+  <div id="status-bar">
+    <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
   </div>
   <script src="dist/main.js" type="module"></script>
 </body>
