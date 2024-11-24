@@ -62,6 +62,17 @@ Display interactive growing graph (arbitrary "genes"). The viewer of the interac
 - [x] Convert old (2010) "genes" from XML to JSON
 - [x] Prepare a very simple "gene," e.g., "[ ]"
 - [ ] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
+The previous task is almost complete, but there are some issues:
+1. Currently, the GUM operates by directly looping over the list of nodes. When new nodes are created, they are added to the list, altering the graph's conditions before the loop ends. We should adopt the logic from the old C# code and the concept of cellular automata, which involves two steps:
+First, perceive (detect the state and neighbors for each cell).
+Then, act.
+Therefore, condition matching should consider the state of the graph before the loop.
+2. Let's make the page more aesthetically pleasing:
+2.1. Add a user interface panel on the right side of the screen. Move the combo box with the genes library to the top of this panel. Also, add a memo box to display the selected genes as text (moving this from the debug panel).
+2.2. Convert the debug panel into an expandable memo box to display and list the nodes. Place this below the combo box and the selected genes memo box.
+2.3. Add a status bar at the bottom of the page to display the numbers of nodes, edges, and GUM iterations.
+2.4. Add a frame around the canvas to define its boundaries. Ensure the canvas fills all the available space except for the status bar and the user interface panel.
+
 
 ## Details about Source Code
 ### Frontend
@@ -128,6 +139,8 @@ index.html content:
     <p id="node-count">Nodes: 0</p>
     <div id="node-details"></div>
     <p id="change-table">Change Table: Not loaded</p>
+    <label for="gene-select">Select Gene:</label>
+    <select id="gene-select"></select>
   </div>
   <script src="dist/main.js" type="module"></script>
 </body>
