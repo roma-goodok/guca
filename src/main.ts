@@ -49,17 +49,22 @@ const gumMachine = new GraphUnfoldingMachine(gumGraph);
 const initialNode = new GUMNode(1, NodeState.A);
 gumGraph.addNode(initialNode);
 
+// Function to map the string representation of node state to the corresponding NodeState enum value
+function mapNodeState(state: string): NodeState {
+  return NodeState[state as keyof typeof NodeState];
+}
+
 // Function to load JSON genes library and select "HirsuteCircleGenom"
 async function loadGenesLibrary() {
   try {
     const response = await fetch('data/demo_2010_dict_genes.json');
     const data = await response.json();
-    const hirsuteCircleGenom = data.genes["HirsuteCircleGenom"];
+    const hirsuteCircleGenom = data.genes["debug"];
 
     hirsuteCircleGenom.forEach((item: any) => {
       const condition = new OperationCondition(
-        item.condition.currentState,
-        item.condition.priorState,
+        mapNodeState(item.condition.currentState),
+        mapNodeState(item.condition.priorState),
         item.condition.allConnectionsCount_GE,
         item.condition.allConnectionsCount_LE,
         item.condition.parentsCount_GE,
@@ -68,13 +73,14 @@ async function loadGenesLibrary() {
 
       const operation = new Operation(
         mapOperationKind(item.operation.kind),
-        item.operation.operandNodeState
+        mapNodeState(item.operation.operandNodeState)
       );
 
       gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
     });
 
     console.log("Loaded HirsuteCircleGenom:", hirsuteCircleGenom);
+    updateDebugInfo();
   } catch (error) {
     console.error("Error loading genes library:", error);
   }
@@ -94,6 +100,19 @@ function mapOperationKind(kind: string): OperationKindEnum {
   }
 }
 
+// Function to map GUMNode to Node
+function mapGUMNodeToNode(gumNode: GUMNode): Node {
+  return {
+    id: gumNode.id,
+    x: gumNode.x,
+    y: gumNode.y,
+    vx: gumNode.vx,
+    vy: gumNode.vy,
+    fx: gumNode.fx,
+    fy: gumNode.fy
+  };
+}
+
 // Function to update the graph visualization
 function update() {
   console.log("Updating graph with nodes:", nodes);
@@ -101,7 +120,7 @@ function update() {
 
   // Bind data for links
   const link = svg.selectAll<SVGLineElement, Link>(".link")
-    .data(links, (d: Link) => `${(d.source as Node).id}-${(d.target as Node).id}`);
+    .data(links, d => `${d.source}-${d.target}`);
 
   // Enter new links
   link.enter().append("line")
@@ -115,7 +134,7 @@ function update() {
 
   // Bind data for nodes
   const node = svg.selectAll<SVGGElement, Node>(".node")
-    .data(nodes, (d: Node) => d.id.toString());
+    .data(nodes, d => d.id.toString());
 
   // Enter new nodes
   const nodeEnter = node.enter().append("g")
@@ -163,8 +182,44 @@ function update() {
     .links(links);
 
   // Restart the simulation to take into account new nodes and links
-  simulation.alpha(1).restart(); // Change: Restart the simulation
+  simulation.alpha(1).restart();
+
+  updateDebugInfo();
 }
+
+// Function to update the debug information
+function updateDebugInfo() {
+  const nodeCountElement = document.getElementById('node-count');
+  const nodeDetailsElement = document.getElementById('node-details');
+  const changeTableElement = document.getElementById('change-table');
+
+  if (nodeCountElement) {
+    nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+  }
+
+  if (nodeDetailsElement) {
+    const nodeDetails = gumGraph.getNodes().map(node => `
+      <p>
+        ID: ${node.id}<br>
+        State: ${NodeState[node.state]}<br>
+        Prior State: ${NodeState[node.priorState]}<br>
+        Parents Count: ${node.parentsCount}<br>
+        Connections Count: ${node.connectionsCount}
+      </p>
+    `).join('');
+    nodeDetailsElement.innerHTML = nodeDetails;
+  }
+
+  if (changeTableElement) {
+    const changeTableItems = gumMachine.getChangeTableItems();
+    changeTableElement.textContent = `Change Table: ${JSON.stringify(changeTableItems, null, 2)}`;
+  }
+}
+
+// Extend GraphUnfoldingMachine to get change table items
+GraphUnfoldingMachine.prototype.getChangeTableItems = function() {
+  return this.changeTable.items;
+};
 
 // Function to add a new node and link to the graph
 function unfoldGraph() {
@@ -177,24 +232,34 @@ function unfoldGraph() {
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
 
+  console.log("Updated GUM nodes:", gumNodes);
+  console.log("Updated GUM edges:", gumEdges);
+
   // Update nodes array
   nodes = gumNodes.map(gumNode => {
-    // Position new nodes randomly around the center node
-    const centerNode = nodes[0]; // Center node
-    const angle = Math.random() * 2 * Math.PI; // Random angle
-    const distance = Math.random() * 200; // Random distance within 200 pixels
-    return {
-      id: gumNode.id,
-      x: centerNode.x! + distance * Math.cos(angle), // New node x position
-      y: centerNode.y! + distance * Math.sin(angle) // New node y position
-    };
+    // Find existing node with the same ID
+    let existingNode = nodes.find(node => node.id === gumNode.id);
+    if (!existingNode) {
+      // Position new nodes randomly around the center node
+      const centerNode = nodes[0]; // Center node
+      const angle = Math.random() * 2 * Math.PI; // Random angle
+      const distance = Math.random() * 200; // Random distance within 200 pixels
+      existingNode = mapGUMNodeToNode(gumNode);
+      existingNode.x = centerNode.x! + distance * Math.cos(angle);
+      existingNode.y = centerNode.y! + distance * Math.sin(angle);
+    }
+    return existingNode;
   });
+
+  console.log("Updated nodes array:", nodes);
 
   // Update links array
   links = gumEdges.map(gumEdge => ({
     source: gumEdge.source.id,
     target: gumEdge.target.id
   }));
+
+  console.log("Updated links array:", links);
 
   update();
 }

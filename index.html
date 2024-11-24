@@ -4,8 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graph Visualization</title>
+  <style>
+    #debug-info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border: 1px solid #ccc;
+      max-width: 300px;
+      font-size: 12px;
+    }
+    #node-details {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
+  <div id="debug-info">
+    <h4>Debug Information</h4>
+    <p id="node-count">Nodes: 0</p>
+    <div id="node-details"></div>
+    <p id="change-table">Change Table: Not loaded</p>
+  </div>
   <script src="dist/main.js" type="module"></script>
 </body>
 </html>

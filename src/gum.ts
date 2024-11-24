@@ -33,15 +33,6 @@ export enum NodeState {
     s250 = 250, s251 = 251, s252 = 252, s253 = 253
   }
 
-  export enum OperationKindEnum {
-    TurnToState = 0x0,
-    TryToConnectWithNearest = 0x1,
-    GiveBirthConnected = 0x2,
-    DisconectFrom = 0x3,
-    Die = 0x4,
-    TryToConnectWith = 0x5,
-    GiveBirth = 0x6,
-  }
 
   export class Operation {
     constructor(
@@ -72,7 +63,7 @@ export enum NodeState {
   }
 
   export class ChangeTable {
-    private items: ChangeTableItem[] = [];
+    public items: ChangeTableItem[] = [];
 
     add(item: ChangeTableItem) {
       this.items.push(item);
@@ -81,29 +72,47 @@ export enum NodeState {
     find(node: GUMNode): ChangeTableItem | null {
       for (const item of this.items) {
         const condition = item.condition;
-        if (
-          (condition.currentState === node.state || condition.currentState === NodeState.Ignored) &&
-          (condition.priorState === node.priorState || condition.priorState === NodeState.Ignored) &&
-          (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
-          (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1) &&
-          (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
-          (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1)
-        ) {
+        console.log(`DEBUG: Checking node ${node.id} against condition:`, condition);
+
+        const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;
+        const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;
+        const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
+                                        (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);
+        const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
+                                    (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);
+
+        console.log(`DEBUG: currentState: ${condition.currentState}, nodeState: ${node.state}, currentStateMatches: ${currentStateMatches}`);
+        console.log(`DEBUG: priorState: ${condition.priorState}, nodePriorState: ${node.priorState}, priorStateMatches: ${priorStateMatches}`);
+        console.log(`DEBUG: connectionsCountMatches: ${connectionsCountMatches}`);
+        console.log(`DEBUG: parentsCountMatches: ${parentsCountMatches}`);
+
+        if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {
+          console.log(`DEBUG: Condition matched for node ${node.id}`);
           return item;
         }
       }
+      console.log(`DEBUG: No condition matched for node ${node.id}`);
       return null;
     }
   }
 
-  export class GUMNode {
-    public connectionsCount: number = 0;
-    public parentsCount: number = 0;
-    public markedAsDeleted: boolean = false;
-    public priorState: NodeState = NodeState.Unknown;
 
-    constructor(public id: number, public state: NodeState = NodeState.Unknown) {}
-  }
+  export class GUMNode {  
+    public connectionsCount: number = 0;  
+    public parentsCount: number = 0;  
+    public markedAsDeleted: boolean = false;  
+    public priorState: NodeState = NodeState.Unknown;  
+    
+    // Add properties to conform to Node interface  
+    public x?: number;  
+    public y?: number;  
+    public vx?: number;  
+    public vy?: number;  
+    public fx?: number | null;  
+    public fy?: number | null;  
+    
+    constructor(public id: number, public state: NodeState = NodeState.Unknown) {}  
+  }  
 
   export class GUMGraph {
     private nodes: GUMNode[] = [];
@@ -133,8 +142,18 @@ export enum NodeState {
     }
   }
 
+  export enum OperationKindEnum {
+    TurnToState = 0x0,
+    TryToConnectWithNearest = 0x1,
+    GiveBirthConnected = 0x2,
+    DisconectFrom = 0x3,
+    Die = 0x4,
+    TryToConnectWith = 0x5,
+    GiveBirth = 0x6,
+  }
+
   export class GraphUnfoldingMachine {
-    private changeTable: ChangeTable;
+    public changeTable: ChangeTable;
 
     constructor(private graph: GUMGraph) {
       this.changeTable = new ChangeTable();
@@ -144,11 +163,17 @@ export enum NodeState {
       this.changeTable.add(item);
     }
 
+    getChangeTableItems() {
+      return this.changeTable.items;
+    }
+
     run() {
       const nodes = this.graph.getNodes();
+      console.log(`DEBUG: RUN`);
       for (const node of nodes) {
         const item = this.changeTable.find(node);
         if (item && item.isEnabled) {
+          console.log(`Matched condition for node ${node.id}`);
           this.performOperation(node, item.operation);
           item.isActive = true;
           item.lastActivationInterationIndex++;
@@ -159,6 +184,7 @@ export enum NodeState {
     }
 
     private performOperation(node: GUMNode, operation: Operation) {
+      console.log(`Performing operation ${operation.kind} on node ${node.id}`);
       switch (operation.kind) {
         case OperationKindEnum.TurnToState:
           node.state = operation.operandNodeState;
@@ -168,6 +194,7 @@ export enum NodeState {
           newNode.parentsCount = node.parentsCount + 1;
           this.graph.addNode(newNode);
           this.graph.addEdge(node, newNode);
+          console.log(`Created new node ${newNode.id} connected to node ${node.id}`);
           break;
         case OperationKindEnum.DisconectFrom:
           node.markedAsDeleted = true;

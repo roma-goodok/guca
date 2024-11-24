@@ -1150,6 +1150,22 @@
                     "kind": "GiveBirthConnected",
                     "operandNodeState": "A"
                 }
+            }            
+        ],
+        "debug": [            
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "A",
+                    "allConnectionsCount_GE": -1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": 1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "A"
+                }
             }
         ],
         "Gun": [

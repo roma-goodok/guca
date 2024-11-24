@@ -57,10 +57,10 @@ M5: Prepare a public project's web page (e.g., GitHub Pages)
 
 #### MVP
 Display interactive growing graph (arbitrary "genes"). The viewer of the interactive growing graph can select "genes" from the predefined library (combo box) or upload them via JSON.
-- [ ] Refresh the rules of GUCA
-- [ ] Propose a JSON format
-- [ ] Convert old (2010) "genes" from XML to JSON
-- [ ] Prepare a very simple "gene," e.g., "[ ]"
+- [x] Refresh the rules of GUCA
+- [x] Propose a JSON format
+- [x] Convert old (2010) "genes" from XML to JSON
+- [x] Prepare a very simple "gene," e.g., "[ ]"
 - [ ] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
 
 ## Details about Source Code
@@ -72,18 +72,28 @@ pwd
 tree -I 'dist|node_modules'
 ```
 ```txt
-guca-visualization
+/Users/rgudchenko/p/guca-visualization
+.
+├── data
+│   └── demo_2010_dict_genes.json
 ├── docs
 │   ├── TODO.md
 │   └── gpt_prompts
-│       └── 01_context_and_current_status.md
+│       ├── 01_context_and_current_status.md
+│       └── 02_milestone_M1_Frontend_MVP.md
 ├── index.html
 ├── package-lock.json
 ├── package.json
+├── run.sh
+├── scripts
+│   └── 01_convert_xml_genes_to_json.py
 ├── src
+│   ├── gum.ts
 │   └── main.ts
 ├── tsconfig.json
 └── webpack.config.js
+
+6 directories, 13 files
 ```
 
 index.html content:
@@ -95,8 +105,30 @@ index.html content:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graph Visualization</title>
+  <style>
+    #debug-info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border: 1px solid #ccc;
+      max-width: 300px;
+      font-size: 12px;
+    }
+    #node-details {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
+  <div id="debug-info">
+    <h4>Debug Information</h4>
+    <p id="node-count">Nodes: 0</p>
+    <div id="node-details"></div>
+    <p id="change-table">Change Table: Not loaded</p>
+  </div>
   <script src="dist/main.js" type="module"></script>
 </body>
 </html>
@@ -145,4 +177,5 @@ tsconfig.json content:
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */  
   }  
 }  
+```
 source of src/main.ts will be provided later
