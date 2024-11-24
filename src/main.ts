@@ -1,15 +1,14 @@
 import * as d3 from 'd3';
 import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';
 
-// Interface definitions for Node and Link
 interface Node {
   id: number;
   x?: number;
   y?: number;
   vx?: number;
   vy?: number;
-  fx?: number | null; // Add fx property for fixed x position
-  fy?: number | null; // Add fy property for fixed y position
+  fx?: number | null;
+  fy?: number | null;
 }
 
 interface Link {
@@ -17,44 +16,35 @@ interface Link {
   target: number | Node;
 }
 
-// Set up SVG canvas dimensions
 const width = 960;
 const height = 600;
 
-// Create SVG element and append it to the body
 const svg = d3.select("body").append("svg")
   .attr("width", width)
   .attr("height", height);
 
-// Initialize force simulation
 const simulation = d3.forceSimulation<Node, Link>()
   .force("link", d3.forceLink<Node, Link>()
-    .id((d: Node) => d.id.toString())) // Set up link force
-  .force("charge", d3.forceManyBody().strength(-400)) // Set up repulsive force
-  .force("center", d3.forceCenter(width / 2, height / 2)); // Center the force
+    .id((d: Node) => d.id.toString()))
+  .force("charge", d3.forceManyBody().strength(-400))
+  .force("center", d3.forceCenter(width / 2, height / 2));
 
-// Initial nodes with positions
 let nodes: Node[] = [
-  { id: 1, x: width / 2, y: height / 2 } // Initial single node in state A
+  { id: 1, x: width / 2, y: height / 2 }
 ];
 
-// Initial links
 let links: Link[] = [];
 
-// Initialize GUMGraph and GraphUnfoldingMachine
 const gumGraph = new GUMGraph();
 const gumMachine = new GraphUnfoldingMachine(gumGraph);
 
-// Add initial single node to GUMGraph
 const initialNode = new GUMNode(1, NodeState.A);
 gumGraph.addNode(initialNode);
 
-// Function to map the string representation of node state to the corresponding NodeState enum value
 function mapNodeState(state: string): NodeState {
   return NodeState[state as keyof typeof NodeState];
 }
 
-// Function to load JSON genes library and select "HirsuteCircleGenom"
 async function loadGenesLibrary() {
   try {
     const response = await fetch('data/demo_2010_dict_genes.json');
@@ -75,10 +65,8 @@ async function loadGenesLibrary() {
         mapOperationKind(item.operation.kind),
         mapNodeState(item.operation.operandNodeState)
       );
-
       gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
     });
-
     console.log("Loaded HirsuteCircleGenom:", hirsuteCircleGenom);
     updateDebugInfo();
   } catch (error) {
@@ -86,7 +74,6 @@ async function loadGenesLibrary() {
   }
 }
 
-// Function to map the string representation of operation kind to the corresponding OperationKindEnum
 function mapOperationKind(kind: string): OperationKindEnum {
   switch (kind) {
     case "TurnToState": return OperationKindEnum.TurnToState;
@@ -100,7 +87,6 @@ function mapOperationKind(kind: string): OperationKindEnum {
   }
 }
 
-// Function to map GUMNode to Node
 function mapGUMNodeToNode(gumNode: GUMNode): Node {
   return {
     id: gumNode.id,
@@ -113,30 +99,24 @@ function mapGUMNodeToNode(gumNode: GUMNode): Node {
   };
 }
 
-// Function to update the graph visualization
 function update() {
   console.log("Updating graph with nodes:", nodes);
   console.log("Updating graph with links:", links);
 
-  // Bind data for links
   const link = svg.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${d.source}-${d.target}`);
 
-  // Enter new links
   link.enter().append("line")
     .attr("class", "link")
     .attr("stroke", "black")
     .attr("stroke-width", 2)
     .merge(link);
 
-  // Remove old links
   link.exit().remove();
 
-  // Bind data for nodes
   const node = svg.selectAll<SVGGElement, Node>(".node")
     .data(nodes, d => d.id.toString());
 
-  // Enter new nodes
   const nodeEnter = node.enter().append("g")
     .attr("class", "node")
     .call(d3.drag<SVGGElement, Node>()
@@ -153,13 +133,10 @@ function update() {
     .attr("dx", -3)
     .text(d => d.id.toString());
 
-  // Merge new nodes with existing nodes
   const mergedNodes = nodeEnter.merge(node);
 
-  // Remove old nodes
   node.exit().remove();
 
-  // Update simulation nodes and links
   simulation
     .nodes(nodes)
     .on("tick", () => {
@@ -178,16 +155,13 @@ function update() {
         .attr("y", d => d.y!);
     });
 
-  simulation.force<d3.ForceLink<Node, Link>>("link")!
-    .links(links);
+  simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
 
-  // Restart the simulation to take into account new nodes and links
   simulation.alpha(1).restart();
 
   updateDebugInfo();
 }
 
-// Function to update the debug information
 function updateDebugInfo() {
   const nodeCountElement = document.getElementById('node-count');
   const nodeDetailsElement = document.getElementById('node-details');
@@ -196,7 +170,6 @@ function updateDebugInfo() {
   if (nodeCountElement) {
     nodeCountElement.textContent = `Nodes: ${nodes.length}`;
   }
-
   if (nodeDetailsElement) {
     const nodeDetails = gumGraph.getNodes().map(node => `
       <p>
@@ -209,71 +182,64 @@ function updateDebugInfo() {
     `).join('');
     nodeDetailsElement.innerHTML = nodeDetails;
   }
-
   if (changeTableElement) {
     const changeTableItems = gumMachine.getChangeTableItems();
     changeTableElement.textContent = `Change Table: ${JSON.stringify(changeTableItems, null, 2)}`;
   }
 }
 
-// Extend GraphUnfoldingMachine to get change table items
 GraphUnfoldingMachine.prototype.getChangeTableItems = function() {
   return this.changeTable.items;
 };
 
-// Function to add a new node and link to the graph
-function unfoldGraph() {
-  console.log("Unfolding graph");
+function unfoldGraph() {  
+  console.log("Unfolding graph");  
+  
+  // Run the Graph Unfolding Machine  
+  gumMachine.run();  
+  
+  // Get the updated nodes and edges from GUMGraph  
+  const gumNodes = gumGraph.getNodes();  
+  const gumEdges = gumGraph.getEdges();  
+  
+  console.log("Updated GUM nodes:", gumNodes);  
+  console.log("Updated GUM edges:", gumEdges);  
+  
+  // Update nodes array  
+  nodes = gumNodes.map(gumNode => {  
+    let existingNode = nodes.find(node => node.id === gumNode.id);  
+    if (!existingNode) {  
+      const centerNode = nodes[0]; // Center node  
+      const angle = Math.random() * 2 * Math.PI; // Random angle  
+      const distance = Math.random() * 200; // Random distance within 200 pixels  
+      existingNode = mapGUMNodeToNode(gumNode);  
+      existingNode.x = centerNode.x! + distance * Math.cos(angle);  
+      existingNode.y = centerNode.y! + distance * Math.sin(angle);  
+    }  
+    return existingNode;  
+  });  
+  
+  console.log("Updated nodes array:", nodes);  
+  
+  // Update links array to reference node objects  
+  links = gumEdges.map(gumEdge => {  
+    const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;  
+    const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;  
+    console.log(`Creating link from node ${sourceNode.id} to node ${targetNode.id}`);  
+    return { source: sourceNode, target: targetNode };  
+  });  
+  
+  console.log("Updated links array:", links);  
+  
+  update();  
+}  
 
-  // Run the Graph Unfolding Machine
-  gumMachine.run();
-
-  // Get the updated nodes and edges from GUMGraph
-  const gumNodes = gumGraph.getNodes();
-  const gumEdges = gumGraph.getEdges();
-
-  console.log("Updated GUM nodes:", gumNodes);
-  console.log("Updated GUM edges:", gumEdges);
-
-  // Update nodes array
-  nodes = gumNodes.map(gumNode => {
-    // Find existing node with the same ID
-    let existingNode = nodes.find(node => node.id === gumNode.id);
-    if (!existingNode) {
-      // Position new nodes randomly around the center node
-      const centerNode = nodes[0]; // Center node
-      const angle = Math.random() * 2 * Math.PI; // Random angle
-      const distance = Math.random() * 200; // Random distance within 200 pixels
-      existingNode = mapGUMNodeToNode(gumNode);
-      existingNode.x = centerNode.x! + distance * Math.cos(angle);
-      existingNode.y = centerNode.y! + distance * Math.sin(angle);
-    }
-    return existingNode;
-  });
-
-  console.log("Updated nodes array:", nodes);
-
-  // Update links array
-  links = gumEdges.map(gumEdge => ({
-    source: gumEdge.source.id,
-    target: gumEdge.target.id
-  }));
-
-  console.log("Updated links array:", links);
-
-  update();
-}
-
-// Initial update of the graph
 update();
 
-// Load the JSON genes library and start the unfolding process
 loadGenesLibrary().then(() => {
-  // Add a new node and link every 2 seconds
   setInterval(unfoldGraph, 2000);
 });
 
-// Drag event handlers
 function dragstarted(event: any, d: Node) {
   if (!event.active) simulation.alphaTarget(0.3).restart();
   d.fx = d.x;
