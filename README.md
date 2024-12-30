@@ -26,3 +26,17 @@ The main idea behind VOGUE is to provide an interactive platform for visualizing
   - Motivation: Go is a performant and efficient programming language with excellent concurrency handling. It is suitable for building a fast and responsive server-side application to support the frontend's interactive requirements.  
   
 By using JavaScript/TypeScript with Three.js for the frontend and Go for the backend, VOGUE aims to create a visually stunning, high-performance, and interactive graph visualization application that meets the project's vision and requirements.  
+
+
+## Links
+
+###  Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction  
+Blaise Agüera Arcas† Jyrki Alakuijala James Evans Ben Laurie Alexander Mordvintsev Eyvind Niklasson† Ettore Randazzo† Luca Versari  
+
+Paper: [https://arxiv.org/pdf/2406.19108v2](https://arxiv.org/pdf/2406.19108v2)  
+Code: [https://github.com/paradigms-of-intelligence/cubff](https://github.com/paradigms-of-intelligence/cubff)  
+
+## Automating the Search for Artificial Life with Foundation Models  
+
+Paper: [https://arxiv.org/pdf/2412.17799v1](https://arxiv.org/pdf/2412.17799v1)  
+Code: [https://github.com/sakanaai/asal](https://github.com/sakanaai/asal)  
