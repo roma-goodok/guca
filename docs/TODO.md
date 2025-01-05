@@ -7,8 +7,8 @@ Display interactive growing graph (arbitrary "genes"). The viewer of the interac
 - [x] Refresh the rules of GUCA
 - [x] Propose a JSON format
 - [x] Convert old (2010) "genes" from XML to JSON
-- [ ] Prepare a very simple "gene," e.g., "[ ]"
-- [ ] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
+- [x] Prepare a very simple "gene," e.g., "[ ]"
+- [x] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
 
 
 High-Level Plan to Implement M1
