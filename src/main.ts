@@ -45,7 +45,7 @@ const graphGroup = svg.append("g");
   
 // Add zoom behavior to the overlay  
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()  
-  .scaleExtent([0.1, 10]) // Limit the zoom scale  
+  .scaleExtent([0.01, 10]) // Limit the zoom scale  
   .on("zoom", (event) => {  
     graphGroup.attr("transform", event.transform);  
   });  
@@ -57,7 +57,7 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
 const simulation = d3.forceSimulation<Node, Link>()  
   .force("link", d3.forceLink<Node, Link>()  
     .id((d: Node) => d.id.toString()))  
-  .force("charge", d3.forceManyBody().strength(-400))  
+  .force("charge", d3.forceManyBody().strength(-1000))  
   .force("center", d3.forceCenter(width / 2, height / 2));  
   
 // Initialize nodes and links arrays  
@@ -325,7 +325,7 @@ update();
   
 // Load the genes library and start the unfolding process  
 loadGenesLibrary().then(() => {  
-  setInterval(unfoldGraph, 2000);  
+  setInterval(unfoldGraph, 500);  
 });  
   
 // Drag event handlers for D3 nodes  
