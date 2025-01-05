@@ -30,6 +30,10 @@ By using JavaScript/TypeScript with Three.js for the frontend and Go for the bac
 
 ## Links
 
+###  "Living Graphs" — Growing Graph Unfolding Cellular Automata (GUCA) with Examples in Silverlight (2010)
+Article (RUS): [https://habr.com/en/articles/107387](https://habr.com/en/articles/107387)
+
+
 ###  Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction  
 Blaise Agüera Arcas† Jyrki Alakuijala James Evans Ben Laurie Alexander Mordvintsev Eyvind Niklasson† Ettore Randazzo† Luca Versari  
 
