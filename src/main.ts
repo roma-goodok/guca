@@ -237,35 +237,48 @@ function update() {
 }
 
 // Update the debug information displayed on the page
-function updateDebugInfo() {
-  const nodeCountElement = document.getElementById('node-count');
-  const nodeDetailsElement = document.getElementById('node-details');
-  const changeTableElement = document.getElementById('change-table');
-  const statusInfoElement = document.getElementById('status-info');
-
-  if (nodeCountElement) {
-    nodeCountElement.textContent = `Nodes: ${nodes.length}`;
-  }
-  if (nodeDetailsElement) {
-    const nodeDetails = gumGraph.getNodes().map(node => `
-      <p>
-        ID: ${node.id}<br>
-        State: ${NodeState[node.state]}<br>
-        Prior State: ${NodeState[node.priorState]}<br>
-        Parents Count: ${node.parentsCount}<br>
-        Connections Count: ${node.connectionsCount}
-      </p>
-    `).join('');
-    nodeDetailsElement.innerHTML = nodeDetails;
-  }
-  if (changeTableElement) {
-    const changeTableItems = gumMachine.getChangeTableItems();
-    changeTableElement.textContent = `Change Table: ${JSON.stringify(changeTableItems, null, 2)}`;
-  }
-  if (statusInfoElement) {
-    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
-  }
-}
+function updateDebugInfo() {  
+  const nodeCountElement = document.getElementById('node-count');  
+  const nodeDetailsElement = document.getElementById('node-details');  
+  const changeTableElement = document.getElementById('change-table');  
+  const statusInfoElement = document.getElementById('status-info');  
+  
+  if (nodeCountElement) {  
+    nodeCountElement.textContent = `Nodes: ${nodes.length}`;  
+  }  
+  
+  if (nodeDetailsElement) {  
+    const nodeDetails = gumGraph.getNodes().map(node => `  
+      <p>  
+        ID: ${node.id}<br>  
+        State: ${NodeState[node.state]}<br>  
+        Prior State: ${NodeState[node.priorState]}<br>  
+        Parents Count: ${node.parentsCount}<br>  
+        Connections Count: ${node.connectionsCount}  
+      </p>  
+    `).join('');  
+    nodeDetailsElement.innerHTML = nodeDetails;  
+  }  
+  
+  if (changeTableElement) {  
+    const changeTableItems = gumMachine.getChangeTableItems();  
+    const shortForm = convertToShortForm(changeTableItems);  
+    const rawJson = JSON.stringify(changeTableItems, null, 2);  
+  
+    changeTableElement.innerHTML = `  
+      <h4>Change Table (Short Form)</h4>  
+      <pre>${shortForm}</pre>  
+      <details>  
+        <summary>Raw JSON (collapsed)</summary>  
+        <pre>${rawJson}</pre>  
+      </details>  
+    `;  
+  }  
+  
+  if (statusInfoElement) {  
+    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;  
+  }  
+}  
 
 // Unfold the graph using the Graph Unfolding Machine
 function unfoldGraph() {
@@ -346,3 +359,40 @@ function dragended(event: any, d: Node) {
   d.fx = null;
   d.fy = null;
 }
+
+function convertToShortForm(changeTableItems: ChangeTableItem[]): string {  
+  return changeTableItems.map((item, index) => {  
+    const condition = item.condition;  
+    const operation = item.operation;  
+  
+    const currentState = NodeState[condition.currentState];  
+    const priorState = condition.priorState !== NodeState.Ignored ? NodeState[condition.priorState] : '-';  
+    const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `c>=${condition.allConnectionsCount_GE}` : '';  
+    const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `c<=${condition.allConnectionsCount_LE}` : '';  
+    const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';  
+    const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';  
+  
+    const conditionStr = `${currentState}(${priorState})${connectionsCountGE}${connectionsCountLE}${parentsCountGE}${parentsCountLE}`;  
+      
+    let operationStr = '';  
+    switch (operation.kind) {  
+      case OperationKindEnum.TurnToState:  
+        operationStr = NodeState[operation.operandNodeState];  
+        break;  
+      case OperationKindEnum.GiveBirthConnected:  
+        operationStr = `++${NodeState[operation.operandNodeState]}`;  
+        break;  
+      case OperationKindEnum.TryToConnectWith:  
+        operationStr = `+${NodeState[operation.operandNodeState]}`;  
+        break;  
+      case OperationKindEnum.DisconectFrom:  
+        operationStr = `-${NodeState[operation.operandNodeState]}`;  
+        break;  
+      default:  
+        operationStr = 'Unknown';  
+        break;  
+    }  
+  
+    return `${index + 1}. ${conditionStr} : ${operationStr}`;  
+  }).join('\n');  
+}  
