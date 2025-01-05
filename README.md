@@ -32,6 +32,8 @@ By using JavaScript/TypeScript with Three.js for the frontend and Go for the bac
 
 ###  "Living Graphs" — Growing Graph Unfolding Cellular Automata (GUCA) with Examples in Silverlight (2010)
 Article (RUS): [https://habr.com/en/articles/107387](https://habr.com/en/articles/107387)
+The concept of 'Living Graphs' utilizes cellular automata to model the self-assembly and evolution of graph structures.  
+"Living Graphs" leverage the principles of cellular automata to simulate the evolution and self-organization of graph structures, contributing to the field of Artificial Life. The GUCA model operates by applying simple, context-specific rules to nodes within a graph. This method facilitates the emergence of complex structures from minimal initial conditions, mirroring biological growth and development. The article showcases several examples, illustrating the potential of GUCA in diverse fields such as robotics, computer networks, and artificial intelligence, while highlighting the model's modularity, regeneration, and adaptability.
 
 
 ###  Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction  
