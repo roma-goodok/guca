@@ -231,8 +231,59 @@ export class GraphUnfoldingMachine {
       case OperationKindEnum.DisconectFrom:
         node.markedAsDeleted = true;
         break;
-      // Handle other cases as needed
+      case OperationKindEnum.TryToConnectWithNearest:
+        this.tryToConnectWithNearest(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.Die:
+        this.die(node);
+        break;
+      case OperationKindEnum.TryToConnectWith:
+        this.tryToConnectWith(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.GiveBirth:
+        this.giveBirth(node, operation.operandNodeState);
+        break;
+      default:
+        console.log(`Unknown operation kind: ${operation.kind}`);
+        break;
     }
+  }
+
+  private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+    // Implement the logic to connect with the nearest node in the given state
+    console.log(`Trying to connect node ${node.id} with nearest node in state ${state}`);
+    // Example logic:
+    const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+    if (nearestNode) {
+      this.graph.addEdge(node, nearestNode);
+      console.log(`Connected node ${node.id} with node ${nearestNode.id}`);
+    }
+  }
+
+  private die(node: GUMNode) {
+    // Implement the logic for the node to die
+    console.log(`Node ${node.id} is dying`);
+    node.markedAsDeleted = true;
+  }
+
+  private tryToConnectWith(node: GUMNode, state: NodeState) {
+    // Implement the logic to try to connect with a node in the given state
+    console.log(`Trying to connect node ${node.id} with node in state ${state}`);
+    // Example logic:
+    const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+    if (targetNode) {
+      this.graph.addEdge(node, targetNode);
+      console.log(`Connected node ${node.id} with node ${targetNode.id}`);
+    }
+  }
+
+  private giveBirth(node: GUMNode, state: NodeState) {
+    // Implement the logic for the node to give birth
+    console.log(`Node ${node.id} is giving birth to node in state ${state}`);
+    const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+    newNode.parentsCount = node.parentsCount + 1;
+    this.graph.addNode(newNode);
+    console.log(`Created new node ${newNode.id}`);
   }
 
   // Get the number of iterations

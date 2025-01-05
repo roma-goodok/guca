@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graph Visualization</title>
   <style>
+    svg {
+      background-color: black;
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -17,7 +20,7 @@
       background: #f4f4f4;
       border-left: 1px solid #ccc;
       padding: 10px;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
     }
@@ -46,6 +49,11 @@
     svg {
       border: 1px solid #ccc;
     }
+    .control-buttons {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -60,6 +68,23 @@
       <p id="node-count">Nodes: 0</p>
       <div id="node-details"></div>
       <p id="change-table">Change Table: Not loaded</p>
+    </div>
+    <div class="control-buttons">
+      <button id="pause-button">Pause</button>
+      <button id="resume-button">Resume</button>
+    </div>
+    <div class="control-group">
+      <h4>Visualization Options</h4>
+      <label for="display-options">Display Options:</label>
+      <select id="display-options">
+        <option value="edges">Display edges</option>
+        <option value="nodes">Display nodes</option>
+        <option value="both">Display nodes and edges</option>
+      </select>
+      <br>
+      <label for="simulation-interval">Simulation Interval:</label>
+      <input type="range" id="simulation-interval" min="50" max="500" value="500">
+      <span id="simulation-interval-value">500</span> ms
     </div>
   </div>
   <div id="status-bar">

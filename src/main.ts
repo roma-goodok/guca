@@ -1,12 +1,14 @@
-// main.ts
-// Author of the code: AI Assistant
-// Author of the ideas: Roman G.
-// Description: This module initializes and manages the interactive visualization
-// of graph unfolding using D3.js. It handles loading genes, mapping nodes,
-// updating the graph, and adding interactive features such as dragging and zooming.
-
 import * as d3 from 'd3';
-import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';
+import {
+  GUMGraph,
+  GUMNode,
+  GraphUnfoldingMachine,
+  NodeState,
+  ChangeTableItem,
+  OperationCondition,
+  Operation,
+  OperationKindEnum,
+} from './gum';
 
 // Interface for Node
 interface Node {
@@ -17,6 +19,7 @@ interface Node {
   vy?: number;
   fx?: number | null;
   fy?: number | null;
+  state: NodeState;
 }
 
 // Interface for Link
@@ -45,25 +48,24 @@ const graphGroup = svg.append("g");
 
 // Add zoom behavior to the overlay
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-  .scaleExtent([0.01, 10]) // Limit the zoom scale
+  .scaleExtent([0.01, 10])
   .on("zoom", (event) => {
     graphGroup.attr("transform", event.transform);
   });
 
-// Use type assertion to ensure compatibility
 (zoomOverlay as any).call(zoomBehavior as any);
 
 // Initialize the force simulation
 const simulation = d3.forceSimulation<Node, Link>()
   .force("link", d3.forceLink<Node, Link>()
     .id((d: Node) => d.id.toString())
-    .distance(50)) // Adjust distance for stability
-  .force("charge", d3.forceManyBody().strength(-300)) // Adjust strength for stability
+    .distance(50))
+  .force("charge", d3.forceManyBody().strength(-300))
   .force("center", d3.forceCenter(width / 2, height / 2))
-  .velocityDecay(0.2); // Increase decay for stability
+  .velocityDecay(0.2);
 
 // Initialize nodes and links arrays
-let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2 }];
+let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
 let links: Link[] = [];
 
 // Initialize GUM graph and machine
@@ -73,6 +75,51 @@ const gumMachine = new GraphUnfoldingMachine(gumGraph);
 // Add an initial node to the GUM graph
 const initialNode = new GUMNode(1, NodeState.A);
 gumGraph.addNode(initialNode);
+
+// Function to get the vertex render color
+function getVertexRenderColor(state: NodeState): string {
+  switch (state % 16) {
+    case 1: return 'pink';
+    case 2: return 'red';
+    case 3: return 'orangeRed';
+    case 4: return 'orange';
+    case 5: return 'lightYellow';
+    case 6: return 'yellow';
+    case 7: return 'lightGreen';
+    case 8: return 'green';
+    case 9: return 'lightSeaGreen';
+    case 10: return 'seaGreen';
+    case 11: return 'lightBlue';
+    case 12: return 'blue';
+    case 13: return 'violet';
+    case 14: return 'lightCyan';
+    case 15: return 'white';
+    case 0: return 'lightGray';
+    default: return 'gray';
+  }
+}
+
+// Function to get the vertex render text color
+function getVertexRenderTextColor(state: NodeState): string {
+  switch (state % 16) {
+    case 2:
+    case 3:
+    case 5:
+    case 7:
+    case 0:
+      return 'white';
+    default:
+      return 'black';
+  }
+}
+
+// Function to convert node state to letter
+function nodeStateToLetter(state: NodeState): string {
+  if (state >= NodeState.A && state <= NodeState.Z) {
+    return String.fromCharCode(64 + state);
+  }
+  return '';
+}
 
 // Helper function to map string state to NodeState enum
 function mapNodeState(state: string): NodeState {
@@ -86,7 +133,6 @@ async function loadGenesLibrary() {
     const data = await response.json();
     const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
 
-    // Populate the combo box with gene names
     for (const geneName in data.genes) {
       const option = document.createElement('option');
       option.value = geneName;
@@ -94,10 +140,8 @@ async function loadGenesLibrary() {
       geneSelect.add(option);
     }
 
-    // Load the default gene
     loadGene(data.genes[geneSelect.value]);
 
-    // Add event listener to handle gene selection
     geneSelect.addEventListener('change', (event) => {
       const selectedGene = (event.target as HTMLSelectElement).value;
       loadGene(data.genes[selectedGene]);
@@ -128,7 +172,6 @@ function loadGene(gene: any) {
     gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
   });
 
-  // Reset and start the graph
   resetGraph();
 }
 
@@ -146,7 +189,27 @@ function mapOperationKind(kind: string): OperationKindEnum {
   }
 }
 
-// Map GUMNode to Node interface
+function mapOperationKindToString(kind: OperationKindEnum): string {
+  switch (kind) {
+    case OperationKindEnum.TurnToState:
+      return 'TurnToState';
+    case OperationKindEnum.TryToConnectWithNearest:
+      return 'TryToConnectWithNearest';
+    case OperationKindEnum.GiveBirthConnected:
+      return 'GiveBirthConnected';
+    case OperationKindEnum.DisconectFrom:
+      return 'DisconectFrom';
+    case OperationKindEnum.Die:
+      return 'Die';
+    case OperationKindEnum.TryToConnectWith:
+      return 'TryToConnectWith';
+    case OperationKindEnum.GiveBirth:
+      return 'GiveBirth';
+    default:
+      return 'Unknown';
+  }
+}
+
 function mapGUMNodeToNode(gumNode: GUMNode): Node {
   return {
     id: gumNode.id,
@@ -155,8 +218,55 @@ function mapGUMNodeToNode(gumNode: GUMNode): Node {
     vx: gumNode.vx,
     vy: gumNode.vy,
     fx: gumNode.fx,
-    fy: gumNode.fy
+    fy: gumNode.fy,
+    state: gumNode.state,
   };
+}
+
+// Convert change table items to short form grammar
+function convertToShortForm(changeTableItems: ChangeTableItem[]): string {
+  return changeTableItems.map((item, index) => {
+    const condition = item.condition;
+    const operation = item.operation;
+
+    const currentState = condition.currentState === NodeState.Unknown ? "+" : NodeState[condition.currentState];
+    const priorState = condition.priorState === NodeState.Ignored ? '-' : (condition.priorState === NodeState.Unknown ? '+' : NodeState[condition.priorState]);
+    const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `c>=${condition.allConnectionsCount_GE}` : '';
+    const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `c<=${condition.allConnectionsCount_LE}` : '';
+    const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';
+    const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';
+
+    const conditionStr = `${currentState}(${priorState})${connectionsCountGE}${connectionsCountLE}${parentsCountGE}${parentsCountLE}`;
+    let operationStr = '';
+    switch (operation.kind) {
+      case OperationKindEnum.TurnToState:
+        operationStr = NodeState[operation.operandNodeState];
+        break;
+      case OperationKindEnum.GiveBirthConnected:
+        operationStr = `++${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.TryToConnectWithNearest:
+        operationStr = `+N${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.DisconectFrom:
+        operationStr = `-${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.Die:
+        operationStr = `--`;
+        break;
+      case OperationKindEnum.TryToConnectWith:
+        operationStr = `+${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.GiveBirth:
+        operationStr = `+${NodeState[operation.operandNodeState]}`;
+        break;
+      default:
+        operationStr = 'Unknown';
+        break;
+    }
+
+    return `${index + 1}. ${conditionStr} : ${operationStr}`;
+  }).join('\n');
 }
 
 function update() {
@@ -170,16 +280,19 @@ function update() {
   // Enter new links
   link.enter().append("line")
     .attr("class", "link")
-    .attr("stroke", "black")
     .attr("stroke-width", 2)
     .merge(link);
 
   // Update existing links
   link
-    .attr("x1", d => (d.source as Node).x!)
-    .attr("y1", d => (d.source as Node).y!)
-    .attr("x2", d => (d.target as Node).x!)
-    .attr("y2", d => (d.target as Node).y!);
+    .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+    .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+    .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+    .attr("stroke", d => {
+      const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+      return getVertexRenderColor(maxState);
+    });
 
   // Remove old links
   link.exit().remove();
@@ -197,13 +310,14 @@ function update() {
       .on("end", dragended));
 
   nodeEnter.append("circle")
-    .attr("r", 5)
-    .attr("fill", "red");
+    .attr("r", 12.5)
+    .attr("fill", d => getVertexRenderColor(d.state));
 
   nodeEnter.append("text")
     .attr("dy", 3)
     .attr("dx", -3)
-    .text(d => d.id.toString());
+    .attr("fill", d => getVertexRenderTextColor(d.state))
+    .text(d => nodeStateToLetter(d.state));
 
   // Merge new nodes with existing nodes
   const mergedNodes = nodeEnter.merge(node);
@@ -214,103 +328,137 @@ function update() {
   // Update simulation nodes and links
   simulation.nodes(nodes).on("tick", () => {
     link
-      .attr("x1", d => (d.source as Node).x!)
-      .attr("y1", d => (d.source as Node).y!)
-      .attr("x2", d => (d.target as Node).x!)
-      .attr("y2", d => (d.target as Node).y!);
+      .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+      .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+      .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+      .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+      .attr("stroke", d => {
+        const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+        return getVertexRenderColor(maxState);
+      });
 
     mergedNodes.select("circle")
       .attr("cx", d => d.x!)
-      .attr("cy", d => d.y!);
+      .attr("cy", d => d.y!)
+      .attr("fill", d => getVertexRenderColor(d.state));
 
     mergedNodes.select("text")
       .attr("x", d => d.x!)
-      .attr("y", d => d.y!);
+      .attr("y", d => d.y!)
+      .attr("fill", d => getVertexRenderTextColor(d.state))
+      .text(d => nodeStateToLetter(d.state));
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
 
-  // Smoothly restart the simulation
   simulation.alpha(0.5).restart();
 
   updateDebugInfo();
 }
 
+// Helper function to adjust edge coordinates for node radius
+function adjustForRadius(source: Node, target: Node) {
+  const radius = 12.5;
+  const dx = target.x! - source.x!;
+  const dy = target.y! - source.y!;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const padding = radius;
+
+  const ratio = (distance - padding) / distance;
+  return {
+    x1: source.x! + dx * (padding / distance),
+    y1: source.y! + dy * (padding / distance),
+    x2: target.x! - dx * (padding / distance),
+    y2: target.y! - dy * (padding / distance),
+  };
+}
+
 // Update the debug information displayed on the page
-function updateDebugInfo() {  
-  const nodeCountElement = document.getElementById('node-count');  
-  const nodeDetailsElement = document.getElementById('node-details');  
-  const changeTableElement = document.getElementById('change-table');  
-  const statusInfoElement = document.getElementById('status-info');  
-  
-  if (nodeCountElement) {  
-    nodeCountElement.textContent = `Nodes: ${nodes.length}`;  
-  }  
-  
-  if (nodeDetailsElement) {  
-    const nodeDetails = gumGraph.getNodes().map(node => `  
-      <p>  
-        ID: ${node.id}<br>  
-        State: ${NodeState[node.state]}<br>  
-        Prior State: ${NodeState[node.priorState]}<br>  
-        Parents Count: ${node.parentsCount}<br>  
-        Connections Count: ${node.connectionsCount}  
-      </p>  
-    `).join('');  
-    nodeDetailsElement.innerHTML = nodeDetails;  
-  }  
-  
-  if (changeTableElement) {  
-    const changeTableItems = gumMachine.getChangeTableItems();  
-    const shortForm = convertToShortForm(changeTableItems);  
-    const rawJson = JSON.stringify(changeTableItems, null, 2);  
-  
-    changeTableElement.innerHTML = `  
-      <h4>Change Table (Short Form)</h4>  
-      <pre>${shortForm}</pre>  
-      <details>  
-        <summary>Raw JSON (collapsed)</summary>  
-        <pre>${rawJson}</pre>  
-      </details>  
-    `;  
-  }  
-  
-  if (statusInfoElement) {  
-    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;  
-  }  
-}  
+function updateDebugInfo() {
+  const nodeCountElement = document.getElementById('node-count');
+  const nodeDetailsElement = document.getElementById('node-details');
+  const changeTableElement = document.getElementById('change-table');
+  const statusInfoElement = document.getElementById('status-info');
+
+  if (nodeCountElement) {
+    nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+  }
+
+  if (nodeDetailsElement) {
+    const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
+      <p>
+        ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
+      </p>
+    `).join('');
+    nodeDetailsElement.innerHTML = nodeDetails;
+  }
+
+  if (changeTableElement) {
+    const changeTableItems = gumMachine.getChangeTableItems();
+    const shortForm = convertToShortForm(changeTableItems);
+
+    const changeTableItemsForJson = changeTableItems.map(item => ({
+      condition: {
+        currentState: NodeState[item.condition.currentState],
+        priorState: item.condition.priorState === NodeState.Ignored ? '-' : NodeState[item.condition.priorState],
+        allConnectionsCount_GE: item.condition.allConnectionsCount_GE,
+        allConnectionsCount_LE: item.condition.allConnectionsCount_LE,
+        parentsCount_GE: item.condition.parentsCount_GE,
+        parentsCount_LE: item.condition.parentsCount_LE
+      },
+      operation: {
+        kind: mapOperationKindToString(item.operation.kind),
+        operandNodeState: NodeState[item.operation.operandNodeState]
+      },
+      isActive: item.isActive,
+      isEnabled: item.isEnabled,
+      lastActivationInterationIndex: item.lastActivationInterationIndex
+    }));
+    const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
+    changeTableElement.innerHTML = `
+      <h4>Change Table (Short Form)</h4>
+      <pre>${shortForm}</pre>
+      <details>
+        <summary>Raw JSON (collapsed)</summary>
+        <pre>${rawJson}</pre>
+      </details>
+    `;
+  }
+
+  if (statusInfoElement) {
+    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+  }
+}
 
 // Unfold the graph using the Graph Unfolding Machine
 function unfoldGraph() {
   console.log("Unfolding graph");
 
-  // Run the Graph Unfolding Machine
   gumMachine.run();
 
-  // Get the updated nodes and edges from GUMGraph
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
 
   console.log("Updated GUM nodes:", gumNodes);
   console.log("Updated GUM edges:", gumEdges);
 
-  // Update nodes array
   nodes = gumNodes.map(gumNode => {
     let existingNode = nodes.find(node => node.id === gumNode.id);
     if (!existingNode) {
-      const centerNode = nodes[0]; // Center node
-      const angle = Math.random() * 2 * Math.PI; // Random angle
-      const distance = Math.random() * 200; // Random distance within 200 pixels
+      const centerNode = nodes[0];
+      const angle = Math.random() * 2 * Math.PI;
+      const distance = Math.random() * 200;
       existingNode = mapGUMNodeToNode(gumNode);
       existingNode.x = centerNode.x! + distance * Math.cos(angle);
       existingNode.y = centerNode.y! + distance * Math.sin(angle);
+    } else {
+      existingNode.state = gumNode.state;
     }
     return existingNode;
   });
 
   console.log("Updated nodes array:", nodes);
 
-  // Update links array to reference node objects
   links = gumEdges.map(gumEdge => {
     const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;
     const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;
@@ -320,13 +468,12 @@ function unfoldGraph() {
 
   console.log("Updated links array:", links);
 
-  // Immediately update the visualization
   update();
 }
 
 // Function to reset the graph to its initial state with a single node
 function resetGraph() {
-  nodes = [{ id: 1, x: width / 2, y: height / 2 }];
+  nodes = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
   links = [];
   gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
   gumGraph.removeMarkedNodes();
@@ -334,13 +481,35 @@ function resetGraph() {
   update();
 }
 
-// Initial update of the graph
-update();
-
-// Load the genes library and start the unfolding process
-loadGenesLibrary().then(() => {
-  setInterval(unfoldGraph, 500);
+// Add event listeners for the combo box and slider
+document.getElementById('display-options')!.addEventListener('change', function () {
+  const displayOption = (this as HTMLSelectElement).value;
+  updateDisplay(displayOption);
 });
+
+document.getElementById('simulation-interval')!.addEventListener('input', function () {
+  const interval = (this as HTMLInputElement).value;
+  simulationInterval = parseInt(interval, 10);
+  document.getElementById('simulation-interval-value')!.textContent = interval;
+  resetGraph();
+});
+
+function updateDisplay(option: string) {
+  const displayEdges = option === 'edges' || option === 'both';
+  const displayNodes = option === 'nodes' || option === 'both';
+
+  d3.selectAll('.link').style('display', displayEdges ? 'block' : 'none');
+  d3.selectAll('.node').style('display', displayNodes ? 'block' : 'none');
+}
+
+// Initialize default display options
+updateDisplay('edges');
+
+// Variable to store the interval for unfolding the graph
+let simulationInterval: any;
+
+// Start the simulation with the default interval
+simulationInterval = setInterval(unfoldGraph, 500);
 
 // Drag event handlers for D3 nodes
 function dragstarted(event: any, d: Node) {
@@ -360,39 +529,22 @@ function dragended(event: any, d: Node) {
   d.fy = null;
 }
 
-function convertToShortForm(changeTableItems: ChangeTableItem[]): string {  
-  return changeTableItems.map((item, index) => {  
-    const condition = item.condition;  
-    const operation = item.operation;  
-  
-    const currentState = NodeState[condition.currentState];  
-    const priorState = condition.priorState !== NodeState.Ignored ? NodeState[condition.priorState] : '-';  
-    const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `c>=${condition.allConnectionsCount_GE}` : '';  
-    const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `c<=${condition.allConnectionsCount_LE}` : '';  
-    const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';  
-    const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';  
-  
-    const conditionStr = `${currentState}(${priorState})${connectionsCountGE}${connectionsCountLE}${parentsCountGE}${parentsCountLE}`;  
-      
-    let operationStr = '';  
-    switch (operation.kind) {  
-      case OperationKindEnum.TurnToState:  
-        operationStr = NodeState[operation.operandNodeState];  
-        break;  
-      case OperationKindEnum.GiveBirthConnected:  
-        operationStr = `++${NodeState[operation.operandNodeState]}`;  
-        break;  
-      case OperationKindEnum.TryToConnectWith:  
-        operationStr = `+${NodeState[operation.operandNodeState]}`;  
-        break;  
-      case OperationKindEnum.DisconectFrom:  
-        operationStr = `-${NodeState[operation.operandNodeState]}`;  
-        break;  
-      default:  
-        operationStr = 'Unknown';  
-        break;  
-    }  
-  
-    return `${index + 1}. ${conditionStr} : ${operationStr}`;  
-  }).join('\n');  
-}  
+// Control buttons for the simulation
+const pauseButton = document.getElementById('pause-button')!;
+pauseButton.addEventListener('click', () => {
+  clearInterval(simulationInterval);
+});
+
+const resumeButton = document.getElementById('resume-button')!;
+resumeButton.addEventListener('click', () => {
+  clearInterval(simulationInterval);
+  simulationInterval = setInterval(unfoldGraph, simulationInterval);
+});
+
+// Initial update of the graph
+update();
+
+// Load the genes library and start the unfolding process
+loadGenesLibrary().then(() => {
+  simulationInterval = setInterval(unfoldGraph, 500);
+});
