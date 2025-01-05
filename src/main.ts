@@ -56,9 +56,11 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
 // Initialize the force simulation
 const simulation = d3.forceSimulation<Node, Link>()
   .force("link", d3.forceLink<Node, Link>()
-    .id((d: Node) => d.id.toString()))
-  .force("charge", d3.forceManyBody().strength(-1000))
-  .force("center", d3.forceCenter(width / 2, height / 2));
+    .id((d: Node) => d.id.toString())
+    .distance(50)) // Adjust distance for stability
+  .force("charge", d3.forceManyBody().strength(-300)) // Adjust strength for stability
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .velocityDecay(0.2); // Increase decay for stability
 
 // Initialize nodes and links arrays
 let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2 }];
@@ -157,7 +159,6 @@ function mapGUMNodeToNode(gumNode: GUMNode): Node {
   };
 }
 
-// Update the D3 visualization with the current nodes and links
 function update() {
   console.log("Updating graph with nodes:", nodes);
   console.log("Updating graph with links:", links);
@@ -211,27 +212,26 @@ function update() {
   node.exit().remove();
 
   // Update simulation nodes and links
-  simulation
-    .nodes(nodes)
-    .on("tick", () => {
-      link
-        .attr("x1", d => (d.source as Node).x!)
-        .attr("y1", d => (d.source as Node).y!)
-        .attr("x2", d => (d.target as Node).x!)
-        .attr("y2", d => (d.target as Node).y!);
+  simulation.nodes(nodes).on("tick", () => {
+    link
+      .attr("x1", d => (d.source as Node).x!)
+      .attr("y1", d => (d.source as Node).y!)
+      .attr("x2", d => (d.target as Node).x!)
+      .attr("y2", d => (d.target as Node).y!);
 
-      mergedNodes.select("circle")
-        .attr("cx", d => d.x!)
-        .attr("cy", d => d.y!);
+    mergedNodes.select("circle")
+      .attr("cx", d => d.x!)
+      .attr("cy", d => d.y!);
 
-      mergedNodes.select("text")
-        .attr("x", d => d.x!)
-        .attr("y", d => d.y!);
-    });
+    mergedNodes.select("text")
+      .attr("x", d => d.x!)
+      .attr("y", d => d.y!);
+  });
+
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
 
-  // Restart the simulation to take into account new nodes and links
-  simulation.alpha(1).restart();
+  // Smoothly restart the simulation
+  simulation.alpha(0.5).restart();
 
   updateDebugInfo();
 }
@@ -307,6 +307,7 @@ function unfoldGraph() {
 
   console.log("Updated links array:", links);
 
+  // Immediately update the visualization
   update();
 }
 

@@ -198,7 +198,7 @@ export class GraphUnfoldingMachine {
 
   // Run the Graph Unfolding Machine
   run() {
-    const nodes = this.graph.getNodes();
+    const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
     console.log(`DEBUG: RUN`);
     for (const node of nodes) {
       const item = this.changeTable.find(node);
