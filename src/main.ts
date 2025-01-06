@@ -30,7 +30,7 @@ interface Link {
 
 // Set the dimensions for the SVG container
 const width = 960;
-const height = 600;
+const height = 960;
 
 // Create an SVG container
 const svg = d3.select("#canvas-container svg")
@@ -529,16 +529,30 @@ function dragended(event: any, d: Node) {
   d.fy = null;
 }
 
+// Function to enable/disable controls
+function setControlsEnabled(enabled: boolean) {
+  const controls = document.querySelectorAll('#display-options, #simulation-interval');
+  controls.forEach(control => {
+    (control as HTMLInputElement).disabled = !enabled;
+  });
+}
+
 // Control buttons for the simulation
 const pauseButton = document.getElementById('pause-button')!;
 pauseButton.addEventListener('click', () => {
-  clearInterval(simulationInterval);
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = undefined;
+  }
+  setControlsEnabled(true);
 });
 
 const resumeButton = document.getElementById('resume-button')!;
 resumeButton.addEventListener('click', () => {
-  clearInterval(simulationInterval);
-  simulationInterval = setInterval(unfoldGraph, simulationInterval);
+  if (!simulationInterval) {
+    simulationInterval = setInterval(unfoldGraph, parseInt((document.getElementById('simulation-interval') as HTMLInputElement).value, 10));
+  }
+  setControlsEnabled(false);
 });
 
 // Initial update of the graph
@@ -547,4 +561,5 @@ update();
 // Load the genes library and start the unfolding process
 loadGenesLibrary().then(() => {
   simulationInterval = setInterval(unfoldGraph, 500);
+  setControlsEnabled(false);
 });

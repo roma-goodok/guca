@@ -3,6 +3,8 @@ node_modules/
   
 # Build outputs  
 dist/  
+
+code2prompt/output.txt
   
 # TypeScript compiled files  
 *.js  

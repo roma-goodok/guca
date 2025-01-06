@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graph Visualization</title>
   <style>
-    svg {
-      background-color: black;
-    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -47,7 +44,9 @@
       position: relative;
     }
     svg {
+      flex: 1;
       border: 1px solid #ccc;
+      background-color: black;
     }
     .control-buttons {
       display: flex;
@@ -86,9 +85,9 @@
       <input type="range" id="simulation-interval" min="50" max="500" value="500">
       <span id="simulation-interval-value">500</span> ms
     </div>
-  </div>
-  <div id="status-bar">
-    <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+    <div id="status-bar">
+      <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+    </div>
   </div>
   <script src="dist/main.js" type="module"></script>
 </body>

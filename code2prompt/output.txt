@@ -1,35 +1,36 @@
-Project Path: guca-visualization
+Project Path: vogue
 
 I need your help tracking down and fixing some bugs that have been reported in this codebase. Here are the files involved:
 
 Source Tree:
 ```
-guca-visualization
+vogue
 ├── index.html
+├── LICENSE
 ├── code2prompt
 │   ├── default.sh
-│   ├── templates
-│   │   ├── document-the-code.hbs
-│   │   ├── find-security-vulnerabilities.hbs
-│   │   ├── clean-up-code.hbs
-│   │   ├── claude-xml.hbs
-│   │   ├── write-github-pull-request.hbs
-│   │   ├── write-git-commit.hbs
-│   │   ├── binary-exploitation-ctf-solver.hbs
-│   │   ├── cryptography-ctf-solver.hbs
-│   │   ├── reverse-engineering-ctf-solver.hbs
-│   │   ├── web-ctf-solver.hbs
-│   │   ├── fix-bugs.hbs
-│   │   ├── write-github-readme.hbs
-│   │   ├── improve-performance.hbs
-│   │   └── refactor.hbs
-│   └── output.txt
+│   └── templates
+│       ├── document-the-code.hbs
+│       ├── find-security-vulnerabilities.hbs
+│       ├── clean-up-code.hbs
+│       ├── claude-xml.hbs
+│       ├── write-github-pull-request.hbs
+│       ├── write-git-commit.hbs
+│       ├── binary-exploitation-ctf-solver.hbs
+│       ├── cryptography-ctf-solver.hbs
+│       ├── reverse-engineering-ctf-solver.hbs
+│       ├── web-ctf-solver.hbs
+│       ├── fix-bugs.hbs
+│       ├── write-github-readme.hbs
+│       ├── improve-performance.hbs
+│       └── refactor.hbs
 ├── docs
 │   ├── gpt_prompts
 │   │   ├── 01_context_and_current_status.md
 │   │   └── 02_milestone_M1_Frontend_MVP.md
 │   └── TODO.md
 ├── run.sh
+├── README.md
 ├── package-lock.json
 ├── package.json
 ├── scripts
@@ -43,7 +44,7 @@ guca-visualization
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/index.html`: 
+`/Users/rgudchenko/p/vogue/index.html`: 
 
 ```html
 <!DOCTYPE html>
@@ -65,7 +66,7 @@ guca-visualization
       background: #f4f4f4;
       border-left: 1px solid #ccc;
       padding: 10px;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
     }
@@ -92,7 +93,14 @@ guca-visualization
       position: relative;
     }
     svg {
+      flex: 1;
       border: 1px solid #ccc;
+      background-color: black;
+    }
+    .control-buttons {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -109,22 +117,66 @@ guca-visualization
       <div id="node-details"></div>
       <p id="change-table">Change Table: Not loaded</p>
     </div>
-  </div>
-  <div id="status-bar">
-    <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+    <div class="control-buttons">
+      <button id="pause-button">Pause</button>
+      <button id="resume-button">Resume</button>
+    </div>
+    <div class="control-group">
+      <h4>Visualization Options</h4>
+      <label for="display-options">Display Options:</label>
+      <select id="display-options">
+        <option value="edges">Display edges</option>
+        <option value="nodes">Display nodes</option>
+        <option value="both">Display nodes and edges</option>
+      </select>
+      <br>
+      <label for="simulation-interval">Simulation Interval:</label>
+      <input type="range" id="simulation-interval" min="50" max="500" value="500">
+      <span id="simulation-interval-value">500</span> ms
+    </div>
+    <div id="status-bar">
+      <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+    </div>
   </div>
   <script src="dist/main.js" type="module"></script>
 </body>
 </html>
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/default.sh`: 
+`/Users/rgudchenko/p/vogue/LICENSE`: 
+
+```
+MIT License
+
+Copyright (c) 2023 Roman Gudchenko
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+```
+
+`/Users/rgudchenko/p/vogue/code2prompt/default.sh`: 
 
 ```sh
 code2prompt . --exclude="*.json,*.js,*.exe,*.bin,*.dll,*.map,node_modules/**,data/**,code2prompt/**" --output=./code2prompt/output.txt  --tokens -t code2prompt/templates/fix-bugs.hbs
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/document-the-code.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/document-the-code.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -159,7 +211,7 @@ Comments should use the idiomatic style for the language, e.g. /// for Rust, """
 Let me know if you have any questions! And be sure to review your work for accuracy before submitting.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/find-security-vulnerabilities.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/find-security-vulnerabilities.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -212,7 +264,7 @@ Be as thorough and detailed as possible in your analysis. The security of this c
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/clean-up-code.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/clean-up-code.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -255,7 +307,7 @@ For each change you make, include a brief code comment explaining your rationale
 Be thoughtful and judicious with your changes. I trust your programming expertise! Let me know if any part of the original code is unclear.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/claude-xml.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/claude-xml.hbs`: 
 
 ```hbs
 <project_path>{{ absolute_code_path }}</project_path>
@@ -296,7 +348,7 @@ Be thoughtful and judicious with your changes. I trust your programming expertis
 </final_instruction>
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/write-github-pull-request.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/write-github-pull-request.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -360,7 +412,7 @@ Write the content in Markdown format and follow the provided pull request templa
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/write-git-commit.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/write-git-commit.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -394,7 +446,7 @@ Feel free to infer reasonable details if needed, but try to stick to what can be
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/binary-exploitation-ctf-solver.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/binary-exploitation-ctf-solver.hbs`: 
 
 ```hbs
 Challenge Name: {{challenge_name}}
@@ -453,7 +505,7 @@ To solve this binary exploitation challenge:
 Include your process, not just the final payload. Stay within scope (no attacking unintended targets).
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/cryptography-ctf-solver.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/cryptography-ctf-solver.hbs`: 
 
 ```hbs
 Challenge Name: {{challenge_name}}
@@ -501,7 +553,7 @@ I need your help to solve this cryptography challenge. Here are some steps to fo
 Let me know if you need any other information to solve the challenge! Cryptography can be tricky.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/reverse-engineering-ctf-solver.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/reverse-engineering-ctf-solver.hbs`: 
 
 ```hbs
 Challenge Name: {{challenge_name}}
@@ -561,7 +613,7 @@ Here's a plan to tackle this reverse engineering challenge:
 Provide the key reversing insights you discover. Focus on reaching the minimum goal, not full understanding.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/web-ctf-solver.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/web-ctf-solver.hbs`: 
 
 ```hbs
 Challenge Name: {{challenge_name}}  
@@ -615,7 +667,7 @@ To solve this web exploitation challenge, follow these steps:
 Provide the vulnerable URL and your exploit payload. Stay within scope and rules - no scanning/attacking other targets.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/fix-bugs.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/fix-bugs.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -663,7 +715,7 @@ After analysis, please update the code with your proposed fixes. Try to match th
 I appreciate your diligence and attention to detail! Let me know if you need any clarification on the intended behavior of the code.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/write-github-readme.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/write-github-readme.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -702,7 +754,7 @@ Write the content in Markdown format. Use your analysis of the code to generate 
 Feel free to infer reasonable details if needed, but try to stick to what can be determined from the codebase itself. Let me know if you have any other questions as you're writing!
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/improve-performance.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/improve-performance.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -749,7 +801,7 @@ Add benchmarks if possible to quantify the performance improvements. Document an
 Try to prioritize the changes that will have the largest impact on typical usage scenarios based on your understanding of the codebase. Let me know if you have any questions!
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/templates/refactor.hbs`: 
+`/Users/rgudchenko/p/vogue/code2prompt/templates/refactor.hbs`: 
 
 ```hbs
 Project Path: {{ absolute_code_path }}
@@ -804,152 +856,7 @@ After refactoring, please share the updated codebase. Update any relevant docume
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/code2prompt/output.txt`: 
-
-```txt
-Project Path: guca-visualization
-
-Source Tree:
-
-```
-guca-visualization
-├── index.html
-├── code2prompt
-│   ├── default.sh
-│   └── output.txt
-├── docs
-│   ├── gpt_prompts
-│   │   ├── 01_context_and_current_status.md
-│   │   └── 02_milestone_M1_Frontend_MVP.md
-│   └── TODO.md
-├── run.sh
-├── package-lock.json
-├── package.json
-├── scripts
-│   └── 01_convert_xml_genes_to_json.py
-├── tsconfig.json
-├── data
-│   └── demo_2010_dict_genes.json
-└── src
-    ├── gum.ts
-    └── main.ts
-
-```
-
-`/Users/rgudchenko/p/guca-visualization/index.html`:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Graph Visualization</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      height: 100vh;
-    }
-    #ui-panel {
-      width: 300px;
-      background: #f4f4f4;
-      border-left: 1px solid #ccc;
-      padding: 10px;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    #debug-info {
-      flex: 1;
-      overflow-y: auto;
-    }
-    #status-bar {
-      height: 30px;
-      background: #333;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      padding: 0 10px;
-    }
-    #canvas-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      margin: 10px;
-      position: relative;
-    }
-    svg {
-      border: 1px solid #ccc;
-    }
-  </style>
-</head>
-<body>
-  <div id="canvas-container">
-    <svg></svg>
-  </div>
-  <div id="ui-panel">
-    <label for="gene-select">Select Gene:</label>
-    <select id="gene-select"></select>
-    <div id="debug-info">
-      <h4>Debug Information</h4>
-      <p id="node-count">Nodes: 0</p>
-      <div id="node-details"></div>
-      <p id="change-table">Change Table: Not loaded</p>
-    </div>
-  </div>
-  <div id="status-bar">
-    <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
-  </div>
-  <script src="dist/main.js" type="module"></script>
-</body>
-</html>
-```
-
-`/Users/rgudchenko/p/guca-visualization/code2prompt/default.sh`:
-
-```sh
-code2prompt . --exclude="*.json,*.js,*.exe,*.bin,*.dll,*.map,node_modules/**,data/**" --output=./code2prompt/output.txt  --tokens
-```
-
-`/Users/rgudchenko/p/guca-visualization/code2prompt/output.txt`:
-
-```txt
-Project Path: guca-visualization
-
-Source Tree:
-
-```
-guca-visualization
-├── index.html
-├── code2prompt
-│   ├── default.sh
-│   └── output.txt
-├── docs
-│   ├── gpt_prompts
-│   │   ├── 01_context_and_current_status.md
-│   │   └── 02_milestone_M1_Frontend_MVP.md
-│   └── TODO.md
-├── run.sh
-├── package-lock.json
-├── package.json
-├── scripts
-│   └── 01_convert_xml_genes_to_json.py
-├── tsconfig.json
-├── data
-│   └── demo_2010_dict_genes.json
-└── src
-    ├── gum.ts
-    └── main.ts
-
-```
-
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/01_context_and_current_status.md`:
+`/Users/rgudchenko/p/vogue/docs/gpt_prompts/01_context_and_current_status.md`: 
 
 ```md
 Hi! You are an AI assistant to help me find information and develop an educational project. Let me provide the main idea of the project, the decisions already made, and the current status first.
@@ -1149,7 +1056,7 @@ source of src/main.ts will be provided later
 
 ```
 
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/02_milestone_M1_Frontend_MVP.md`:
+`/Users/rgudchenko/p/vogue/docs/gpt_prompts/02_milestone_M1_Frontend_MVP.md`: 
 
 ```md
 First, let's focus on the M1 milestone. I already have the GUCA rules (in C#) (see the implementation of the Graph Unfolding Machine in C# below with comments in Russian, including all the rules). Please:
@@ -1160,295 +1067,7 @@ First, let's focus on the M1 milestone. I already have the GUCA rules (in C#) (s
 4. Propose a high-level plan to implement M1.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/docs/TODO.md`:
-
-```md
-#### Initialization
-- [x] Display interactive graph (hardcoded very simple iterative node creation)
-- [x] Familiarize with web development (TypeScript)
-
-#### MVP
-Display interactive growing graph (arbitrary "genes"). The viewer of the interactive growing graph can select "genes" from the predefined library (combo box) or upload them via JSON.
-- [x] Refresh the rules of GUCA
-- [x] Propose a JSON format
-- [x] Convert old (2010) "genes" from XML to JSON
-- [x] Prepare a very simple "gene," e.g., "[ ]"
-- [x] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
-
-
-High-Level Plan to Implement M1
- 
-
-1. Analyze and Convert Rules
-Task: Convert existing rules from C# to JSON format.
-Action: Write a script or manually convert a subset of the existing rules to JSON format to be used in the initial MVP.
-2. Frontend Setup
-Task: Set up the basic frontend structure using TypeScript and D3.js.
-Action:
-Create the project scaffold (if not already done).
-Implement a basic HTML structure with a canvas for D3.js visualizations.
-Add interactive elements like a combo box for selecting genes and a file upload input for loading JSON files.
-3. Graph Unfolding Machine in TypeScript
-Task: Implement the core functionality of the Graph Unfolding Machine in TypeScript.
-Action:
-Implement classes and methods to parse the JSON format and apply the transition rules to the graph.
-Ensure compatibility with the provided JSON format.
-4. Graph Visualization
-Task: Use D3.js to visualize the graph.
-Action:
-Implement the force-directed layout algorithm in D3.js.
-Add functionality to update the graph layout in real-time based on user interactions and unfolding rules.
-Implement interactive features to add, remove, and update vertices and edges.
-Implement the virtual "knife" tool for cutting edges.
-5. Testing and Debugging
-Task: Test the frontend MVP with a few hardcoded genes.
-Action:
-Load the JSON format of genes into the frontend.
-Test the interactive graph visualization and unfolding.
-Debug any issues related to graph manipulation and visualization.
-6. Documentation and Feedback
-Task: Document the implementation process.
-Action:
-Write documentation for the JSON format, how to use the frontend, and any other relevant information.
-Gather feedback from initial users and make improvements based on their input.
-Detailed Steps for Implementation
- 
-
-1. Setup Project
-Ensure the project structure is in place with index.html, main.ts, and necessary configurations (package.json, webpack.config.js, etc.).
-Install necessary dependencies (TypeScript, D3.js, etc.).
-2. Create Basic HTML Structure
-Update index.html to include elements for graph visualization and interaction (e.g., canvas, combo box, file upload).
-3. Implement JSON Parsing
-Write TypeScript functions to parse the JSON format and convert it into a suitable structure for the Graph Unfolding Machine.
-4. Implement Graph Unfolding Machine
-Translate the core logic of the C# Graph Unfolding Machine into TypeScript.
-Implement classes like NodeState, OperationCondition, Operation, ChangeTableItem, GUMNode, ChangeTable, GUMGraph, and GraphUnfoldingMachine.
-5. Integrate D3.js for Visualization
-Use D3.js to create a force-directed graph layout.
-Add functionality to dynamically update the graph based on the unfolding rules.
-Implement interactive features such as adding/removing nodes and edges.
-6. Testing and Debugging
-Load hardcoded JSON genes into the frontend and test the unfolding process.
-Debug any issues and ensure the graph updates correctly in real-time.
-7. Documentation and User Feedback
-Document the JSON format, how to use the frontend, and any other relevant information.
-Gather feedback from initial users and make necessary improvements.
-```
-```
-
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/01_context_and_current_status.md`:
-
-```md
-Hi! You are an AI assistant to help me find information and develop an educational project. Let me provide the main idea of the project, the decisions already made, and the current status first.
-
-(!) As this is the first message, just take the instructions below into account. There is no need to implement anything right now, as further instructions will be provided later.
-
-# Project Description
-VOGUE: Visualization of Ontogeny in Graph Unfolding Evolution
-
-
-## Project Vision
-The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) driven by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.
-
-## Main Idea
-The main idea behind VOGUE is to provide an interactive platform for visualizing the ontogeny of graph unfolding cellular automata based on a "program" calculated by a genetic algorithm. Users will be able to manipulate the graph and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata.
-
-## Requirements
-- Animated visualization of graph unfolding cellular automata based on a genetic algorithm.
-- Interactive graph visualization with real-time updates.
-- Support for adding, removing, and updating vertices and edges.
-- Implementation of a force-directed layout algorithm, extendable to 3D.
-- A virtual "knife" mouse tool for cutting edges interactively.
-- Smooth and responsive user experience.
-
-## Components and Selected Frameworks
-### Frontend
-Visualize with some interactivity. Users can also select "genes" from a combo box or upload them as a JSON file.
-Framework and Libraries: TypeScript with D3.js. Motivation: for rapid development.
-
-### Backend (of Web Application)
-To log user experience and upload genes from a genes database.
-
-### Graph Evolution Lab
-Offline application or scripts to develop graph evolution algorithms and conduct experiments with possible reuse of web-based visualization. Some resulting genes can be published to the Frontend (at least by hardcoded gene codes).
-Frameworks: Python with high parallelization on multicore CPU (Threadripper) and/or GPU.
-
-# Current Status
-I already have old (2010-2014) working code (GUCA project) but it's not web-oriented and implemented in C#.
-
-## Milestones
-M1: Frontend MVP (more or less attractive): can interactively visualize just a few hardcoded genes (can be selected). The Graph Unfolding Machine (which implements graph unfolding cellular automata) should be implemented in TypeScript.
-
-M2: Graph Evolution Lab - implement the first version of the evolution algorithm and reproduce some old experiments using CPU parallelization.
-
-M3: Make Frontend more attractive and ready to publish.
-
-M4: Improve Graph Evolution Lab to conduct experiments faster and more conveniently, reproducibly (using ClearML for experiment tracking and visualization).
-
-M5: Prepare a public project's web page (e.g., GitHub Pages)
-- Article
-- Source code published
-- Examples of visualization
-
-## TODO List
-### Frontend
-#### Initialization
-- [x] Display interactive graph (hardcoded very simple iterative node creation)
-- [x] Familiarize with web development (TypeScript)
-
-#### MVP
-Display interactive growing graph (arbitrary "genes"). The viewer of the interactive growing graph can select "genes" from the predefined library (combo box) or upload them via JSON.
-- [x] Refresh the rules of GUCA
-- [x] Propose a JSON format
-- [x] Convert old (2010) "genes" from XML to JSON
-- [x] Prepare a very simple "gene," e.g., "[ ]"
-- [ ] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
-The previous task is almost complete, but there are some issues:
-1. Currently, the GUM operates by directly looping over the list of nodes. When new nodes are created, they are added to the list, altering the graph's conditions before the loop ends. We should adopt the logic from the old C# code and the concept of cellular automata, which involves two steps:
-First, perceive (detect the state and neighbors for each cell).
-Then, act.
-Therefore, condition matching should consider the state of the graph before the loop.
-2. Let's make the page more aesthetically pleasing:
-2.1. Add a user interface panel on the right side of the screen. Move the combo box with the genes library to the top of this panel. Also, add a memo box to display the selected genes as text (moving this from the debug panel).
-2.2. Convert the debug panel into an expandable memo box to display and list the nodes. Place this below the combo box and the selected genes memo box.
-2.3. Add a status bar at the bottom of the page to display the numbers of nodes, edges, and GUM iterations.
-2.4. Add a frame around the canvas to define its boundaries. Ensure the canvas fills all the available space except for the status bar and the user interface panel.
-
-
-## Details about Source Code
-### Frontend
-Current project structure:
-```sh
-# sh command to see a project tree without lib artifacts:
-pwd
-tree -I 'dist|node_modules'
-```
-```txt
-/Users/rgudchenko/p/guca-visualization
-.
-├── data
-│   └── demo_2010_dict_genes.json
-├── docs
-│   ├── TODO.md
-│   └── gpt_prompts
-│       ├── 01_context_and_current_status.md
-│       └── 02_milestone_M1_Frontend_MVP.md
-├── index.html
-├── package-lock.json
-├── package.json
-├── run.sh
-├── scripts
-│   └── 01_convert_xml_genes_to_json.py
-├── src
-│   ├── gum.ts
-│   └── main.ts
-├── tsconfig.json
-└── webpack.config.js
-
-6 directories, 13 files
-```
-
-index.html content:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Graph Visualization</title>
-  <style>
-    #debug-info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      border: 1px solid #ccc;
-      max-width: 300px;
-      font-size: 12px;
-    }
-    #node-details {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-  </style>
-</head>
-<body>
-  <div id="debug-info">
-    <h4>Debug Information</h4>
-    <p id="node-count">Nodes: 0</p>
-    <div id="node-details"></div>
-    <p id="change-table">Change Table: Not loaded</p>
-    <label for="gene-select">Select Gene:</label>
-    <select id="gene-select"></select>
-  </div>
-  <script src="dist/main.js" type="module"></script>
-</body>
-</html>
-```
- 
-package.json content:
-```json
-{  
-  "name": "guca-visualization",  
-  "version": "1.0.0",  
-  "main": "index.js",  
-  "scripts": {  
-    "test": "echo \"Error: no test specified\" && exit 1",  
-    "build": "webpack",  
-    "start": "http-server -c-1"  
-  },  
-  "keywords": [],  
-  "author": "",  
-  "license": "ISC",  
-  "description": "",  
-  "dependencies": {  
-    "d3": "^7.9.0"  
-  },  
-  "devDependencies": {  
-    "@types/d3": "^7.4.3",  
-    "ts-loader": "^9.5.1",  
-    "typescript": "^5.6.3",  
-    "webpack": "^5.96.1",  
-    "webpack-cli": "^5.1.4",  
-    "http-server": "^14.1.1"  
-  }  
-}  
-```
-
-tsconfig.json content:
-```json
-{  
-  "compilerOptions": {  
-    "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */  
-    "module": "ESNext",                                  /* Specify what module code is generated. */  
-    "rootDir": "./src",                                  /* Specify the root folder within your source files. */  
-    "outDir": "./dist",                                  /* Specify an output folder for all emitted files. */  
-    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */  
-    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */  
-    "strict": true,                                      /* Enable all strict type-checking options. */  
-    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */  
-  }  
-}  
-```
-source of src/main.ts will be provided later
-
-```
-
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/02_milestone_M1_Frontend_MVP.md`:
-
-```md
-First, let's focus on the M1 milestone. I already have the GUCA rules (in C#) (see the implementation of the Graph Unfolding Machine in C# below with comments in Russian, including all the rules). Please:
-
-1. Analyze it.
-2. If you have any questions to clarify the implementation of the GraphUnfoldingMachine in the new web-based frontend (guca-visualization Git project), please ask.
-3. Provide a JSON format.
-4. Propose a high-level plan to implement M1.
-```
-
-`/Users/rgudchenko/p/guca-visualization/docs/TODO.md`:
+`/Users/rgudchenko/p/vogue/docs/TODO.md`: 
 
 ```md
 #### Initialization
@@ -1524,14 +1143,72 @@ Document the JSON format, how to use the frontend, and any other relevant inform
 Gather feedback from initial users and make necessary improvements.
 ```
 
-`/Users/rgudchenko/p/guca-visualization/run.sh`:
+`/Users/rgudchenko/p/vogue/run.sh`: 
 
 ```sh
 webpack
 http-server -c-1  
 ```
 
-`/Users/rgudchenko/p/guca-visualization/scripts/01_convert_xml_genes_to_json.py`:
+`/Users/rgudchenko/p/vogue/README.md`: 
+
+```md
+# VOGUE: Visualization of Ontogeny in Graph Unfolding Evolution  
+  
+## Project Vision  
+  
+The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.  
+  
+## Main Idea  
+  
+The main idea behind VOGUE is to provide an interactive platform for visualizing the ontogeny of graph unfolding cellular automata based on a "program" calculated by a genetic algorithm. Users will be able to manipulate the graph and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata.  
+  
+## Requirements  
+  
+1. Animated visualization of graph unfolding cellular automata based on a genetic algorithm.  
+2. Interactive graph visualization with real-time updates.  
+3. Support for adding, removing, and updating vertices and edges.  
+4. Implementation of a force-directed layout algorithm, extendable to 3D.  
+5. A virtual "knife" mouse tool for cutting edges interactively.  
+6. Smooth and responsive user experience.  
+  
+## Selected Frameworks  
+  
+- **Frontend**: JavaScript/TypeScript with Three.js  
+  - Motivation: Three.js is a powerful 3D visualization library that leverages WebGL for creating advanced graphics. It is suitable for implementing a custom force-directed algorithm and provides the necessary tools for creating interactive 3D graph visualizations.  
+  
+- **Backend**: Go with a web framework (e.g., Gin, Revel, or Echo)  
+  - Motivation: Go is a performant and efficient programming language with excellent concurrency handling. It is suitable for building a fast and responsive server-side application to support the frontend's interactive requirements.  
+  
+By using JavaScript/TypeScript with Three.js for the frontend and Go for the backend, VOGUE aims to create a visually stunning, high-performance, and interactive graph visualization application that meets the project's vision and requirements.  
+
+
+## Links
+
+###  "Living Graphs" — Growing Graph Unfolding Cellular Automata (GUCA) with Examples in Silverlight (2010)
+Article (RUS): [https://habr.com/en/articles/107387](https://habr.com/en/articles/107387)  
+
+The concept of 'Living Graphs' utilizes cellular automata to model the self-assembly and evolution of graph structures.   
+
+"Living Graphs" leverage the principles of cellular automata to simulate the evolution and self-organization of graph structures, contributing to the field of Artificial Life. The GUCA model operates by applying simple, context-specific rules to nodes within a graph. This method facilitates the emergence of complex structures from minimal initial conditions, mirroring biological growth and development. The article showcases several examples, illustrating the potential of GUCA in diverse fields such as robotics, computer networks, and artificial intelligence, while highlighting the model's modularity, regeneration, and adaptability.
+
+
+###  Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction  
+Blaise Agüera Arcas† Jyrki Alakuijala James Evans Ben Laurie Alexander Mordvintsev Eyvind Niklasson† Ettore Randazzo† Luca Versari  
+
+Paper: [https://arxiv.org/pdf/2406.19108v2](https://arxiv.org/pdf/2406.19108v2)  
+Code: [https://github.com/paradigms-of-intelligence/cubff](https://github.com/paradigms-of-intelligence/cubff)  
+
+## Automating the Search for Artificial Life with Foundation Models  
+
+Paper: [https://arxiv.org/pdf/2412.17799v1](https://arxiv.org/pdf/2412.17799v1)  
+Code: [https://github.com/sakanaai/asal](https://github.com/sakanaai/asal)  
+
+The paper introduces ASAL (Automated Search for Artificial Life), an automated search method using foundation models to discover and analyze artificial life simulations.
+
+```
+
+`/Users/rgudchenko/p/vogue/scripts/01_convert_xml_genes_to_json.py`: 
 
 ```py
 import xml.etree.ElementTree as ET  
@@ -1579,1545 +1256,872 @@ with open("/Users/rgudchenko/p/guca-visualization/data/demo_2010_dict_genes.json
     json_file.write(json_data)  
 ```
 
-`/Users/rgudchenko/p/guca-visualization/src/gum.ts`:
+`/Users/rgudchenko/p/vogue/src/gum.ts`: 
 
 ```ts
-// gum.ts  
-// This module defines the core classes and logic for the Graph Unfolding Machine (GUM).  
-// It includes definitions for node states, operations, conditions, change table items, and the change table itself.  
-// The GUMNode and GUMGraph classes represent the nodes and graph structure, respectively.  
-// The GraphUnfoldingMachine class manages the graph unfolding process based on the change table and specified operations.  
-//  
-// Author of the code: AI Assistant  
-// Author of the ideas: Roman G.  
-  
-// Enumeration for different states a node can be in  
-export enum NodeState {  
-  Max = 255,  
-  Min = 0,  
-  Ignored = 0,  
-  Unknown = 254,  
-  A = 1, B = 2, C = 3, D = 4, E = 5, F = 6, G = 7, H = 8, I = 9,  
-  J = 10, K = 11, L = 12, M = 13, N = 14, O = 15, P = 16, Q = 17, R = 18, S = 19,  
-  T = 20, U = 21, V = 22, W = 23, X = 24, Y = 25, Z = 26, s27 = 27, s28 = 28, s29 = 29,  
-  s30 = 30, s31 = 31, s32 = 32, s33 = 33, s34 = 34, s35 = 35, s36 = 36, s37 = 37, s38 = 38, s39 = 39,  
-  s40 = 40, s41 = 41, s42 = 42, s43 = 43, s44 = 44, s45 = 45, s46 = 46, s47 = 47, s48 = 48, s49 = 49,  
-  s50 = 50, s51 = 51, s52 = 52, s53 = 53, s54 = 54, s55 = 55, s56 = 56, s57 = 57, s58 = 58, s59 = 59,  
-  s60 = 60, s61 = 61, s62 = 62, s63 = 63, s64 = 64, s65 = 65, s66 = 66, s67 = 67, s68 = 68, s69 = 69,  
-  s70 = 70, s71 = 71, s72 = 72, s73 = 73, s74 = 74, s75 = 75, s76 = 76, s77 = 77, s78 = 78, s79 = 79,  
-  s80 = 80, s81 = 81, s82 = 82, s83 = 83, s84 = 84, s85 = 85, s86 = 86, s87 = 87, s88 = 88, s89 = 89,  
-  s90 = 90, s91 = 91, s92 = 92, s93 = 93, s94 = 94, s95 = 95, s96 = 96, s97 = 97, s98 = 98, s99 = 99,  
-  s100 = 100, s101 = 101, s102 = 102, s103 = 103, s104 = 104, s105 = 105, s106 = 106, s107 = 107, s108 = 108, s109 = 109,  
-  s110 = 110, s111 = 111, s112 = 112, s113 = 113, s114 = 114, s115 = 115, s116 = 116, s117 = 117, s118 = 118, s119 = 119,  
-  s120 = 120, s121 = 121, s122 = 122, s123 = 123, s124 = 124, s125 = 125, s126 = 126, s127 = 127, s128 = 128, s129 = 129,  
-  s130 = 130, s131 = 131, s132 = 132, s133 = 133, s134 = 134, s135 = 135, s136 = 136, s137 = 137, s138 = 138, s139 = 139,  
-  s140 = 140, s141 = 141, s142 = 142, s143 = 143, s144 = 144, s145 = 145, s146 = 146, s147 = 147, s148 = 148, s149 = 149,  
-  s150 = 150, s151 = 151, s152 = 152, s153 = 153, s154 = 154, s155 = 155, s156 = 156, s157 = 157, s158 = 158, s159 = 159,  
-  s160 = 160, s161 = 161, s162 = 162, s163 = 163, s164 = 164, s165 = 165, s166 = 166, s167 = 167, s168 = 168, s169 = 169,  
-  s170 = 170, s171 = 171, s172 = 172, s173 = 173, s174 = 174, s175 = 175, s176 = 176, s177 = 177, s178 = 178, s179 = 179,  
-  s180 = 180, s181 = 181, s182 = 182, s183 = 183, s184 = 184, s185 = 185, s186 = 186, s187 = 187, s188 = 188, s189 = 189,  
-  s190 = 190, s191 = 191, s192 = 192, s193 = 193, s194 = 194, s195 = 195, s196 = 196, s197 = 197, s198 = 198, s199 = 199,  
-  s200 = 200, s201 = 201, s202 = 202, s203 = 203, s204 = 204, s205 = 205, s206 = 206, s207 = 207, s208 = 208, s209 = 209,  
-  s210 = 210, s211 = 211, s212 = 212, s213 = 213, s214 = 214, s215 = 215, s216 = 216, s217 = 217, s218 = 218, s219 = 219,  
-  s220 = 220, s221 = 221, s222 = 222, s223 = 223, s224 = 224, s225 = 225, s226 = 226, s227 = 227, s228 = 228, s229 = 229,  
-  s230 = 230, s231 = 231, s232 = 232, s233 = 233, s234 = 234, s235 = 235, s236 = 236, s237 = 237, s238 = 238, s239 = 239,  
-  s240 = 240, s241 = 241, s242 = 242, s243 = 243, s244 = 244, s245 = 245, s246 = 246, s247 = 247, s248 = 248, s249 = 249,  
-  s250 = 250, s251 = 251, s252 = 252, s253 = 253  
-}  
-  
-// Class representing an operation in the GUM  
-export class Operation {  
-  constructor(  
-    public kind: OperationKindEnum,  
-    public operandNodeState: NodeState = NodeState.Ignored  
-  ) { }  
-}  
-  
-// Class representing a condition for an operation  
-export class OperationCondition {  
-  constructor(  
-    public currentState: NodeState,  
-    public priorState: NodeState = NodeState.Ignored,  
-    public allConnectionsCount_GE: number = -1,  
-    public allConnectionsCount_LE: number = -1,  
-    public parentsCount_GE: number = -1,  
-    public parentsCount_LE: number = -1  
-  ) { }  
-}  
-  
-// Class representing an item in the change table  
-export class ChangeTableItem {  
-  constructor(  
-    public condition: OperationCondition,  
-    public operation: Operation,  
-    public isActive: boolean = false,  
-    public isEnabled: boolean = true,  
-    public lastActivationInterationIndex: number = -1  
-  ) { }  
-}  
-  
-// Class representing a change table  
-export class ChangeTable {  
-  public items: ChangeTableItem[] = [];  
-  
-  // Add an item to the change table  
-  add(item: ChangeTableItem) {  
-    this.items.push(item);  
-  }  
-  
-  // Find an item in the change table that matches the given node  
-  find(node: GUMNode): ChangeTableItem | null {  
-    for (const item of this.items) {  
-      const condition = item.condition;  
-      console.log(`DEBUG: Checking node ${node.id} against condition:`, condition);  
-  
-      const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;  
-      const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;  
-      const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&  
-        (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);  
-      const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&  
-        (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);  
-  
-      console.log(`DEBUG: currentState: ${condition.currentState}, nodeState: ${node.state}, currentStateMatches: ${currentStateMatches}`);  
-      console.log(`DEBUG: priorState: ${condition.priorState}, nodePriorState: ${node.priorState}, priorStateMatches: ${priorStateMatches}`);  
-      console.log(`DEBUG: connectionsCountMatches: ${connectionsCountMatches}`);  
-      console.log(`DEBUG: parentsCountMatches: ${parentsCountMatches}`);  
-  
-      if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {  
-        console.log(`DEBUG: Condition matched for node ${node.id}`);  
-        return item;  
-      }  
-    }  
-    console.log(`DEBUG: No condition matched for node ${node.id}`);  
-    return null;  
-  }  
-}  
-  
-// Class representing a node in the GUM graph  
-export class GUMNode {  
-  public connectionsCount: number = 0;  
-  public parentsCount: number = 0;  
-  public markedAsDeleted: boolean = false;  
-  public priorState: NodeState = NodeState.Unknown;  
-  
-  // Add properties to conform to Node interface  
-  public x?: number;  
-  public y?: number;  
-  public vx?: number;  
-  public vy?: number;  
-  public fx?: number | null;  
-  public fy?: number | null;  
-  
-  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }  
-}  
-  
-// Class representing the GUM graph  
-export class GUMGraph {  
-  private nodes: GUMNode[] = [];  
-  private edges: { source: GUMNode; target: GUMNode }[] = [];  
-  
-  // Add a node to the graph  
-  addNode(node: GUMNode) {  
-    this.nodes.push(node);  
-  }  
-  
-  // Add an edge between two nodes in the graph  
-  addEdge(source: GUMNode, target: GUMNode) {  
-    this.edges.push({ source, target });  
-    source.connectionsCount++;  
-    target.connectionsCount++;  
-  }  
-  
-  // Get all nodes in the graph  
-  getNodes(): GUMNode[] {  
-    return this.nodes;  
-  }  
-  
-  // Get all edges in the graph  
-  getEdges() {  
-    return this.edges;  
-  }  
-  
-  // Remove nodes marked as deleted from the graph  
-  removeMarkedNodes() {  
-    this.nodes = this.nodes.filter(node => !node.markedAsDeleted);  
-    this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);  
-  }  
-}  
-  
-// Enumeration for different kinds of operations in the GUM  
-export enum OperationKindEnum {  
-  TurnToState = 0x0,  
-  TryToConnectWithNearest = 0x1,  
-  GiveBirthConnected = 0x2,  
-  DisconectFrom = 0x3,  
-  Die = 0x4,  
-  TryToConnectWith = 0x5,  
-  GiveBirth = 0x6,  
-}  
-  
-// Class representing the Graph Unfolding Machine  
-export class GraphUnfoldingMachine {  
-  public changeTable: ChangeTable;  
-  private iterations: number = 0;  
-  
-  constructor(private graph: GUMGraph) {  
-    this.changeTable = new ChangeTable();  
-  }  
-  
-  // Add an item to the change table  
-  addChangeTableItem(item: ChangeTableItem) {  
-    this.changeTable.add(item);  
-  }  
-  
-  // Get all items in the change table  
-  getChangeTableItems() {  
-    return this.changeTable.items;  
-  }  
-  
-  // Clear the change table when loading a new gene  
-  clearChangeTable() {  
-    this.changeTable.items = [];  
-  }  
-  
-  // Run the Graph Unfolding Machine  
-  run() {  
-    const nodes = this.graph.getNodes();  
-    console.log(`DEBUG: RUN`);  
-    for (const node of nodes) {  
-      const item = this.changeTable.find(node);  
-      if (item && item.isEnabled) {  
-        console.log(`Matched condition for node ${node.id}`);  
-        this.performOperation(node, item.operation);  
-        item.isActive = true;  
-        item.lastActivationInterationIndex++;  
-      }  
-      node.priorState = node.state;  
-    }  
-    this.iterations++;  
-    this.graph.removeMarkedNodes();  
-  }  
-  
-  // Perform an operation on a node  
-  private performOperation(node: GUMNode, operation: Operation) {  
-    console.log(`Performing operation ${operation.kind} on node ${node.id}`);  
-    switch (operation.kind) {  
-      case OperationKindEnum.TurnToState:  
-        node.state = operation.operandNodeState;  
-        break;  
-      case OperationKindEnum.GiveBirthConnected:  
-        const newNode = new GUMNode(this.graph.getNodes().length + 1, operation.operandNodeState);  
-        newNode.parentsCount = node.parentsCount + 1;  
-        this.graph.addNode(newNode);  
-        this.graph.addEdge(node, newNode);  
-        console.log(`Created new node ${newNode.id} connected to node ${node.id}`);  
-        break;  
-      case OperationKindEnum.DisconectFrom:  
-        node.markedAsDeleted = true;  
-        break;  
-      // Handle other cases as needed  
-    }  
-  }  
-  
-  // Get the number of iterations  
-  getIterations() {  
-    return this.iterations;  
-  }  
-}  
-```
+// gum.ts
+// This module defines the core classes and logic for the Graph Unfolding Machine (GUM).
+// It includes definitions for node states, operations, conditions, change table items, and the change table itself.
+// The GUMNode and GUMGraph classes represent the nodes and graph structure, respectively.
+// The GraphUnfoldingMachine class manages the graph unfolding process based on the change table and specified operations.
+//
+// Author of the code: AI Assistant
+// Author of the ideas: Roman G.
 
-`/Users/rgudchenko/p/guca-visualization/src/main.ts`:
+// Enumeration for different states a node can be in
+export enum NodeState {
+  Max = 255,
+  Min = 0,
+  Ignored = 0,
+  Unknown = 254,
+  A = 1, B = 2, C = 3, D = 4, E = 5, F = 6, G = 7, H = 8, I = 9,
+  J = 10, K = 11, L = 12, M = 13, N = 14, O = 15, P = 16, Q = 17, R = 18, S = 19,
+  T = 20, U = 21, V = 22, W = 23, X = 24, Y = 25, Z = 26, s27 = 27, s28 = 28, s29 = 29,
+  s30 = 30, s31 = 31, s32 = 32, s33 = 33, s34 = 34, s35 = 35, s36 = 36, s37 = 37, s38 = 38, s39 = 39,
+  s40 = 40, s41 = 41, s42 = 42, s43 = 43, s44 = 44, s45 = 45, s46 = 46, s47 = 47, s48 = 48, s49 = 49,
+  s50 = 50, s51 = 51, s52 = 52, s53 = 53, s54 = 54, s55 = 55, s56 = 56, s57 = 57, s58 = 58, s59 = 59,
+  s60 = 60, s61 = 61, s62 = 62, s63 = 63, s64 = 64, s65 = 65, s66 = 66, s67 = 67, s68 = 68, s69 = 69,
+  s70 = 70, s71 = 71, s72 = 72, s73 = 73, s74 = 74, s75 = 75, s76 = 76, s77 = 77, s78 = 78, s79 = 79,
+  s80 = 80, s81 = 81, s82 = 82, s83 = 83, s84 = 84, s85 = 85, s86 = 86, s87 = 87, s88 = 88, s89 = 89,
+  s90 = 90, s91 = 91, s92 = 92, s93 = 93, s94 = 94, s95 = 95, s96 = 96, s97 = 97, s98 = 98, s99 = 99,
+  s100 = 100, s101 = 101, s102 = 102, s103 = 103, s104 = 104, s105 = 105, s106 = 106, s107 = 107, s108 = 108, s109 = 109,
+  s110 = 110, s111 = 111, s112 = 112, s113 = 113, s114 = 114, s115 = 115, s116 = 116, s117 = 117, s118 = 118, s119 = 119,
+  s120 = 120, s121 = 121, s122 = 122, s123 = 123, s124 = 124, s125 = 125, s126 = 126, s127 = 127, s128 = 128, s129 = 129,
+  s130 = 130, s131 = 131, s132 = 132, s133 = 133, s134 = 134, s135 = 135, s136 = 136, s137 = 137, s138 = 138, s139 = 139,
+  s140 = 140, s141 = 141, s142 = 142, s143 = 143, s144 = 144, s145 = 145, s146 = 146, s147 = 147, s148 = 148, s149 = 149,
+  s150 = 150, s151 = 151, s152 = 152, s153 = 153, s154 = 154, s155 = 155, s156 = 156, s157 = 157, s158 = 158, s159 = 159,
+  s160 = 160, s161 = 161, s162 = 162, s163 = 163, s164 = 164, s165 = 165, s166 = 166, s167 = 167, s168 = 168, s169 = 169,
+  s170 = 170, s171 = 171, s172 = 172, s173 = 173, s174 = 174, s175 = 175, s176 = 176, s177 = 177, s178 = 178, s179 = 179,
+  s180 = 180, s181 = 181, s182 = 182, s183 = 183, s184 = 184, s185 = 185, s186 = 186, s187 = 187, s188 = 188, s189 = 189,
+  s190 = 190, s191 = 191, s192 = 192, s193 = 193, s194 = 194, s195 = 195, s196 = 196, s197 = 197, s198 = 198, s199 = 199,
+  s200 = 200, s201 = 201, s202 = 202, s203 = 203, s204 = 204, s205 = 205, s206 = 206, s207 = 207, s208 = 208, s209 = 209,
+  s210 = 210, s211 = 211, s212 = 212, s213 = 213, s214 = 214, s215 = 215, s216 = 216, s217 = 217, s218 = 218, s219 = 219,
+  s220 = 220, s221 = 221, s222 = 222, s223 = 223, s224 = 224, s225 = 225, s226 = 226, s227 = 227, s228 = 228, s229 = 229,
+  s230 = 230, s231 = 231, s232 = 232, s233 = 233, s234 = 234, s235 = 235, s236 = 236, s237 = 237, s238 = 238, s239 = 239,
+  s240 = 240, s241 = 241, s242 = 242, s243 = 243, s244 = 244, s245 = 245, s246 = 246, s247 = 247, s248 = 248, s249 = 249,
+  s250 = 250, s251 = 251, s252 = 252, s253 = 253
+}
 
-```ts
-// main.ts  
-// Author of the code: AI Assistant  
-// Author of the ideas: Roman G.  
-// Description: This module initializes and manages the interactive visualization  
-// of graph unfolding using D3.js. It handles loading genes, mapping nodes,   
-// updating the graph, and adding interactive features such as dragging and zooming.  
-  
-import * as d3 from 'd3';  
-import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';  
-  
-// Interface for Node  
-interface Node {  
-  id: number;  
-  x?: number;  
-  y?: number;  
-  vx?: number;  
-  vy?: number;  
-  fx?: number | null;  
-  fy?: number | null;  
-}  
-  
-// Interface for Link  
-interface Link {  
-  source: number | Node;  
-  target: number | Node;  
-}  
-  
-// Set the dimensions for the SVG container  
-const width = 960;  
-const height = 600;  
-  
-// Create an SVG container  
-const svg = d3.select("#canvas-container svg")  
-  .attr("width", width)  
-  .attr("height", height);  
-  
-// Add a rectangle overlay to capture zoom events  
-const zoomOverlay = svg.append("rect")  
-  .attr("width", width)  
-  .attr("height", height)  
-  .attr("fill", "none")  
-  .attr("pointer-events", "all");  
-  
-const graphGroup = svg.append("g");  
-  
-// Add zoom behavior to the overlay  
-const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()  
-  .scaleExtent([0.01, 10]) // Limit the zoom scale  
-  .on("zoom", (event) => {  
-    graphGroup.attr("transform", event.transform);  
-  });  
-  
-// Use type assertion to ensure compatibility  
-(zoomOverlay as any).call(zoomBehavior as any);  
-  
-// Initialize the force simulation  
-const simulation = d3.forceSimulation<Node, Link>()  
-  .force("link", d3.forceLink<Node, Link>()  
-    .id((d: Node) => d.id.toString()))  
-  .force("charge", d3.forceManyBody().strength(-1000))  
-  .force("center", d3.forceCenter(width / 2, height / 2));  
-  
-// Initialize nodes and links arrays  
-let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2 }];  
-let links: Link[] = [];  
-  
-// Initialize GUM graph and machine  
-const gumGraph = new GUMGraph();  
-const gumMachine = new GraphUnfoldingMachine(gumGraph);  
-  
-// Add an initial node to the GUM graph  
-const initialNode = new GUMNode(1, NodeState.A);  
-gumGraph.addNode(initialNode);  
-  
-// Helper function to map string state to NodeState enum  
-function mapNodeState(state: string): NodeState {  
-  return NodeState[state as keyof typeof NodeState];  
-}  
-  
-// Load the genes library from a JSON file  
-async function loadGenesLibrary() {  
-  try {  
-    const response = await fetch('data/demo_2010_dict_genes.json');  
-    const data = await response.json();  
-    const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;  
-  
-    // Populate the combo box with gene names  
-    for (const geneName in data.genes) {  
-      const option = document.createElement('option');  
-      option.value = geneName;  
-      option.text = geneName;  
-      geneSelect.add(option);  
-    }  
-  
-    // Load the default gene  
-    loadGene(data.genes[geneSelect.value]);  
-  
-    // Add event listener to handle gene selection  
-    geneSelect.addEventListener('change', (event) => {  
-      const selectedGene = (event.target as HTMLSelectElement).value;  
-      loadGene(data.genes[selectedGene]);  
-    });  
-    updateDebugInfo();  
-  } catch (error) {  
-    console.error("Error loading genes library:", error);  
-  }  
-}  
-  
-// Function to load a specific gene  
-function loadGene(gene: any) {  
-  gumMachine.clearChangeTable();  
-  gene.forEach((item: any) => {  
-    const condition = new OperationCondition(  
-      mapNodeState(item.condition.currentState),  
-      mapNodeState(item.condition.priorState),  
-      item.condition.allConnectionsCount_GE,  
-      item.condition.allConnectionsCount_LE,  
-      item.condition.parentsCount_GE,  
-      item.condition.parentsCount_LE  
-    );  
-  
-    const operation = new Operation(  
-      mapOperationKind(item.operation.kind),  
-      mapNodeState(item.operation.operandNodeState)  
-    );  
-    gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));  
-  });  
-  
-  // Reset and start the graph  
-  resetGraph();  
-}  
-  
-// Helper function to map string kind to OperationKindEnum  
-function mapOperationKind(kind: string): OperationKindEnum {  
-  switch (kind) {  
-    case "TurnToState": return OperationKindEnum.TurnToState;  
-    case "TryToConnectWithNearest": return OperationKindEnum.TryToConnectWithNearest;  
-    case "GiveBirthConnected": return OperationKindEnum.GiveBirthConnected;  
-    case "DisconectFrom": return OperationKindEnum.DisconectFrom;  
-    case "Die": return OperationKindEnum.Die;  
-    case "TryToConnectWith": return OperationKindEnum.TryToConnectWith;  
-    case "GiveBirth": return OperationKindEnum.GiveBirth;  
-    default: throw new Error(`Unknown operation kind: ${kind}`);  
-  }  
-}  
-  
-// Map GUMNode to Node interface  
-function mapGUMNodeToNode(gumNode: GUMNode): Node {  
-  return {  
-    id: gumNode.id,  
-    x: gumNode.x,  
-    y: gumNode.y,  
-    vx: gumNode.vx,  
-    vy: gumNode.vy,  
-    fx: gumNode.fx,  
-    fy: gumNode.fy  
-  };  
-}  
-  
-// Update the D3 visualization with the current nodes and links  
-function update() {  
-  console.log("Updating graph with nodes:", nodes);  
-  console.log("Updating graph with links:", links);  
-  
-  // Bind data for links  
-  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")  
-    .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);  
-  
-  // Enter new links  
-  link.enter().append("line")  
-    .attr("class", "link")  
-    .attr("stroke", "black")  
-    .attr("stroke-width", 2)  
-    .merge(link);  
-  
-  // Update existing links  
-  link  
-    .attr("x1", d => (d.source as Node).x!)  
-    .attr("y1", d => (d.source as Node).y!)  
-    .attr("x2", d => (d.target as Node).x!)  
-    .attr("y2", d => (d.target as Node).y!);  
-  
-  // Remove old links  
-  link.exit().remove();  
-  
-  // Bind data for nodes  
-  const node = graphGroup.selectAll<SVGGElement, Node>(".node")  
-    .data(nodes, d => d.id.toString());  
-  
-  // Enter new nodes  
-  const nodeEnter = node.enter().append("g")  
-    .attr("class", "node")  
-    .call(d3.drag<SVGGElement, Node>()  
-      .on("start", dragstarted)  
-      .on("drag", dragged)  
-      .on("end", dragended));  
-  
-  nodeEnter.append("circle")  
-    .attr("r", 5)  
-    .attr("fill", "red");  
-  
-  nodeEnter.append("text")  
-    .attr("dy", 3)  
-    .attr("dx", -3)  
-    .text(d => d.id.toString());  
-  
-  // Merge new nodes with existing nodes  
-  const mergedNodes = nodeEnter.merge(node);  
-  
-  // Remove old nodes  
-  node.exit().remove();  
-  
-  // Update simulation nodes and links  
-  simulation  
-    .nodes(nodes)  
-    .on("tick", () => {  
-      link  
-        .attr("x1", d => (d.source as Node).x!)  
-        .attr("y1", d => (d.source as Node).y!)  
-        .attr("x2", d => (d.target as Node).x!)  
-        .attr("y2", d => (d.target as Node).y!);  
-  
-      mergedNodes.select("circle")  
-        .attr("cx", d => d.x!)  
-        .attr("cy", d => d.y!);  
-  
-      mergedNodes.select("text")  
-        .attr("x", d => d.x!)  
-        .attr("y", d => d.y!);  
-    });  
-  simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);  
-  
-  // Restart the simulation to take into account new nodes and links  
-  simulation.alpha(1).restart();  
-  
-  updateDebugInfo();  
-}  
-  
-// Update the debug information displayed on the page  
-function updateDebugInfo() {  
-  const nodeCountElement = document.getElementById('node-count');  
-  const nodeDetailsElement = document.getElementById('node-details');  
-  const changeTableElement = document.getElementById('change-table');  
-  const statusInfoElement = document.getElementById('status-info');  
-  
-  if (nodeCountElement) {  
-    nodeCountElement.textContent = `Nodes: ${nodes.length}`;  
-  }  
-  if (nodeDetailsElement) {  
-    const nodeDetails = gumGraph.getNodes().map(node => `  
-      <p>  
-        ID: ${node.id}<br>  
-        State: ${NodeState[node.state]}<br>  
-        Prior State: ${NodeState[node.priorState]}<br>  
-        Parents Count: ${node.parentsCount}<br>  
-        Connections Count: ${node.connectionsCount}  
-      </p>  
-    `).join('');  
-    nodeDetailsElement.innerHTML = nodeDetails;  
-  }  
-  if (changeTableElement) {  
-    const changeTableItems = gumMachine.getChangeTableItems();  
-    changeTableElement.textContent = `Change Table: ${JSON.stringify(changeTableItems, null, 2)}`;  
-  }  
-  if (statusInfoElement) {  
-    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;  
-  }  
-}  
-  
-// Unfold the graph using the Graph Unfolding Machine  
-function unfoldGraph() {  
-  console.log("Unfolding graph");  
-  
-  // Run the Graph Unfolding Machine  
-  gumMachine.run();  
-  
-  // Get the updated nodes and edges from GUMGraph  
-  const gumNodes = gumGraph.getNodes();  
-  const gumEdges = gumGraph.getEdges();  
-  
-  console.log("Updated GUM nodes:", gumNodes);  
-  console.log("Updated GUM edges:", gumEdges);  
-  
-  // Update nodes array  
-  nodes = gumNodes.map(gumNode => {  
-    let existingNode = nodes.find(node => node.id === gumNode.id);  
-    if (!existingNode) {  
-      const centerNode = nodes[0]; // Center node  
-      const angle = Math.random() * 2 * Math.PI; // Random angle  
-      const distance = Math.random() * 200; // Random distance within 200 pixels  
-      existingNode = mapGUMNodeToNode(gumNode);  
-      existingNode.x = centerNode.x! + distance * Math.cos(angle);  
-      existingNode.y = centerNode.y! + distance * Math.sin(angle);  
-    }  
-    return existingNode;  
-  });  
-  
-  console.log("Updated nodes array:", nodes);  
-  
-  // Update links array to reference node objects  
-  links = gumEdges.map(gumEdge => {  
-    const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;  
-    const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;  
-    console.log(`Creating link from node ${sourceNode.id} to node ${targetNode.id}`);  
-    return { source: sourceNode, target: targetNode };  
-  });  
-  
-  console.log("Updated links array:", links);  
-  
-  update();  
-}  
-  
-// Function to reset the graph to its initial state with a single node  
-function resetGraph() {  
-  nodes = [{ id: 1, x: width / 2, y: height / 2 }];  
-  links = [];  
-  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);  
-  gumGraph.removeMarkedNodes();  
-  gumGraph.addNode(new GUMNode(1, NodeState.A));  
-  update();  
-}  
-  
-// Initial update of the graph  
-update();  
-  
-// Load the genes library and start the unfolding process  
-loadGenesLibrary().then(() => {  
-  setInterval(unfoldGraph, 500);  
-});  
-  
-// Drag event handlers for D3 nodes  
-function dragstarted(event: any, d: Node) {  
-  if (!event.active) simulation.alphaTarget(0.3).restart();  
-  d.fx = d.x;  
-  d.fy = d.y;  
-}  
-  
-function dragged(event: any, d: Node) {  
-  d.fx = event.x;  
-  d.fy = event.y;  
-}  
-  
-function dragended(event: any, d: Node) {  
-  if (!event.active) simulation.alphaTarget(0);  
-  d.fx = null;  
-  d.fy = null;  
-}  
-```
-```
+// Class representing an operation in the GUM
+export class Operation {
+  constructor(
+    public kind: OperationKindEnum,
+    public operandNodeState: NodeState = NodeState.Ignored
+  ) { }
+}
 
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/01_context_and_current_status.md`: 
+// Class representing a condition for an operation
+export class OperationCondition {
+  constructor(
+    public currentState: NodeState,
+    public priorState: NodeState = NodeState.Ignored,
+    public allConnectionsCount_GE: number = -1,
+    public allConnectionsCount_LE: number = -1,
+    public parentsCount_GE: number = -1,
+    public parentsCount_LE: number = -1
+  ) { }
+}
 
-```md
-Hi! You are an AI assistant to help me find information and develop an educational project. Let me provide the main idea of the project, the decisions already made, and the current status first.
+// Class representing an item in the change table
+export class ChangeTableItem {
+  constructor(
+    public condition: OperationCondition,
+    public operation: Operation,
+    public isActive: boolean = false,
+    public isEnabled: boolean = true,
+    public lastActivationInterationIndex: number = -1
+  ) { }
+}
 
-(!) As this is the first message, just take the instructions below into account. There is no need to implement anything right now, as further instructions will be provided later.
+// Class representing a change table
+export class ChangeTable {
+  public items: ChangeTableItem[] = [];
 
-# Project Description
-VOGUE: Visualization of Ontogeny in Graph Unfolding Evolution
+  // Add an item to the change table
+  add(item: ChangeTableItem) {
+    this.items.push(item);
+  }
 
+  // Find an item in the change table that matches the given node
+  find(node: GUMNode): ChangeTableItem | null {
+    for (const item of this.items) {
+      const condition = item.condition;
+      console.log(`DEBUG: Checking node ${node.id} against condition:`, condition);
 
-## Project Vision
-The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) driven by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.
+      const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;
+      const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;
+      const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
+        (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);
+      const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
+        (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);
 
-## Main Idea
-The main idea behind VOGUE is to provide an interactive platform for visualizing the ontogeny of graph unfolding cellular automata based on a "program" calculated by a genetic algorithm. Users will be able to manipulate the graph and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata.
+      console.log(`DEBUG: currentState: ${condition.currentState}, nodeState: ${node.state}, currentStateMatches: ${currentStateMatches}`);
+      console.log(`DEBUG: priorState: ${condition.priorState}, nodePriorState: ${node.priorState}, priorStateMatches: ${priorStateMatches}`);
+      console.log(`DEBUG: connectionsCountMatches: ${connectionsCountMatches}`);
+      console.log(`DEBUG: parentsCountMatches: ${parentsCountMatches}`);
 
-## Requirements
-- Animated visualization of graph unfolding cellular automata based on a genetic algorithm.
-- Interactive graph visualization with real-time updates.
-- Support for adding, removing, and updating vertices and edges.
-- Implementation of a force-directed layout algorithm, extendable to 3D.
-- A virtual "knife" mouse tool for cutting edges interactively.
-- Smooth and responsive user experience.
-
-## Components and Selected Frameworks
-### Frontend
-Visualize with some interactivity. Users can also select "genes" from a combo box or upload them as a JSON file.
-Framework and Libraries: TypeScript with D3.js. Motivation: for rapid development.
-
-### Backend (of Web Application)
-To log user experience and upload genes from a genes database.
-
-### Graph Evolution Lab
-Offline application or scripts to develop graph evolution algorithms and conduct experiments with possible reuse of web-based visualization. Some resulting genes can be published to the Frontend (at least by hardcoded gene codes).
-Frameworks: Python with high parallelization on multicore CPU (Threadripper) and/or GPU.
-
-# Current Status
-I already have old (2010-2014) working code (GUCA project) but it's not web-oriented and implemented in C#.
-
-## Milestones
-M1: Frontend MVP (more or less attractive): can interactively visualize just a few hardcoded genes (can be selected). The Graph Unfolding Machine (which implements graph unfolding cellular automata) should be implemented in TypeScript.
-
-M2: Graph Evolution Lab - implement the first version of the evolution algorithm and reproduce some old experiments using CPU parallelization.
-
-M3: Make Frontend more attractive and ready to publish.
-
-M4: Improve Graph Evolution Lab to conduct experiments faster and more conveniently, reproducibly (using ClearML for experiment tracking and visualization).
-
-M5: Prepare a public project's web page (e.g., GitHub Pages)
-- Article
-- Source code published
-- Examples of visualization
-
-## TODO List
-### Frontend
-#### Initialization
-- [x] Display interactive graph (hardcoded very simple iterative node creation)
-- [x] Familiarize with web development (TypeScript)
-
-#### MVP
-Display interactive growing graph (arbitrary "genes"). The viewer of the interactive growing graph can select "genes" from the predefined library (combo box) or upload them via JSON.
-- [x] Refresh the rules of GUCA
-- [x] Propose a JSON format
-- [x] Convert old (2010) "genes" from XML to JSON
-- [x] Prepare a very simple "gene," e.g., "[ ]"
-- [ ] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
-The previous task is almost complete, but there are some issues:
-1. Currently, the GUM operates by directly looping over the list of nodes. When new nodes are created, they are added to the list, altering the graph's conditions before the loop ends. We should adopt the logic from the old C# code and the concept of cellular automata, which involves two steps:
-First, perceive (detect the state and neighbors for each cell).
-Then, act.
-Therefore, condition matching should consider the state of the graph before the loop.
-2. Let's make the page more aesthetically pleasing:
-2.1. Add a user interface panel on the right side of the screen. Move the combo box with the genes library to the top of this panel. Also, add a memo box to display the selected genes as text (moving this from the debug panel).
-2.2. Convert the debug panel into an expandable memo box to display and list the nodes. Place this below the combo box and the selected genes memo box.
-2.3. Add a status bar at the bottom of the page to display the numbers of nodes, edges, and GUM iterations.
-2.4. Add a frame around the canvas to define its boundaries. Ensure the canvas fills all the available space except for the status bar and the user interface panel.
-
-
-## Details about Source Code
-### Frontend
-Current project structure:
-```sh
-# sh command to see a project tree without lib artifacts:
-pwd
-tree -I 'dist|node_modules'
-```
-```txt
-/Users/rgudchenko/p/guca-visualization
-.
-├── data
-│   └── demo_2010_dict_genes.json
-├── docs
-│   ├── TODO.md
-│   └── gpt_prompts
-│       ├── 01_context_and_current_status.md
-│       └── 02_milestone_M1_Frontend_MVP.md
-├── index.html
-├── package-lock.json
-├── package.json
-├── run.sh
-├── scripts
-│   └── 01_convert_xml_genes_to_json.py
-├── src
-│   ├── gum.ts
-│   └── main.ts
-├── tsconfig.json
-└── webpack.config.js
-
-6 directories, 13 files
-```
-
-index.html content:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Graph Visualization</title>
-  <style>
-    #debug-info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      border: 1px solid #ccc;
-      max-width: 300px;
-      font-size: 12px;
+      if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {
+        console.log(`DEBUG: Condition matched for node ${node.id}`);
+        return item;
+      }
     }
-    #node-details {
-      max-height: 200px;
-      overflow-y: auto;
+    console.log(`DEBUG: No condition matched for node ${node.id}`);
+    return null;
+  }
+}
+
+// Class representing a node in the GUM graph
+export class GUMNode {
+  public connectionsCount: number = 0;
+  public parentsCount: number = 0;
+  public markedAsDeleted: boolean = false;
+  public priorState: NodeState = NodeState.Unknown;
+
+  // Add properties to conform to Node interface
+  public x?: number;
+  public y?: number;
+  public vx?: number;
+  public vy?: number;
+  public fx?: number | null;
+  public fy?: number | null;
+
+  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
+}
+
+// Class representing the GUM graph
+export class GUMGraph {
+  private nodes: GUMNode[] = [];
+  private edges: { source: GUMNode; target: GUMNode }[] = [];
+
+  // Add a node to the graph
+  addNode(node: GUMNode) {
+    this.nodes.push(node);
+  }
+
+  // Add an edge between two nodes in the graph
+  addEdge(source: GUMNode, target: GUMNode) {
+    this.edges.push({ source, target });
+    source.connectionsCount++;
+    target.connectionsCount++;
+  }
+
+  // Get all nodes in the graph
+  getNodes(): GUMNode[] {
+    return this.nodes;
+  }
+
+  // Get all edges in the graph
+  getEdges() {
+    return this.edges;
+  }
+
+  // Remove nodes marked as deleted from the graph
+  removeMarkedNodes() {
+    this.nodes = this.nodes.filter(node => !node.markedAsDeleted);
+    this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);
+  }
+}
+
+// Enumeration for different kinds of operations in the GUM
+export enum OperationKindEnum {
+  TurnToState = 0x0,
+  TryToConnectWithNearest = 0x1,
+  GiveBirthConnected = 0x2,
+  DisconectFrom = 0x3,
+  Die = 0x4,
+  TryToConnectWith = 0x5,
+  GiveBirth = 0x6,
+}
+
+// Class representing the Graph Unfolding Machine
+export class GraphUnfoldingMachine {
+  public changeTable: ChangeTable;
+  private iterations: number = 0;
+
+  constructor(private graph: GUMGraph) {
+    this.changeTable = new ChangeTable();
+  }
+
+  // Add an item to the change table
+  addChangeTableItem(item: ChangeTableItem) {
+    this.changeTable.add(item);
+  }
+
+  // Get all items in the change table
+  getChangeTableItems() {
+    return this.changeTable.items;
+  }
+
+  // Clear the change table when loading a new gene
+  clearChangeTable() {
+    this.changeTable.items = [];
+  }
+
+  // Run the Graph Unfolding Machine
+  run() {
+    const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
+    console.log(`DEBUG: RUN`);
+    for (const node of nodes) {
+      const item = this.changeTable.find(node);
+      if (item && item.isEnabled) {
+        console.log(`Matched condition for node ${node.id}`);
+        this.performOperation(node, item.operation);
+        item.isActive = true;
+        item.lastActivationInterationIndex++;
+      }
+      node.priorState = node.state;
     }
-  </style>
-</head>
-<body>
-  <div id="debug-info">
-    <h4>Debug Information</h4>
-    <p id="node-count">Nodes: 0</p>
-    <div id="node-details"></div>
-    <p id="change-table">Change Table: Not loaded</p>
-    <label for="gene-select">Select Gene:</label>
-    <select id="gene-select"></select>
-  </div>
-  <script src="dist/main.js" type="module"></script>
-</body>
-</html>
-```
- 
-package.json content:
-```json
-{  
-  "name": "guca-visualization",  
-  "version": "1.0.0",  
-  "main": "index.js",  
-  "scripts": {  
-    "test": "echo \"Error: no test specified\" && exit 1",  
-    "build": "webpack",  
-    "start": "http-server -c-1"  
-  },  
-  "keywords": [],  
-  "author": "",  
-  "license": "ISC",  
-  "description": "",  
-  "dependencies": {  
-    "d3": "^7.9.0"  
-  },  
-  "devDependencies": {  
-    "@types/d3": "^7.4.3",  
-    "ts-loader": "^9.5.1",  
-    "typescript": "^5.6.3",  
-    "webpack": "^5.96.1",  
-    "webpack-cli": "^5.1.4",  
-    "http-server": "^14.1.1"  
-  }  
-}  
-```
+    this.iterations++;
+    this.graph.removeMarkedNodes();
+  }
 
-tsconfig.json content:
-```json
-{  
-  "compilerOptions": {  
-    "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */  
-    "module": "ESNext",                                  /* Specify what module code is generated. */  
-    "rootDir": "./src",                                  /* Specify the root folder within your source files. */  
-    "outDir": "./dist",                                  /* Specify an output folder for all emitted files. */  
-    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */  
-    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */  
-    "strict": true,                                      /* Enable all strict type-checking options. */  
-    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */  
-  }  
-}  
-```
-source of src/main.ts will be provided later
+  // Perform an operation on a node
+  private performOperation(node: GUMNode, operation: Operation) {
+    console.log(`Performing operation ${operation.kind} on node ${node.id}`);
+    switch (operation.kind) {
+      case OperationKindEnum.TurnToState:
+        node.state = operation.operandNodeState;
+        break;
+      case OperationKindEnum.GiveBirthConnected:
+        const newNode = new GUMNode(this.graph.getNodes().length + 1, operation.operandNodeState);
+        newNode.parentsCount = node.parentsCount + 1;
+        this.graph.addNode(newNode);
+        this.graph.addEdge(node, newNode);
+        console.log(`Created new node ${newNode.id} connected to node ${node.id}`);
+        break;
+      case OperationKindEnum.DisconectFrom:
+        node.markedAsDeleted = true;
+        break;
+      case OperationKindEnum.TryToConnectWithNearest:
+        this.tryToConnectWithNearest(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.Die:
+        this.die(node);
+        break;
+      case OperationKindEnum.TryToConnectWith:
+        this.tryToConnectWith(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.GiveBirth:
+        this.giveBirth(node, operation.operandNodeState);
+        break;
+      default:
+        console.log(`Unknown operation kind: ${operation.kind}`);
+        break;
+    }
+  }
 
-```
+  private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+    // Implement the logic to connect with the nearest node in the given state
+    console.log(`Trying to connect node ${node.id} with nearest node in state ${state}`);
+    // Example logic:
+    const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+    if (nearestNode) {
+      this.graph.addEdge(node, nearestNode);
+      console.log(`Connected node ${node.id} with node ${nearestNode.id}`);
+    }
+  }
 
-`/Users/rgudchenko/p/guca-visualization/docs/gpt_prompts/02_milestone_M1_Frontend_MVP.md`: 
+  private die(node: GUMNode) {
+    // Implement the logic for the node to die
+    console.log(`Node ${node.id} is dying`);
+    node.markedAsDeleted = true;
+  }
 
-```md
-First, let's focus on the M1 milestone. I already have the GUCA rules (in C#) (see the implementation of the Graph Unfolding Machine in C# below with comments in Russian, including all the rules). Please:
+  private tryToConnectWith(node: GUMNode, state: NodeState) {
+    // Implement the logic to try to connect with a node in the given state
+    console.log(`Trying to connect node ${node.id} with node in state ${state}`);
+    // Example logic:
+    const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+    if (targetNode) {
+      this.graph.addEdge(node, targetNode);
+      console.log(`Connected node ${node.id} with node ${targetNode.id}`);
+    }
+  }
 
-1. Analyze it.
-2. If you have any questions to clarify the implementation of the GraphUnfoldingMachine in the new web-based frontend (guca-visualization Git project), please ask.
-3. Provide a JSON format.
-4. Propose a high-level plan to implement M1.
-```
+  private giveBirth(node: GUMNode, state: NodeState) {
+    // Implement the logic for the node to give birth
+    console.log(`Node ${node.id} is giving birth to node in state ${state}`);
+    const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+    newNode.parentsCount = node.parentsCount + 1;
+    this.graph.addNode(newNode);
+    console.log(`Created new node ${newNode.id}`);
+  }
 
-`/Users/rgudchenko/p/guca-visualization/docs/TODO.md`: 
-
-```md
-#### Initialization
-- [x] Display interactive graph (hardcoded very simple iterative node creation)
-- [x] Familiarize with web development (TypeScript)
-
-#### MVP
-Display interactive growing graph (arbitrary "genes"). The viewer of the interactive growing graph can select "genes" from the predefined library (combo box) or upload them via JSON.
-- [x] Refresh the rules of GUCA
-- [x] Propose a JSON format
-- [x] Convert old (2010) "genes" from XML to JSON
-- [x] Prepare a very simple "gene," e.g., "[ ]"
-- [x] GraphUnfoldingMachine - which executes a "gene" modifying the graph. The modified graph should be visualized simultaneously as it grows.
-
-
-High-Level Plan to Implement M1
- 
-
-1. Analyze and Convert Rules
-Task: Convert existing rules from C# to JSON format.
-Action: Write a script or manually convert a subset of the existing rules to JSON format to be used in the initial MVP.
-2. Frontend Setup
-Task: Set up the basic frontend structure using TypeScript and D3.js.
-Action:
-Create the project scaffold (if not already done).
-Implement a basic HTML structure with a canvas for D3.js visualizations.
-Add interactive elements like a combo box for selecting genes and a file upload input for loading JSON files.
-3. Graph Unfolding Machine in TypeScript
-Task: Implement the core functionality of the Graph Unfolding Machine in TypeScript.
-Action:
-Implement classes and methods to parse the JSON format and apply the transition rules to the graph.
-Ensure compatibility with the provided JSON format.
-4. Graph Visualization
-Task: Use D3.js to visualize the graph.
-Action:
-Implement the force-directed layout algorithm in D3.js.
-Add functionality to update the graph layout in real-time based on user interactions and unfolding rules.
-Implement interactive features to add, remove, and update vertices and edges.
-Implement the virtual "knife" tool for cutting edges.
-5. Testing and Debugging
-Task: Test the frontend MVP with a few hardcoded genes.
-Action:
-Load the JSON format of genes into the frontend.
-Test the interactive graph visualization and unfolding.
-Debug any issues related to graph manipulation and visualization.
-6. Documentation and Feedback
-Task: Document the implementation process.
-Action:
-Write documentation for the JSON format, how to use the frontend, and any other relevant information.
-Gather feedback from initial users and make improvements based on their input.
-Detailed Steps for Implementation
- 
-
-1. Setup Project
-Ensure the project structure is in place with index.html, main.ts, and necessary configurations (package.json, webpack.config.js, etc.).
-Install necessary dependencies (TypeScript, D3.js, etc.).
-2. Create Basic HTML Structure
-Update index.html to include elements for graph visualization and interaction (e.g., canvas, combo box, file upload).
-3. Implement JSON Parsing
-Write TypeScript functions to parse the JSON format and convert it into a suitable structure for the Graph Unfolding Machine.
-4. Implement Graph Unfolding Machine
-Translate the core logic of the C# Graph Unfolding Machine into TypeScript.
-Implement classes like NodeState, OperationCondition, Operation, ChangeTableItem, GUMNode, ChangeTable, GUMGraph, and GraphUnfoldingMachine.
-5. Integrate D3.js for Visualization
-Use D3.js to create a force-directed graph layout.
-Add functionality to dynamically update the graph based on the unfolding rules.
-Implement interactive features such as adding/removing nodes and edges.
-6. Testing and Debugging
-Load hardcoded JSON genes into the frontend and test the unfolding process.
-Debug any issues and ensure the graph updates correctly in real-time.
-7. Documentation and User Feedback
-Document the JSON format, how to use the frontend, and any other relevant information.
-Gather feedback from initial users and make necessary improvements.
+  // Get the number of iterations
+  getIterations() {
+    return this.iterations;
+  }
+}
 ```
 
-`/Users/rgudchenko/p/guca-visualization/run.sh`: 
-
-```sh
-webpack
-http-server -c-1  
-```
-
-`/Users/rgudchenko/p/guca-visualization/scripts/01_convert_xml_genes_to_json.py`: 
-
-```py
-import xml.etree.ElementTree as ET  
-import json  
-  
-def xml_to_json(xml_file):  
-    tree = ET.parse(xml_file)  
-    root = tree.getroot()  
-  
-    genes = {}  
-  
-    for change_table in root.findall("{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}ChangeTable"):  
-        gene_name = change_table.get("{http://schemas.microsoft.com/winfx/2006/xaml}Key")  
-        genes[gene_name] = []  
-          
-        for item in change_table.findall("{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}ChangeTableItem"):  
-            condition = item.find("{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}ChangeTableItem.Condition/{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}OperationCondition")  
-            operation = item.find("{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}ChangeTableItem.Operation/{clr-namespace:GraphUnfoldingMachine;assembly=Physical2DGraphCanvasSL}Operation")  
-  
-            condition_data = {  
-                "currentState": condition.get("CurrentState"),  
-                "priorState": condition.get("PriorState"),  
-                "allConnectionsCount_GE": int(condition.get("AllConnectionsCount_GE")),  
-                "allConnectionsCount_LE": int(condition.get("AllConnectionsCount_LE")),  
-                "parentsCount_GE": int(condition.get("ParentsCount_GE")),  
-                "parentsCount_LE": int(condition.get("ParentsCount_LE"))  
-            }  
-  
-            operation_data = {  
-                "kind": operation.get("Kind"),  
-                "operandNodeState": operation.get("OperandNodeState")  
-            }  
-  
-            genes[gene_name].append({  
-                "condition": condition_data,  
-                "operation": operation_data  
-            })  
-  
-    return json.dumps({"genes": genes}, indent=4)  
-  
-# Example usage:  
-xml_file = "/Users/rgudchenko/p/GUCA/2024_10_28_CSharp_backup/GraphUnfoldingMachineDemoSL/GraphUnfoldingMachineDemoSL/dictGens.xaml"  
-json_data = xml_to_json(xml_file)  
-with open("/Users/rgudchenko/p/guca-visualization/data/demo_2010_dict_genes.json", "w") as json_file:  
-    json_file.write(json_data)  
-```
-
-`/Users/rgudchenko/p/guca-visualization/src/gum.ts`: 
+`/Users/rgudchenko/p/vogue/src/main.ts`: 
 
 ```ts
-// gum.ts  
-// This module defines the core classes and logic for the Graph Unfolding Machine (GUM).  
-// It includes definitions for node states, operations, conditions, change table items, and the change table itself.  
-// The GUMNode and GUMGraph classes represent the nodes and graph structure, respectively.  
-// The GraphUnfoldingMachine class manages the graph unfolding process based on the change table and specified operations.  
-//  
-// Author of the code: AI Assistant  
-// Author of the ideas: Roman G.  
-  
-// Enumeration for different states a node can be in  
-export enum NodeState {  
-  Max = 255,  
-  Min = 0,  
-  Ignored = 0,  
-  Unknown = 254,  
-  A = 1, B = 2, C = 3, D = 4, E = 5, F = 6, G = 7, H = 8, I = 9,  
-  J = 10, K = 11, L = 12, M = 13, N = 14, O = 15, P = 16, Q = 17, R = 18, S = 19,  
-  T = 20, U = 21, V = 22, W = 23, X = 24, Y = 25, Z = 26, s27 = 27, s28 = 28, s29 = 29,  
-  s30 = 30, s31 = 31, s32 = 32, s33 = 33, s34 = 34, s35 = 35, s36 = 36, s37 = 37, s38 = 38, s39 = 39,  
-  s40 = 40, s41 = 41, s42 = 42, s43 = 43, s44 = 44, s45 = 45, s46 = 46, s47 = 47, s48 = 48, s49 = 49,  
-  s50 = 50, s51 = 51, s52 = 52, s53 = 53, s54 = 54, s55 = 55, s56 = 56, s57 = 57, s58 = 58, s59 = 59,  
-  s60 = 60, s61 = 61, s62 = 62, s63 = 63, s64 = 64, s65 = 65, s66 = 66, s67 = 67, s68 = 68, s69 = 69,  
-  s70 = 70, s71 = 71, s72 = 72, s73 = 73, s74 = 74, s75 = 75, s76 = 76, s77 = 77, s78 = 78, s79 = 79,  
-  s80 = 80, s81 = 81, s82 = 82, s83 = 83, s84 = 84, s85 = 85, s86 = 86, s87 = 87, s88 = 88, s89 = 89,  
-  s90 = 90, s91 = 91, s92 = 92, s93 = 93, s94 = 94, s95 = 95, s96 = 96, s97 = 97, s98 = 98, s99 = 99,  
-  s100 = 100, s101 = 101, s102 = 102, s103 = 103, s104 = 104, s105 = 105, s106 = 106, s107 = 107, s108 = 108, s109 = 109,  
-  s110 = 110, s111 = 111, s112 = 112, s113 = 113, s114 = 114, s115 = 115, s116 = 116, s117 = 117, s118 = 118, s119 = 119,  
-  s120 = 120, s121 = 121, s122 = 122, s123 = 123, s124 = 124, s125 = 125, s126 = 126, s127 = 127, s128 = 128, s129 = 129,  
-  s130 = 130, s131 = 131, s132 = 132, s133 = 133, s134 = 134, s135 = 135, s136 = 136, s137 = 137, s138 = 138, s139 = 139,  
-  s140 = 140, s141 = 141, s142 = 142, s143 = 143, s144 = 144, s145 = 145, s146 = 146, s147 = 147, s148 = 148, s149 = 149,  
-  s150 = 150, s151 = 151, s152 = 152, s153 = 153, s154 = 154, s155 = 155, s156 = 156, s157 = 157, s158 = 158, s159 = 159,  
-  s160 = 160, s161 = 161, s162 = 162, s163 = 163, s164 = 164, s165 = 165, s166 = 166, s167 = 167, s168 = 168, s169 = 169,  
-  s170 = 170, s171 = 171, s172 = 172, s173 = 173, s174 = 174, s175 = 175, s176 = 176, s177 = 177, s178 = 178, s179 = 179,  
-  s180 = 180, s181 = 181, s182 = 182, s183 = 183, s184 = 184, s185 = 185, s186 = 186, s187 = 187, s188 = 188, s189 = 189,  
-  s190 = 190, s191 = 191, s192 = 192, s193 = 193, s194 = 194, s195 = 195, s196 = 196, s197 = 197, s198 = 198, s199 = 199,  
-  s200 = 200, s201 = 201, s202 = 202, s203 = 203, s204 = 204, s205 = 205, s206 = 206, s207 = 207, s208 = 208, s209 = 209,  
-  s210 = 210, s211 = 211, s212 = 212, s213 = 213, s214 = 214, s215 = 215, s216 = 216, s217 = 217, s218 = 218, s219 = 219,  
-  s220 = 220, s221 = 221, s222 = 222, s223 = 223, s224 = 224, s225 = 225, s226 = 226, s227 = 227, s228 = 228, s229 = 229,  
-  s230 = 230, s231 = 231, s232 = 232, s233 = 233, s234 = 234, s235 = 235, s236 = 236, s237 = 237, s238 = 238, s239 = 239,  
-  s240 = 240, s241 = 241, s242 = 242, s243 = 243, s244 = 244, s245 = 245, s246 = 246, s247 = 247, s248 = 248, s249 = 249,  
-  s250 = 250, s251 = 251, s252 = 252, s253 = 253  
-}  
-  
-// Class representing an operation in the GUM  
-export class Operation {  
-  constructor(  
-    public kind: OperationKindEnum,  
-    public operandNodeState: NodeState = NodeState.Ignored  
-  ) { }  
-}  
-  
-// Class representing a condition for an operation  
-export class OperationCondition {  
-  constructor(  
-    public currentState: NodeState,  
-    public priorState: NodeState = NodeState.Ignored,  
-    public allConnectionsCount_GE: number = -1,  
-    public allConnectionsCount_LE: number = -1,  
-    public parentsCount_GE: number = -1,  
-    public parentsCount_LE: number = -1  
-  ) { }  
-}  
-  
-// Class representing an item in the change table  
-export class ChangeTableItem {  
-  constructor(  
-    public condition: OperationCondition,  
-    public operation: Operation,  
-    public isActive: boolean = false,  
-    public isEnabled: boolean = true,  
-    public lastActivationInterationIndex: number = -1  
-  ) { }  
-}  
-  
-// Class representing a change table  
-export class ChangeTable {  
-  public items: ChangeTableItem[] = [];  
-  
-  // Add an item to the change table  
-  add(item: ChangeTableItem) {  
-    this.items.push(item);  
-  }  
-  
-  // Find an item in the change table that matches the given node  
-  find(node: GUMNode): ChangeTableItem | null {  
-    for (const item of this.items) {  
-      const condition = item.condition;  
-      console.log(`DEBUG: Checking node ${node.id} against condition:`, condition);  
-  
-      const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;  
-      const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;  
-      const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&  
-        (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);  
-      const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&  
-        (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);  
-  
-      console.log(`DEBUG: currentState: ${condition.currentState}, nodeState: ${node.state}, currentStateMatches: ${currentStateMatches}`);  
-      console.log(`DEBUG: priorState: ${condition.priorState}, nodePriorState: ${node.priorState}, priorStateMatches: ${priorStateMatches}`);  
-      console.log(`DEBUG: connectionsCountMatches: ${connectionsCountMatches}`);  
-      console.log(`DEBUG: parentsCountMatches: ${parentsCountMatches}`);  
-  
-      if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {  
-        console.log(`DEBUG: Condition matched for node ${node.id}`);  
-        return item;  
-      }  
-    }  
-    console.log(`DEBUG: No condition matched for node ${node.id}`);  
-    return null;  
-  }  
-}  
-  
-// Class representing a node in the GUM graph  
-export class GUMNode {  
-  public connectionsCount: number = 0;  
-  public parentsCount: number = 0;  
-  public markedAsDeleted: boolean = false;  
-  public priorState: NodeState = NodeState.Unknown;  
-  
-  // Add properties to conform to Node interface  
-  public x?: number;  
-  public y?: number;  
-  public vx?: number;  
-  public vy?: number;  
-  public fx?: number | null;  
-  public fy?: number | null;  
-  
-  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }  
-}  
-  
-// Class representing the GUM graph  
-export class GUMGraph {  
-  private nodes: GUMNode[] = [];  
-  private edges: { source: GUMNode; target: GUMNode }[] = [];  
-  
-  // Add a node to the graph  
-  addNode(node: GUMNode) {  
-    this.nodes.push(node);  
-  }  
-  
-  // Add an edge between two nodes in the graph  
-  addEdge(source: GUMNode, target: GUMNode) {  
-    this.edges.push({ source, target });  
-    source.connectionsCount++;  
-    target.connectionsCount++;  
-  }  
-  
-  // Get all nodes in the graph  
-  getNodes(): GUMNode[] {  
-    return this.nodes;  
-  }  
-  
-  // Get all edges in the graph  
-  getEdges() {  
-    return this.edges;  
-  }  
-  
-  // Remove nodes marked as deleted from the graph  
-  removeMarkedNodes() {  
-    this.nodes = this.nodes.filter(node => !node.markedAsDeleted);  
-    this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);  
-  }  
-}  
-  
-// Enumeration for different kinds of operations in the GUM  
-export enum OperationKindEnum {  
-  TurnToState = 0x0,  
-  TryToConnectWithNearest = 0x1,  
-  GiveBirthConnected = 0x2,  
-  DisconectFrom = 0x3,  
-  Die = 0x4,  
-  TryToConnectWith = 0x5,  
-  GiveBirth = 0x6,  
-}  
-  
-// Class representing the Graph Unfolding Machine  
-export class GraphUnfoldingMachine {  
-  public changeTable: ChangeTable;  
-  private iterations: number = 0;  
-  
-  constructor(private graph: GUMGraph) {  
-    this.changeTable = new ChangeTable();  
-  }  
-  
-  // Add an item to the change table  
-  addChangeTableItem(item: ChangeTableItem) {  
-    this.changeTable.add(item);  
-  }  
-  
-  // Get all items in the change table  
-  getChangeTableItems() {  
-    return this.changeTable.items;  
-  }  
-  
-  // Clear the change table when loading a new gene  
-  clearChangeTable() {  
-    this.changeTable.items = [];  
-  }  
-  
-  // Run the Graph Unfolding Machine  
-  run() {  
-    const nodes = this.graph.getNodes();  
-    console.log(`DEBUG: RUN`);  
-    for (const node of nodes) {  
-      const item = this.changeTable.find(node);  
-      if (item && item.isEnabled) {  
-        console.log(`Matched condition for node ${node.id}`);  
-        this.performOperation(node, item.operation);  
-        item.isActive = true;  
-        item.lastActivationInterationIndex++;  
-      }  
-      node.priorState = node.state;  
-    }  
-    this.iterations++;  
-    this.graph.removeMarkedNodes();  
-  }  
-  
-  // Perform an operation on a node  
-  private performOperation(node: GUMNode, operation: Operation) {  
-    console.log(`Performing operation ${operation.kind} on node ${node.id}`);  
-    switch (operation.kind) {  
-      case OperationKindEnum.TurnToState:  
-        node.state = operation.operandNodeState;  
-        break;  
-      case OperationKindEnum.GiveBirthConnected:  
-        const newNode = new GUMNode(this.graph.getNodes().length + 1, operation.operandNodeState);  
-        newNode.parentsCount = node.parentsCount + 1;  
-        this.graph.addNode(newNode);  
-        this.graph.addEdge(node, newNode);  
-        console.log(`Created new node ${newNode.id} connected to node ${node.id}`);  
-        break;  
-      case OperationKindEnum.DisconectFrom:  
-        node.markedAsDeleted = true;  
-        break;  
-      // Handle other cases as needed  
-    }  
-  }  
-  
-  // Get the number of iterations  
-  getIterations() {  
-    return this.iterations;  
-  }  
-}  
-```
+import * as d3 from 'd3';
+import {
+  GUMGraph,
+  GUMNode,
+  GraphUnfoldingMachine,
+  NodeState,
+  ChangeTableItem,
+  OperationCondition,
+  Operation,
+  OperationKindEnum,
+} from './gum';
 
-`/Users/rgudchenko/p/guca-visualization/src/main.ts`: 
+// Interface for Node
+interface Node {
+  id: number;
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
+  state: NodeState;
+}
 
-```ts
-// main.ts  
-// Author of the code: AI Assistant  
-// Author of the ideas: Roman G.  
-// Description: This module initializes and manages the interactive visualization  
-// of graph unfolding using D3.js. It handles loading genes, mapping nodes,   
-// updating the graph, and adding interactive features such as dragging and zooming.  
-  
-import * as d3 from 'd3';  
-import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';  
-  
-// Interface for Node  
-interface Node {  
-  id: number;  
-  x?: number;  
-  y?: number;  
-  vx?: number;  
-  vy?: number;  
-  fx?: number | null;  
-  fy?: number | null;  
-}  
-  
-// Interface for Link  
-interface Link {  
-  source: number | Node;  
-  target: number | Node;  
-}  
-  
-// Set the dimensions for the SVG container  
-const width = 960;  
-const height = 600;  
-  
-// Create an SVG container  
-const svg = d3.select("#canvas-container svg")  
-  .attr("width", width)  
-  .attr("height", height);  
-  
-// Add a rectangle overlay to capture zoom events  
-const zoomOverlay = svg.append("rect")  
-  .attr("width", width)  
-  .attr("height", height)  
-  .attr("fill", "none")  
-  .attr("pointer-events", "all");  
-  
-const graphGroup = svg.append("g");  
-  
-// Add zoom behavior to the overlay  
-const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()  
-  .scaleExtent([0.01, 10]) // Limit the zoom scale  
-  .on("zoom", (event) => {  
-    graphGroup.attr("transform", event.transform);  
-  });  
-  
-// Use type assertion to ensure compatibility  
-(zoomOverlay as any).call(zoomBehavior as any);  
-  
-// Initialize the force simulation  
-const simulation = d3.forceSimulation<Node, Link>()  
-  .force("link", d3.forceLink<Node, Link>()  
-    .id((d: Node) => d.id.toString()))  
-  .force("charge", d3.forceManyBody().strength(-1000))  
-  .force("center", d3.forceCenter(width / 2, height / 2));  
-  
-// Initialize nodes and links arrays  
-let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2 }];  
-let links: Link[] = [];  
-  
-// Initialize GUM graph and machine  
-const gumGraph = new GUMGraph();  
-const gumMachine = new GraphUnfoldingMachine(gumGraph);  
-  
-// Add an initial node to the GUM graph  
-const initialNode = new GUMNode(1, NodeState.A);  
-gumGraph.addNode(initialNode);  
-  
-// Helper function to map string state to NodeState enum  
-function mapNodeState(state: string): NodeState {  
-  return NodeState[state as keyof typeof NodeState];  
-}  
-  
-// Load the genes library from a JSON file  
-async function loadGenesLibrary() {  
-  try {  
-    const response = await fetch('data/demo_2010_dict_genes.json');  
-    const data = await response.json();  
-    const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;  
-  
-    // Populate the combo box with gene names  
-    for (const geneName in data.genes) {  
-      const option = document.createElement('option');  
-      option.value = geneName;  
-      option.text = geneName;  
-      geneSelect.add(option);  
-    }  
-  
-    // Load the default gene  
-    loadGene(data.genes[geneSelect.value]);  
-  
-    // Add event listener to handle gene selection  
-    geneSelect.addEventListener('change', (event) => {  
-      const selectedGene = (event.target as HTMLSelectElement).value;  
-      loadGene(data.genes[selectedGene]);  
-    });  
-    updateDebugInfo();  
-  } catch (error) {  
-    console.error("Error loading genes library:", error);  
-  }  
-}  
-  
-// Function to load a specific gene  
-function loadGene(gene: any) {  
-  gumMachine.clearChangeTable();  
-  gene.forEach((item: any) => {  
-    const condition = new OperationCondition(  
-      mapNodeState(item.condition.currentState),  
-      mapNodeState(item.condition.priorState),  
-      item.condition.allConnectionsCount_GE,  
-      item.condition.allConnectionsCount_LE,  
-      item.condition.parentsCount_GE,  
-      item.condition.parentsCount_LE  
-    );  
-  
-    const operation = new Operation(  
-      mapOperationKind(item.operation.kind),  
-      mapNodeState(item.operation.operandNodeState)  
-    );  
-    gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));  
-  });  
-  
-  // Reset and start the graph  
-  resetGraph();  
-}  
-  
-// Helper function to map string kind to OperationKindEnum  
-function mapOperationKind(kind: string): OperationKindEnum {  
-  switch (kind) {  
-    case "TurnToState": return OperationKindEnum.TurnToState;  
-    case "TryToConnectWithNearest": return OperationKindEnum.TryToConnectWithNearest;  
-    case "GiveBirthConnected": return OperationKindEnum.GiveBirthConnected;  
-    case "DisconectFrom": return OperationKindEnum.DisconectFrom;  
-    case "Die": return OperationKindEnum.Die;  
-    case "TryToConnectWith": return OperationKindEnum.TryToConnectWith;  
-    case "GiveBirth": return OperationKindEnum.GiveBirth;  
-    default: throw new Error(`Unknown operation kind: ${kind}`);  
-  }  
-}  
-  
-// Map GUMNode to Node interface  
-function mapGUMNodeToNode(gumNode: GUMNode): Node {  
-  return {  
-    id: gumNode.id,  
-    x: gumNode.x,  
-    y: gumNode.y,  
-    vx: gumNode.vx,  
-    vy: gumNode.vy,  
-    fx: gumNode.fx,  
-    fy: gumNode.fy  
-  };  
-}  
-  
-// Update the D3 visualization with the current nodes and links  
-function update() {  
-  console.log("Updating graph with nodes:", nodes);  
-  console.log("Updating graph with links:", links);  
-  
-  // Bind data for links  
-  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")  
-    .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);  
-  
-  // Enter new links  
-  link.enter().append("line")  
-    .attr("class", "link")  
-    .attr("stroke", "black")  
-    .attr("stroke-width", 2)  
-    .merge(link);  
-  
-  // Update existing links  
-  link  
-    .attr("x1", d => (d.source as Node).x!)  
-    .attr("y1", d => (d.source as Node).y!)  
-    .attr("x2", d => (d.target as Node).x!)  
-    .attr("y2", d => (d.target as Node).y!);  
-  
-  // Remove old links  
-  link.exit().remove();  
-  
-  // Bind data for nodes  
-  const node = graphGroup.selectAll<SVGGElement, Node>(".node")  
-    .data(nodes, d => d.id.toString());  
-  
-  // Enter new nodes  
-  const nodeEnter = node.enter().append("g")  
-    .attr("class", "node")  
-    .call(d3.drag<SVGGElement, Node>()  
-      .on("start", dragstarted)  
-      .on("drag", dragged)  
-      .on("end", dragended));  
-  
-  nodeEnter.append("circle")  
-    .attr("r", 5)  
-    .attr("fill", "red");  
-  
-  nodeEnter.append("text")  
-    .attr("dy", 3)  
-    .attr("dx", -3)  
-    .text(d => d.id.toString());  
-  
-  // Merge new nodes with existing nodes  
-  const mergedNodes = nodeEnter.merge(node);  
-  
-  // Remove old nodes  
-  node.exit().remove();  
-  
-  // Update simulation nodes and links  
-  simulation  
-    .nodes(nodes)  
-    .on("tick", () => {  
-      link  
-        .attr("x1", d => (d.source as Node).x!)  
-        .attr("y1", d => (d.source as Node).y!)  
-        .attr("x2", d => (d.target as Node).x!)  
-        .attr("y2", d => (d.target as Node).y!);  
-  
-      mergedNodes.select("circle")  
-        .attr("cx", d => d.x!)  
-        .attr("cy", d => d.y!);  
-  
-      mergedNodes.select("text")  
-        .attr("x", d => d.x!)  
-        .attr("y", d => d.y!);  
-    });  
-  simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);  
-  
-  // Restart the simulation to take into account new nodes and links  
-  simulation.alpha(1).restart();  
-  
-  updateDebugInfo();  
-}  
-  
-// Update the debug information displayed on the page  
-function updateDebugInfo() {  
-  const nodeCountElement = document.getElementById('node-count');  
-  const nodeDetailsElement = document.getElementById('node-details');  
-  const changeTableElement = document.getElementById('change-table');  
-  const statusInfoElement = document.getElementById('status-info');  
-  
-  if (nodeCountElement) {  
-    nodeCountElement.textContent = `Nodes: ${nodes.length}`;  
-  }  
-  if (nodeDetailsElement) {  
-    const nodeDetails = gumGraph.getNodes().map(node => `  
-      <p>  
-        ID: ${node.id}<br>  
-        State: ${NodeState[node.state]}<br>  
-        Prior State: ${NodeState[node.priorState]}<br>  
-        Parents Count: ${node.parentsCount}<br>  
-        Connections Count: ${node.connectionsCount}  
-      </p>  
-    `).join('');  
-    nodeDetailsElement.innerHTML = nodeDetails;  
-  }  
-  if (changeTableElement) {  
-    const changeTableItems = gumMachine.getChangeTableItems();  
-    changeTableElement.textContent = `Change Table: ${JSON.stringify(changeTableItems, null, 2)}`;  
-  }  
-  if (statusInfoElement) {  
-    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;  
-  }  
-}  
-  
-// Unfold the graph using the Graph Unfolding Machine  
-function unfoldGraph() {  
-  console.log("Unfolding graph");  
-  
-  // Run the Graph Unfolding Machine  
-  gumMachine.run();  
-  
-  // Get the updated nodes and edges from GUMGraph  
-  const gumNodes = gumGraph.getNodes();  
-  const gumEdges = gumGraph.getEdges();  
-  
-  console.log("Updated GUM nodes:", gumNodes);  
-  console.log("Updated GUM edges:", gumEdges);  
-  
-  // Update nodes array  
-  nodes = gumNodes.map(gumNode => {  
-    let existingNode = nodes.find(node => node.id === gumNode.id);  
-    if (!existingNode) {  
-      const centerNode = nodes[0]; // Center node  
-      const angle = Math.random() * 2 * Math.PI; // Random angle  
-      const distance = Math.random() * 200; // Random distance within 200 pixels  
-      existingNode = mapGUMNodeToNode(gumNode);  
-      existingNode.x = centerNode.x! + distance * Math.cos(angle);  
-      existingNode.y = centerNode.y! + distance * Math.sin(angle);  
-    }  
-    return existingNode;  
-  });  
-  
-  console.log("Updated nodes array:", nodes);  
-  
-  // Update links array to reference node objects  
-  links = gumEdges.map(gumEdge => {  
-    const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;  
-    const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;  
-    console.log(`Creating link from node ${sourceNode.id} to node ${targetNode.id}`);  
-    return { source: sourceNode, target: targetNode };  
-  });  
-  
-  console.log("Updated links array:", links);  
-  
-  update();  
-}  
-  
-// Function to reset the graph to its initial state with a single node  
-function resetGraph() {  
-  nodes = [{ id: 1, x: width / 2, y: height / 2 }];  
-  links = [];  
-  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);  
-  gumGraph.removeMarkedNodes();  
-  gumGraph.addNode(new GUMNode(1, NodeState.A));  
-  update();  
-}  
-  
-// Initial update of the graph  
-update();  
-  
-// Load the genes library and start the unfolding process  
-loadGenesLibrary().then(() => {  
-  setInterval(unfoldGraph, 500);  
-});  
-  
-// Drag event handlers for D3 nodes  
-function dragstarted(event: any, d: Node) {  
-  if (!event.active) simulation.alphaTarget(0.3).restart();  
-  d.fx = d.x;  
-  d.fy = d.y;  
-}  
-  
-function dragged(event: any, d: Node) {  
-  d.fx = event.x;  
-  d.fy = event.y;  
-}  
-  
-function dragended(event: any, d: Node) {  
-  if (!event.active) simulation.alphaTarget(0);  
-  d.fx = null;  
-  d.fy = null;  
-}  
+// Interface for Link
+interface Link {
+  source: number | Node;
+  target: number | Node;
+}
+
+// Set the dimensions for the SVG container
+const width = 960;
+const height = 960;
+
+// Create an SVG container
+const svg = d3.select("#canvas-container svg")
+  .attr("width", width)
+  .attr("height", height);
+
+// Add a rectangle overlay to capture zoom events
+const zoomOverlay = svg.append("rect")
+  .attr("width", width)
+  .attr("height", height)
+  .attr("fill", "none")
+  .attr("pointer-events", "all");
+
+const graphGroup = svg.append("g");
+
+// Add zoom behavior to the overlay
+const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+  .scaleExtent([0.01, 10])
+  .on("zoom", (event) => {
+    graphGroup.attr("transform", event.transform);
+  });
+
+(zoomOverlay as any).call(zoomBehavior as any);
+
+// Initialize the force simulation
+const simulation = d3.forceSimulation<Node, Link>()
+  .force("link", d3.forceLink<Node, Link>()
+    .id((d: Node) => d.id.toString())
+    .distance(50))
+  .force("charge", d3.forceManyBody().strength(-300))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .velocityDecay(0.2);
+
+// Initialize nodes and links arrays
+let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
+let links: Link[] = [];
+
+// Initialize GUM graph and machine
+const gumGraph = new GUMGraph();
+const gumMachine = new GraphUnfoldingMachine(gumGraph);
+
+// Add an initial node to the GUM graph
+const initialNode = new GUMNode(1, NodeState.A);
+gumGraph.addNode(initialNode);
+
+// Function to get the vertex render color
+function getVertexRenderColor(state: NodeState): string {
+  switch (state % 16) {
+    case 1: return 'pink';
+    case 2: return 'red';
+    case 3: return 'orangeRed';
+    case 4: return 'orange';
+    case 5: return 'lightYellow';
+    case 6: return 'yellow';
+    case 7: return 'lightGreen';
+    case 8: return 'green';
+    case 9: return 'lightSeaGreen';
+    case 10: return 'seaGreen';
+    case 11: return 'lightBlue';
+    case 12: return 'blue';
+    case 13: return 'violet';
+    case 14: return 'lightCyan';
+    case 15: return 'white';
+    case 0: return 'lightGray';
+    default: return 'gray';
+  }
+}
+
+// Function to get the vertex render text color
+function getVertexRenderTextColor(state: NodeState): string {
+  switch (state % 16) {
+    case 2:
+    case 3:
+    case 5:
+    case 7:
+    case 0:
+      return 'white';
+    default:
+      return 'black';
+  }
+}
+
+// Function to convert node state to letter
+function nodeStateToLetter(state: NodeState): string {
+  if (state >= NodeState.A && state <= NodeState.Z) {
+    return String.fromCharCode(64 + state);
+  }
+  return '';
+}
+
+// Helper function to map string state to NodeState enum
+function mapNodeState(state: string): NodeState {
+  return NodeState[state as keyof typeof NodeState];
+}
+
+// Load the genes library from a JSON file
+async function loadGenesLibrary() {
+  try {
+    const response = await fetch('data/demo_2010_dict_genes.json');
+    const data = await response.json();
+    const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
+
+    for (const geneName in data.genes) {
+      const option = document.createElement('option');
+      option.value = geneName;
+      option.text = geneName;
+      geneSelect.add(option);
+    }
+
+    loadGene(data.genes[geneSelect.value]);
+
+    geneSelect.addEventListener('change', (event) => {
+      const selectedGene = (event.target as HTMLSelectElement).value;
+      loadGene(data.genes[selectedGene]);
+    });
+    updateDebugInfo();
+  } catch (error) {
+    console.error("Error loading genes library:", error);
+  }
+}
+
+// Function to load a specific gene
+function loadGene(gene: any) {
+  gumMachine.clearChangeTable();
+  gene.forEach((item: any) => {
+    const condition = new OperationCondition(
+      mapNodeState(item.condition.currentState),
+      mapNodeState(item.condition.priorState),
+      item.condition.allConnectionsCount_GE,
+      item.condition.allConnectionsCount_LE,
+      item.condition.parentsCount_GE,
+      item.condition.parentsCount_LE
+    );
+
+    const operation = new Operation(
+      mapOperationKind(item.operation.kind),
+      mapNodeState(item.operation.operandNodeState)
+    );
+    gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
+  });
+
+  resetGraph();
+}
+
+// Helper function to map string kind to OperationKindEnum
+function mapOperationKind(kind: string): OperationKindEnum {
+  switch (kind) {
+    case "TurnToState": return OperationKindEnum.TurnToState;
+    case "TryToConnectWithNearest": return OperationKindEnum.TryToConnectWithNearest;
+    case "GiveBirthConnected": return OperationKindEnum.GiveBirthConnected;
+    case "DisconectFrom": return OperationKindEnum.DisconectFrom;
+    case "Die": return OperationKindEnum.Die;
+    case "TryToConnectWith": return OperationKindEnum.TryToConnectWith;
+    case "GiveBirth": return OperationKindEnum.GiveBirth;
+    default: throw new Error(`Unknown operation kind: ${kind}`);
+  }
+}
+
+function mapOperationKindToString(kind: OperationKindEnum): string {
+  switch (kind) {
+    case OperationKindEnum.TurnToState:
+      return 'TurnToState';
+    case OperationKindEnum.TryToConnectWithNearest:
+      return 'TryToConnectWithNearest';
+    case OperationKindEnum.GiveBirthConnected:
+      return 'GiveBirthConnected';
+    case OperationKindEnum.DisconectFrom:
+      return 'DisconectFrom';
+    case OperationKindEnum.Die:
+      return 'Die';
+    case OperationKindEnum.TryToConnectWith:
+      return 'TryToConnectWith';
+    case OperationKindEnum.GiveBirth:
+      return 'GiveBirth';
+    default:
+      return 'Unknown';
+  }
+}
+
+function mapGUMNodeToNode(gumNode: GUMNode): Node {
+  return {
+    id: gumNode.id,
+    x: gumNode.x,
+    y: gumNode.y,
+    vx: gumNode.vx,
+    vy: gumNode.vy,
+    fx: gumNode.fx,
+    fy: gumNode.fy,
+    state: gumNode.state,
+  };
+}
+
+// Convert change table items to short form grammar
+function convertToShortForm(changeTableItems: ChangeTableItem[]): string {
+  return changeTableItems.map((item, index) => {
+    const condition = item.condition;
+    const operation = item.operation;
+
+    const currentState = condition.currentState === NodeState.Unknown ? "+" : NodeState[condition.currentState];
+    const priorState = condition.priorState === NodeState.Ignored ? '-' : (condition.priorState === NodeState.Unknown ? '+' : NodeState[condition.priorState]);
+    const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `c>=${condition.allConnectionsCount_GE}` : '';
+    const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `c<=${condition.allConnectionsCount_LE}` : '';
+    const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';
+    const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';
+
+    const conditionStr = `${currentState}(${priorState})${connectionsCountGE}${connectionsCountLE}${parentsCountGE}${parentsCountLE}`;
+    let operationStr = '';
+    switch (operation.kind) {
+      case OperationKindEnum.TurnToState:
+        operationStr = NodeState[operation.operandNodeState];
+        break;
+      case OperationKindEnum.GiveBirthConnected:
+        operationStr = `++${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.TryToConnectWithNearest:
+        operationStr = `+N${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.DisconectFrom:
+        operationStr = `-${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.Die:
+        operationStr = `--`;
+        break;
+      case OperationKindEnum.TryToConnectWith:
+        operationStr = `+${NodeState[operation.operandNodeState]}`;
+        break;
+      case OperationKindEnum.GiveBirth:
+        operationStr = `+${NodeState[operation.operandNodeState]}`;
+        break;
+      default:
+        operationStr = 'Unknown';
+        break;
+    }
+
+    return `${index + 1}. ${conditionStr} : ${operationStr}`;
+  }).join('\n');
+}
+
+function update() {
+  console.log("Updating graph with nodes:", nodes);
+  console.log("Updating graph with links:", links);
+
+  // Bind data for links
+  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
+    .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
+
+  // Enter new links
+  link.enter().append("line")
+    .attr("class", "link")
+    .attr("stroke-width", 2)
+    .merge(link);
+
+  // Update existing links
+  link
+    .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+    .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+    .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+    .attr("stroke", d => {
+      const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+      return getVertexRenderColor(maxState);
+    });
+
+  // Remove old links
+  link.exit().remove();
+
+  // Bind data for nodes
+  const node = graphGroup.selectAll<SVGGElement, Node>(".node")
+    .data(nodes, d => d.id.toString());
+
+  // Enter new nodes
+  const nodeEnter = node.enter().append("g")
+    .attr("class", "node")
+    .call(d3.drag<SVGGElement, Node>()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));
+
+  nodeEnter.append("circle")
+    .attr("r", 12.5)
+    .attr("fill", d => getVertexRenderColor(d.state));
+
+  nodeEnter.append("text")
+    .attr("dy", 3)
+    .attr("dx", -3)
+    .attr("fill", d => getVertexRenderTextColor(d.state))
+    .text(d => nodeStateToLetter(d.state));
+
+  // Merge new nodes with existing nodes
+  const mergedNodes = nodeEnter.merge(node);
+
+  // Remove old nodes
+  node.exit().remove();
+
+  // Update simulation nodes and links
+  simulation.nodes(nodes).on("tick", () => {
+    link
+      .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+      .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+      .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+      .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+      .attr("stroke", d => {
+        const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+        return getVertexRenderColor(maxState);
+      });
+
+    mergedNodes.select("circle")
+      .attr("cx", d => d.x!)
+      .attr("cy", d => d.y!)
+      .attr("fill", d => getVertexRenderColor(d.state));
+
+    mergedNodes.select("text")
+      .attr("x", d => d.x!)
+      .attr("y", d => d.y!)
+      .attr("fill", d => getVertexRenderTextColor(d.state))
+      .text(d => nodeStateToLetter(d.state));
+  });
+
+  simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
+
+  simulation.alpha(0.5).restart();
+
+  updateDebugInfo();
+}
+
+// Helper function to adjust edge coordinates for node radius
+function adjustForRadius(source: Node, target: Node) {
+  const radius = 12.5;
+  const dx = target.x! - source.x!;
+  const dy = target.y! - source.y!;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const padding = radius;
+
+  const ratio = (distance - padding) / distance;
+  return {
+    x1: source.x! + dx * (padding / distance),
+    y1: source.y! + dy * (padding / distance),
+    x2: target.x! - dx * (padding / distance),
+    y2: target.y! - dy * (padding / distance),
+  };
+}
+
+// Update the debug information displayed on the page
+function updateDebugInfo() {
+  const nodeCountElement = document.getElementById('node-count');
+  const nodeDetailsElement = document.getElementById('node-details');
+  const changeTableElement = document.getElementById('change-table');
+  const statusInfoElement = document.getElementById('status-info');
+
+  if (nodeCountElement) {
+    nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+  }
+
+  if (nodeDetailsElement) {
+    const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
+      <p>
+        ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
+      </p>
+    `).join('');
+    nodeDetailsElement.innerHTML = nodeDetails;
+  }
+
+  if (changeTableElement) {
+    const changeTableItems = gumMachine.getChangeTableItems();
+    const shortForm = convertToShortForm(changeTableItems);
+
+    const changeTableItemsForJson = changeTableItems.map(item => ({
+      condition: {
+        currentState: NodeState[item.condition.currentState],
+        priorState: item.condition.priorState === NodeState.Ignored ? '-' : NodeState[item.condition.priorState],
+        allConnectionsCount_GE: item.condition.allConnectionsCount_GE,
+        allConnectionsCount_LE: item.condition.allConnectionsCount_LE,
+        parentsCount_GE: item.condition.parentsCount_GE,
+        parentsCount_LE: item.condition.parentsCount_LE
+      },
+      operation: {
+        kind: mapOperationKindToString(item.operation.kind),
+        operandNodeState: NodeState[item.operation.operandNodeState]
+      },
+      isActive: item.isActive,
+      isEnabled: item.isEnabled,
+      lastActivationInterationIndex: item.lastActivationInterationIndex
+    }));
+    const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
+    changeTableElement.innerHTML = `
+      <h4>Change Table (Short Form)</h4>
+      <pre>${shortForm}</pre>
+      <details>
+        <summary>Raw JSON (collapsed)</summary>
+        <pre>${rawJson}</pre>
+      </details>
+    `;
+  }
+
+  if (statusInfoElement) {
+    statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+  }
+}
+
+// Unfold the graph using the Graph Unfolding Machine
+function unfoldGraph() {
+  console.log("Unfolding graph");
+
+  gumMachine.run();
+
+  const gumNodes = gumGraph.getNodes();
+  const gumEdges = gumGraph.getEdges();
+
+  console.log("Updated GUM nodes:", gumNodes);
+  console.log("Updated GUM edges:", gumEdges);
+
+  nodes = gumNodes.map(gumNode => {
+    let existingNode = nodes.find(node => node.id === gumNode.id);
+    if (!existingNode) {
+      const centerNode = nodes[0];
+      const angle = Math.random() * 2 * Math.PI;
+      const distance = Math.random() * 200;
+      existingNode = mapGUMNodeToNode(gumNode);
+      existingNode.x = centerNode.x! + distance * Math.cos(angle);
+      existingNode.y = centerNode.y! + distance * Math.sin(angle);
+    } else {
+      existingNode.state = gumNode.state;
+    }
+    return existingNode;
+  });
+
+  console.log("Updated nodes array:", nodes);
+
+  links = gumEdges.map(gumEdge => {
+    const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;
+    const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;
+    console.log(`Creating link from node ${sourceNode.id} to node ${targetNode.id}`);
+    return { source: sourceNode, target: targetNode };
+  });
+
+  console.log("Updated links array:", links);
+
+  update();
+}
+
+// Function to reset the graph to its initial state with a single node
+function resetGraph() {
+  nodes = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
+  links = [];
+  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
+  gumGraph.removeMarkedNodes();
+  gumGraph.addNode(new GUMNode(1, NodeState.A));
+  update();
+}
+
+// Add event listeners for the combo box and slider
+document.getElementById('display-options')!.addEventListener('change', function () {
+  const displayOption = (this as HTMLSelectElement).value;
+  updateDisplay(displayOption);
+});
+
+document.getElementById('simulation-interval')!.addEventListener('input', function () {
+  const interval = (this as HTMLInputElement).value;
+  simulationInterval = parseInt(interval, 10);
+  document.getElementById('simulation-interval-value')!.textContent = interval;
+  resetGraph();
+});
+
+function updateDisplay(option: string) {
+  const displayEdges = option === 'edges' || option === 'both';
+  const displayNodes = option === 'nodes' || option === 'both';
+
+  d3.selectAll('.link').style('display', displayEdges ? 'block' : 'none');
+  d3.selectAll('.node').style('display', displayNodes ? 'block' : 'none');
+}
+
+// Initialize default display options
+updateDisplay('edges');
+
+// Variable to store the interval for unfolding the graph
+let simulationInterval: any;
+
+// Start the simulation with the default interval
+simulationInterval = setInterval(unfoldGraph, 500);
+
+// Drag event handlers for D3 nodes
+function dragstarted(event: any, d: Node) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+}
+
+function dragged(event: any, d: Node) {
+  d.fx = event.x;
+  d.fy = event.y;
+}
+
+function dragended(event: any, d: Node) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
+
+// Function to enable/disable controls
+function setControlsEnabled(enabled: boolean) {
+  const controls = document.querySelectorAll('#display-options, #simulation-interval');
+  controls.forEach(control => {
+    (control as HTMLInputElement).disabled = !enabled;
+  });
+}
+
+// Control buttons for the simulation
+const pauseButton = document.getElementById('pause-button')!;
+pauseButton.addEventListener('click', () => {
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = undefined;
+  }
+  setControlsEnabled(true);
+});
+
+const resumeButton = document.getElementById('resume-button')!;
+resumeButton.addEventListener('click', () => {
+  if (!simulationInterval) {
+    simulationInterval = setInterval(unfoldGraph, parseInt((document.getElementById('simulation-interval') as HTMLInputElement).value, 10));
+  }
+  setControlsEnabled(false);
+});
+
+// Initial update of the graph
+update();
+
+// Load the genes library and start the unfolding process
+loadGenesLibrary().then(() => {
+  simulationInterval = setInterval(unfoldGraph, 500);
+  setControlsEnabled(false);
+});
 ```
 
 
