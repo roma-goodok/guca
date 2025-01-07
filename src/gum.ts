@@ -159,6 +159,7 @@ export class GUMGraph {
     this.nodes = this.nodes.filter(node => !node.markedAsDeleted);
     this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);
   }
+  
 }
 
 // Enumeration for different kinds of operations in the GUM
@@ -289,5 +290,10 @@ export class GraphUnfoldingMachine {
   // Get the number of iterations
   getIterations() {
     return this.iterations;
+  }
+
+  // instruction for Assistance: Could you update this pats to add also debug info about edges as list with start and end point (status of Node)
+  ResetInteratios() {
+    this.iterations = 0
   }
 }

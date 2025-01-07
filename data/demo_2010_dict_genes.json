@@ -1150,9 +1150,9 @@
                     "kind": "GiveBirthConnected",
                     "operandNodeState": "A"
                 }
-            }            
+            }
         ],
-        "debug": [            
+        "debug": [
             {
                 "condition": {
                     "currentState": "A",
@@ -1237,6 +1237,138 @@
                 "operation": {
                     "kind": "DisconectFrom",
                     "operandNodeState": "A"
+                }
+            }
+        ],
+        "Gun2": [
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 0,
+                    "allConnectionsCount_LE": 0,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "A"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "B"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "B",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TryToConnectWithNearest",
+                    "operandNodeState": "A"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "B",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 2,
+                    "allConnectionsCount_LE": 2,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TryToConnectWithNearest",
+                    "operandNodeState": "B"
+                }
+            }
+        ],
+        "Gun3": [
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 0,
+                    "allConnectionsCount_LE": 0,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "A"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "B"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "B",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TryToConnectWithNearest",
+                    "operandNodeState": "A"
+                }
+            }
+        ],
+        "Gun4": [
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 0,
+                    "allConnectionsCount_LE": 0,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "A"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "Ignored",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "B"
                 }
             }
         ],

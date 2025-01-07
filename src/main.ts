@@ -118,6 +118,7 @@ function loadGene(gene: any) {
     gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
   });
   resetGraph();
+  gumMachine.ResetInteratios()
 }
 
 function update() {
@@ -227,6 +228,7 @@ function updateDebugInfo() {
   const nodeDetailsElement = document.getElementById('node-details');
   const changeTableElement = document.getElementById('change-table');
   const statusInfoElement = document.getElementById('status-info');
+  const edgeDetailsElement = document.getElementById('edge-details'); // New element for edge details
 
   if (nodeCountElement) {
     nodeCountElement.textContent = `Nodes: ${nodes.length}`;
@@ -239,6 +241,12 @@ function updateDebugInfo() {
     `).join('');
     nodeDetailsElement.innerHTML = nodeDetails;
   }
+  if (edgeDetailsElement) {
+    const edgeDetails = gumGraph.getEdges().map(edge =>
+      `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+    ).join('\n');
+    edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
+  }  
   if (changeTableElement) {
     const changeTableItems = gumMachine.getChangeTableItems();
     const shortForm = convertToShortForm(changeTableItems);
@@ -270,6 +278,7 @@ function updateDebugInfo() {
       </details>
     `;
   }
+
   if (statusInfoElement) {
     statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
   }
@@ -354,8 +363,8 @@ updateDisplay('edges');
 // Variable to store the interval for unfolding the graph
 let simulationInterval: any;
 
-// Start the simulation with the default interval
-simulationInterval = setInterval(unfoldGraph, 500);
+// Start the simulation with the default interval. It's commented to prevent doubled calling the unfoldGraph(). TODO: resolve this issue in correct way
+// simulationInterval = setInterval(unfoldGraph, 2000);
 
 // Drag event handlers for D3 nodes
 function dragstarted(event: any, d: Node) {
@@ -413,6 +422,6 @@ update();
 
 // Load the genes library and start the unfolding process
 loadGenesLibrary().then(() => {
-  simulationInterval = setInterval(unfoldGraph, 500);
+  simulationInterval = setInterval(unfoldGraph, 2000);
   setControlsEnabled(false);
 });

@@ -13,7 +13,7 @@
       height: 100vh;
     }
     #ui-panel {
-      width: 300px;
+      width: 500px;
       background: #f4f4f4;
       border-left: 1px solid #ccc;
       padding: 10px;
@@ -66,6 +66,7 @@
       <h4>Debug Information</h4>
       <p id="node-count">Nodes: 0</p>
       <div id="node-details"></div>
+      <div id="edge-details"></div>
       <p id="change-table">Change Table: Not loaded</p>
     </div>
     <div class="control-buttons">
@@ -82,8 +83,8 @@
       </select>
       <br>
       <label for="simulation-interval">Simulation Interval:</label>
-      <input type="range" id="simulation-interval" min="50" max="500" value="500">
-      <span id="simulation-interval-value">500</span> ms
+      <input type="range" id="simulation-interval" min="50" max="2000" value="2000">
+      <span id="simulation-interval-value">2000</span> ms
     </div>
     <div id="status-bar">
       <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
