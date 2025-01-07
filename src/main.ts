@@ -70,6 +70,9 @@ const gumMachine = new GraphUnfoldingMachine(gumGraph);
 const initialNode = new GUMNode(1, NodeState.A);
 gumGraph.addNode(initialNode);
 
+// Logical flag to control the simulation state
+let isSimulationRunning = true;
+
 // Load the genes library from a JSON file
 async function loadGenesLibrary() {
   try {
@@ -205,7 +208,7 @@ function update() {
 function adjustForRadius(source: Node, target: Node) {
   const radius = 12.5;
   const dx = target.x! - source.x!;
-  const dy = target.y! - source.x!;
+  const dy = target.y! - source.y!;
   const distance = Math.sqrt(dx * dx + dy * dy);
   const padding = radius;
 
@@ -274,6 +277,10 @@ function updateDebugInfo() {
 
 // Unfold the graph using the Graph Unfolding Machine
 function unfoldGraph() {
+  if (!isSimulationRunning) {
+    return;
+  }
+
   console.log("Unfolding graph");
 
   gumMachine.run();
@@ -377,21 +384,28 @@ function setControlsEnabled(enabled: boolean) {
 }
 
 // Control buttons for the simulation
-const pauseButton = document.getElementById('pause-button')!;
+const pauseButton = document.getElementById('pause-button') as HTMLButtonElement;
+const resumeButton = document.getElementById('resume-button') as HTMLButtonElement;
+
+// Initially disable the "Resume" button
+resumeButton.disabled = true;
+
 pauseButton.addEventListener('click', () => {
-  if (simulationInterval) {
-    clearInterval(simulationInterval);
-    simulationInterval = undefined;
-  }
+  isSimulationRunning = false;
+  clearInterval(simulationInterval);
   setControlsEnabled(true);
+  pauseButton.disabled = true;
+  resumeButton.disabled = false;
 });
 
-const resumeButton = document.getElementById('resume-button')!;
 resumeButton.addEventListener('click', () => {
-  if (!simulationInterval) {
+  if (!isSimulationRunning) {
+    isSimulationRunning = true;
     simulationInterval = setInterval(unfoldGraph, parseInt((document.getElementById('simulation-interval') as HTMLInputElement).value, 10));
   }
   setControlsEnabled(false);
+  pauseButton.disabled = false;
+  resumeButton.disabled = true;
 });
 
 // Initial update of the graph
