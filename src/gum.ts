@@ -89,18 +89,18 @@ export class ChangeTable {
     }
 }
 
-// Class representing a node in the GUM graph  
-export class GUMNode {  
-  public connectionsCount = 0;  
-  public parentsCount = 0;  
-  public markedAsDeleted = false;  
-  public priorState = NodeState.Unknown;  
-  public position: { x: number; y: number } | null = null;  
-  public velocity: { vx: number; vy: number } | null = null;  
-  public force: { fx: number | null; fy: number | null } | null = null;  
+// Class representing a node in the GUM graph
+export class GUMNode {
+  public connectionsCount = 0;
+  public parentsCount = 0;
+  public markedAsDeleted = false;
+  public priorState = NodeState.Unknown;
+  public position: { x: number; y: number } | null = null;
+  public velocity: { vx: number; vy: number } | null = null;
+  public force: { fx: number | null; fy: number | null } | null = null;
 
-  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }  
-}  
+  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
+}
 
 // Class representing the GUM graph
 export class GUMGraph {
@@ -177,19 +177,22 @@ export class GraphUnfoldingMachine {
     }
 
     run() {
-        const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
-        for (const node of nodes) {
-            const item = this.changeTable.find(node);
-            if (item && item.isEnabled) {
-                this.performOperation(node, item.operation);
-                item.isActive = true;
-                item.lastActivationInterationIndex++;
-            }
-            node.priorState = node.state;
-        }
-        this.iterations++;
-        this.graph.removeMarkedNodes();
-    }
+      // Reset IsActive for all change table items
+      this.changeTable.items.forEach(item => item.isActive = false);
+
+      const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
+      for (const node of nodes) {
+          const item = this.changeTable.find(node);
+          if (item && item.isEnabled) {
+              this.performOperation(node, item.operation);
+              item.isActive = true;
+              item.lastActivationInterationIndex++;
+          }
+          node.priorState = node.state;
+      }
+      this.iterations++;
+      this.graph.removeMarkedNodes();
+  }
 
     private performOperation(node: GUMNode, operation: Operation) {
         switch (operation.kind) {

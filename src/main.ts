@@ -208,62 +208,62 @@ function adjustForRadius(source: Node, target: Node) {
  * Update the debug information displayed on the page.
  */
 function updateDebugInfo() {
-    const nodeCountElement = document.getElementById('node-count');
-    const nodeDetailsElement = document.getElementById('node-details');
-    const changeTableElement = document.getElementById('change-table');
-    const statusInfoElement = document.getElementById('status-info');
-    const edgeDetailsElement = document.getElementById('edge-details');
+  const nodeCountElement = document.getElementById('node-count');
+  const nodeDetailsElement = document.getElementById('node-details');
+  const changeTableElement = document.getElementById('change-table');
+  const statusInfoElement = document.getElementById('status-info');
+  const edgeDetailsElement = document.getElementById('edge-details');
 
-    if (nodeCountElement) {
-        nodeCountElement.textContent = `Nodes: ${nodes.length}`;
-    }
-    if (nodeDetailsElement) {
-        const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
-            <p>
-                ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
-            </p>
-        `).join('');
-        nodeDetailsElement.innerHTML = nodeDetails;
-    }
-    if (edgeDetailsElement) {
-        const edgeDetails = gumGraph.getEdges().map(edge =>
-            `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
-        ).join('\n');
-        edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
-    }
-    if (changeTableElement) {
-        const changeTableItems = gumMachine.getChangeTableItems();
-        const shortForm = convertToShortForm(changeTableItems);
-        const changeTableItemsForJson = changeTableItems.map(item => ({
-            condition: {
-                currentState: NodeState[item.condition.currentState],
-                priorState: item.condition.priorState === NodeState.Ignored ? '-' : NodeState[item.condition.priorState],
-                allConnectionsCount_GE: item.condition.allConnectionsCount_GE,
-                allConnectionsCount_LE: item.condition.allConnectionsCount_LE,
-                parentsCount_GE: item.condition.parentsCount_GE,
-                parentsCount_LE: item.condition.parentsCount_LE
-            },
-            operation: {
-                kind: mapOperationKindToString(item.operation.kind),
-                operandNodeState: NodeState[item.operation.operandNodeState]
-            },
-            isActive: item.isActive,
-            isEnabled: item.isEnabled,
-            lastActivationInterationIndex: item.lastActivationInterationIndex
-        }));
-        const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
-        changeTableElement.innerHTML = `
-            <h4>Change Table (Short Form)</h4>
-            <pre>${shortForm}</pre>
-            <details>
-                <summary>Raw JSON (collapsed)</summary>
-                <pre>${rawJson}</pre>
-            </details>
-        `;
-    }
-    if (statusInfoElement) {
-        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
-    }
+  if (nodeCountElement) {
+      nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+  }
+  if (nodeDetailsElement) {
+      const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
+          <p>
+              ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
+          </p>
+      `).join('');
+      nodeDetailsElement.innerHTML = nodeDetails;
+  }
+  if (edgeDetailsElement) {
+      const edgeDetails = gumGraph.getEdges().map(edge =>
+          `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+      ).join('\n');
+      edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
+  }
+  if (changeTableElement) {
+      const changeTableItems = gumMachine.getChangeTableItems();
+      const shortForm = convertToShortForm(changeTableItems);
+      const changeTableItemsForJson = changeTableItems.map(item => ({
+          condition: {
+              currentState: NodeState[item.condition.currentState],
+              priorState: item.condition.priorState === NodeState.Ignored ? '-' : NodeState[item.condition.priorState],
+              allConnectionsCount_GE: item.condition.allConnectionsCount_GE,
+              allConnectionsCount_LE: item.condition.allConnectionsCount_LE,
+              parentsCount_GE: item.condition.parentsCount_GE,
+              parentsCount_LE: item.condition.parentsCount_LE
+          },
+          operation: {
+              kind: mapOperationKindToString(item.operation.kind),
+              operandNodeState: NodeState[item.operation.operandNodeState]
+          },
+          isActive: item.isActive,
+          isEnabled: item.isEnabled,
+          lastActivationInterationIndex: item.lastActivationInterationIndex
+      }));
+      const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
+      changeTableElement.innerHTML = `
+          <h4>Change Table (Short Form)</h4>
+          <pre>${shortForm}</pre>
+          <details>
+              <summary>Raw JSON (collapsed)</summary>
+              <pre>${rawJson}</pre>
+          </details>
+      `;
+  }
+  if (statusInfoElement) {
+      statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+  }
 }
 
 /**
