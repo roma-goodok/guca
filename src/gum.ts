@@ -159,7 +159,14 @@ export class GUMGraph {
     this.nodes = this.nodes.filter(node => !node.markedAsDeleted);
     this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);
   }
-  
+
+  // Check if two nodes are connected
+  areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
+    return this.edges.some(edge =>
+      (edge.source.id === node1.id && edge.target.id === node2.id) ||
+      (edge.source.id === node2.id && edge.target.id === node1.id)
+    );
+  }
 }
 
 // Enumeration for different kinds of operations in the GUM
@@ -253,9 +260,10 @@ export class GraphUnfoldingMachine {
   private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
     // Implement the logic to connect with the nearest node in the given state
     console.log(`Trying to connect node ${node.id} with nearest node in state ${state}`);
-    // Example logic:
+
     const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-    if (nearestNode) {
+
+    if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
       this.graph.addEdge(node, nearestNode);
       console.log(`Connected node ${node.id} with node ${nearestNode.id}`);
     }
@@ -270,9 +278,10 @@ export class GraphUnfoldingMachine {
   private tryToConnectWith(node: GUMNode, state: NodeState) {
     // Implement the logic to try to connect with a node in the given state
     console.log(`Trying to connect node ${node.id} with node in state ${state}`);
-    // Example logic:
+
     const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-    if (targetNode) {
+
+    if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
       this.graph.addEdge(node, targetNode);
       console.log(`Connected node ${node.id} with node ${targetNode.id}`);
     }
