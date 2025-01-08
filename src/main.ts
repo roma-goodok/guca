@@ -1,26 +1,8 @@
+// main.ts
+
 import * as d3 from 'd3';
-import {
-  GUMGraph,
-  GUMNode,
-  GraphUnfoldingMachine,
-  NodeState,
-  ChangeTableItem,
-  OperationCondition,
-  Operation,
-  OperationKindEnum
-} from './gum';
-import {
-  mapOperationKind,
-  getVertexRenderColor,
-  getVertexRenderTextColor,
-  mapNodeState,
-  nodeStateToLetter,
-  mapOperationKindToString,
-  mapGUMNodeToNode,
-  convertToShortForm,
-  Node,
-  Link
-} from './utils';
+import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';
+import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, nodeStateToLetter, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
 
 // Set the dimensions for the SVG container
 const width = 960;
@@ -73,7 +55,9 @@ gumGraph.addNode(initialNode);
 // Logical flag to control the simulation state
 let isSimulationRunning = true;
 
-// Load the genes library from a JSON file
+/**
+ * Load the genes library from a JSON file and populate the gene select dropdown.
+ */
 async function loadGenesLibrary() {
   try {
     const response = await fetch('data/demo_2010_dict_genes.json');
@@ -92,13 +76,17 @@ async function loadGenesLibrary() {
       const selectedGene = (event.target as HTMLSelectElement).value;
       loadGene(data.genes[selectedGene]);
     });
+
     updateDebugInfo();
   } catch (error) {
     console.error("Error loading genes library:", error);
   }
 }
 
-// Function to load a specific gene
+/**
+ * Load a specific gene into the Graph Unfolding Machine.
+ * @param gene - The gene data to load.
+ */
 function loadGene(gene: any) {
   gumMachine.clearChangeTable();
   gene.forEach((item: any) => {
@@ -110,7 +98,6 @@ function loadGene(gene: any) {
       item.condition.parentsCount_GE,
       item.condition.parentsCount_LE
     );
-
     const operation = new Operation(
       mapOperationKind(item.operation.kind),
       mapNodeState(item.operation.operandNodeState)
@@ -118,24 +105,21 @@ function loadGene(gene: any) {
     gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
   });
   resetGraph();
-  gumMachine.ResetInteratios()
+  gumMachine.resetIterations();
 }
 
+/**
+ * Update the graph visualization with the current nodes and links.
+ */
 function update() {
-  console.log("Updating graph with nodes:", nodes);
-  console.log("Updating graph with links:", links);
-
-  // Bind data for links
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
-  // Enter new links
   link.enter().append("line")
     .attr("class", "link")
     .attr("stroke-width", 2)
     .merge(link);
 
-  // Update existing links
   link
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
     .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
@@ -146,14 +130,11 @@ function update() {
       return getVertexRenderColor(maxState);
     });
 
-  // Remove old links
   link.exit().remove();
 
-  // Bind data for nodes
   const node = graphGroup.selectAll<SVGGElement, Node>(".node")
     .data(nodes, d => d.id.toString());
 
-  // Enter new nodes
   const nodeEnter = node.enter().append("g")
     .attr("class", "node")
     .call(d3.drag<SVGGElement, Node>()
@@ -171,13 +152,10 @@ function update() {
     .attr("fill", d => getVertexRenderTextColor(d.state))
     .text(d => nodeStateToLetter(d.state));
 
-  // Merge new nodes with existing nodes
   const mergedNodes = nodeEnter.merge(node);
 
-  // Remove old nodes
   node.exit().remove();
 
-  // Update simulation nodes and links
   simulation.nodes(nodes).on("tick", () => {
     link
       .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
@@ -200,20 +178,26 @@ function update() {
       .attr("fill", d => getVertexRenderTextColor(d.state))
       .text(d => nodeStateToLetter(d.state));
   });
+
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
   updateDebugInfo();
 }
 
-// Helper function to adjust edge coordinates for node radius
+/**
+ * Adjust edge coordinates for node radius to ensure edges don't overlap with node circles.
+ * @param source - The source node.
+ * @param target - The target node.
+ * @returns The adjusted coordinates for the edge.
+ */
 function adjustForRadius(source: Node, target: Node) {
   const radius = 12.5;
   const dx = target.x! - source.x!;
   const dy = target.y! - source.y!;
   const distance = Math.sqrt(dx * dx + dy * dy);
   const padding = radius;
-
   const ratio = (distance - padding) / distance;
+
   return {
     x1: source.x! + dx * (padding / distance),
     y1: source.y! + dy * (padding / distance),
@@ -222,13 +206,15 @@ function adjustForRadius(source: Node, target: Node) {
   };
 }
 
-// Update the debug information displayed on the page
+/**
+ * Update the debug information displayed on the page.
+ */
 function updateDebugInfo() {
   const nodeCountElement = document.getElementById('node-count');
   const nodeDetailsElement = document.getElementById('node-details');
   const changeTableElement = document.getElementById('change-table');
   const statusInfoElement = document.getElementById('status-info');
-  const edgeDetailsElement = document.getElementById('edge-details'); // New element for edge details
+  const edgeDetailsElement = document.getElementById('edge-details');
 
   if (nodeCountElement) {
     nodeCountElement.textContent = `Nodes: ${nodes.length}`;
@@ -246,11 +232,10 @@ function updateDebugInfo() {
       `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
     ).join('\n');
     edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
-  }  
+  }
   if (changeTableElement) {
     const changeTableItems = gumMachine.getChangeTableItems();
     const shortForm = convertToShortForm(changeTableItems);
-
     const changeTableItemsForJson = changeTableItems.map(item => ({
       condition: {
         currentState: NodeState[item.condition.currentState],
@@ -278,13 +263,14 @@ function updateDebugInfo() {
       </details>
     `;
   }
-
   if (statusInfoElement) {
     statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
   }
 }
 
-// Unfold the graph using the Graph Unfolding Machine
+/**
+ * Unfold the graph using the Graph Unfolding Machine.
+ */
 function unfoldGraph() {
   if (!isSimulationRunning) {
     return;
@@ -326,7 +312,9 @@ function unfoldGraph() {
   update();
 }
 
-// Function to reset the graph to its initial state with a single node
+/**
+ * Reset the graph to its initial state with a single node.
+ */
 function resetGraph() {
   nodes = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
   links = [];
@@ -349,6 +337,10 @@ document.getElementById('simulation-interval')!.addEventListener('input', functi
   resetGraph();
 });
 
+/**
+ * Update the display options for the graph visualization.
+ * @param option - The selected display option.
+ */
 function updateDisplay(option: string) {
   const displayEdges = option === 'edges' || option === 'both';
   const displayNodes = option === 'nodes' || option === 'both';
@@ -362,35 +354,6 @@ updateDisplay('edges');
 
 // Variable to store the interval for unfolding the graph
 let simulationInterval: any;
-
-// Start the simulation with the default interval. It's commented to prevent doubled calling the unfoldGraph(). TODO: resolve this issue in correct way
-// simulationInterval = setInterval(unfoldGraph, 2000);
-
-// Drag event handlers for D3 nodes
-function dragstarted(event: any, d: Node) {
-  if (!event.active) simulation.alphaTarget(0.3).restart();
-  d.fx = d.x;
-  d.fy = d.y;
-}
-
-function dragged(event: any, d: Node) {
-  d.fx = event.x;
-  d.fy = event.y;
-}
-
-function dragended(event: any, d: Node) {
-  if (!event.active) simulation.alphaTarget(0);
-  d.fx = null;
-  d.fy = null;
-}
-
-// Function to enable/disable controls
-function setControlsEnabled(enabled: boolean) {
-  const controls = document.querySelectorAll('#display-options, #simulation-interval');
-  controls.forEach(control => {
-    (control as HTMLInputElement).disabled = !enabled;
-  });
-}
 
 // Control buttons for the simulation
 const pauseButton = document.getElementById('pause-button') as HTMLButtonElement;
@@ -417,11 +380,51 @@ resumeButton.addEventListener('click', () => {
   resumeButton.disabled = true;
 });
 
-// Initial update of the graph
-update();
+/**
+ * Enable or disable controls based on the provided flag.
+ * @param enabled - Whether to enable or disable the controls.
+ */
+function setControlsEnabled(enabled: boolean) {
+  const controls = document.querySelectorAll('#display-options, #simulation-interval');
+  controls.forEach(control => {
+    (control as HTMLInputElement).disabled = !enabled;
+  });
+}
 
 // Load the genes library and start the unfolding process
 loadGenesLibrary().then(() => {
   simulationInterval = setInterval(unfoldGraph, 2000);
   setControlsEnabled(false);
 });
+
+/**
+ * Drag event handler for when the drag starts.
+ * @param event - The drag event.
+ * @param d - The node being dragged.
+ */
+function dragstarted(event: any, d: Node) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+}
+
+/**
+ * Drag event handler for when the node is being dragged.
+ * @param event - The drag event.
+ * @param d - The node being dragged.
+ */
+function dragged(event: any, d: Node) {
+  d.fx = event.x;
+  d.fy = event.y;
+}
+
+/**
+ * Drag event handler for when the drag ends.
+ * @param event - The drag event.
+ * @param d - The node being dragged.
+ */
+function dragended(event: any, d: Node) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}

@@ -2,7 +2,7 @@
 
 import { NodeState, OperationKindEnum, GUMNode, ChangeTableItem } from './gum';
 
-// Define the Node interface in utils.ts
+// Define the Node interface to represent a graph node with properties for position, velocity, force, and state.
 export interface Node {
   id: number;
   x?: number;
@@ -14,12 +14,18 @@ export interface Node {
   state: NodeState;
 }
 
-// Interface for Link
+// Define the Link interface to represent a connection between two nodes in the graph.
 export interface Link {
-    source: number | Node;
-    target: number | Node;
-  }
+  source: number | Node;
+  target: number | Node;
+}
 
+/**
+ * Maps a string representation of an operation kind to its corresponding enum value.
+ * @param kind - The string representation of the operation kind.
+ * @returns The corresponding OperationKindEnum value.
+ * @throws An error if the operation kind is unknown.
+ */
 export function mapOperationKind(kind: string): OperationKindEnum {
   switch (kind) {
     case "TurnToState":
@@ -41,6 +47,11 @@ export function mapOperationKind(kind: string): OperationKindEnum {
   }
 }
 
+/**
+ * Gets the color used to render a vertex based on its state.
+ * @param state - The state of the node.
+ * @returns The color corresponding to the node state.
+ */
 export function getVertexRenderColor(state: NodeState): string {
   switch (state % 16) {
     case 1:
@@ -80,6 +91,11 @@ export function getVertexRenderColor(state: NodeState): string {
   }
 }
 
+/**
+ * Gets the text color used to render a vertex based on its state.
+ * @param state - The state of the node.
+ * @returns The text color corresponding to the node state.
+ */
 export function getVertexRenderTextColor(state: NodeState): string {
   switch (state % 16) {
     case 2:
@@ -93,10 +109,20 @@ export function getVertexRenderTextColor(state: NodeState): string {
   }
 }
 
+/**
+ * Maps a string representation of a node state to its corresponding enum value.
+ * @param state - The string representation of the node state.
+ * @returns The corresponding NodeState enum value.
+ */
 export function mapNodeState(state: string): NodeState {
   return NodeState[state as keyof typeof NodeState];
 }
 
+/**
+ * Converts a node state to its corresponding letter representation.
+ * @param state - The state of the node.
+ * @returns The letter representation of the node state.
+ */
 export function nodeStateToLetter(state: NodeState): string {
   if (state >= NodeState.A && state <= NodeState.Z) {
     return String.fromCharCode(64 + state);
@@ -104,6 +130,11 @@ export function nodeStateToLetter(state: NodeState): string {
   return '';
 }
 
+/**
+ * Maps an OperationKindEnum value to its corresponding string representation.
+ * @param kind - The OperationKindEnum value.
+ * @returns The string representation of the operation kind.
+ */
 export function mapOperationKindToString(kind: OperationKindEnum): string {
   switch (kind) {
     case OperationKindEnum.TurnToState:
@@ -125,19 +156,29 @@ export function mapOperationKindToString(kind: OperationKindEnum): string {
   }
 }
 
+/**
+ * Maps a GUMNode object to a Node object used for visualization.
+ * @param gumNode - The GUMNode object.
+ * @returns The corresponding Node object.
+ */
 export function mapGUMNodeToNode(gumNode: GUMNode): Node {
   return {
     id: gumNode.id,
-    x: gumNode.x,
-    y: gumNode.y,
-    vx: gumNode.vx,
-    vy: gumNode.vy,
-    fx: gumNode.fx,
-    fy: gumNode.fy,
+    x: gumNode.position?.x,
+    y: gumNode.position?.y,
+    vx: gumNode.velocity?.vx,
+    vy: gumNode.velocity?.vy,
+    fx: gumNode.force?.fx,
+    fy: gumNode.force?.fy,
     state: gumNode.state,
   };
 }
 
+/**
+ * Converts a list of ChangeTableItem objects to a short-form string representation.
+ * @param changeTableItems - The list of ChangeTableItem objects.
+ * @returns A string representation of the change table items in short form.
+ */
 export function convertToShortForm(changeTableItems: ChangeTableItem[]): string {
   return changeTableItems.map((item, index) => {
     const condition = item.condition;
@@ -178,7 +219,6 @@ export function convertToShortForm(changeTableItems: ChangeTableItem[]): string 
         operationStr = 'Unknown';
         break;
     }
-
     return `${index + 1}. ${conditionStr} : ${operationStr}`;
   }).join('\n');
 }

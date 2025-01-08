@@ -110,57 +110,57 @@ export class ChangeTable {
 }
 
 // Class representing a node in the GUM graph
+// gum.ts
 export class GUMNode {
-  public connectionsCount: number = 0;
-  public parentsCount: number = 0;
-  public markedAsDeleted: boolean = false;
-  public priorState: NodeState = NodeState.Unknown;
-
-  // Add properties to conform to Node interface
-  public x?: number;
-  public y?: number;
-  public vx?: number;
-  public vy?: number;
-  public fx?: number | null;
-  public fy?: number | null;
+  public connectionsCount = 0;
+  public parentsCount = 0;
+  public markedAsDeleted = false;
+  public priorState = NodeState.Unknown;
+  public position: { x: number; y: number } | null = null;
+  public velocity: { vx: number; vy: number } | null = null;
+  public force: { fx: number | null; fy: number | null } | null = null;
 
   constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
 }
 
+
+interface Edge {
+  source: GUMNode;
+  target: GUMNode;
+}
+
 // Class representing the GUM graph
 export class GUMGraph {
-  private nodes: GUMNode[] = [];
-  private edges: { source: GUMNode; target: GUMNode }[] = [];
+  private nodes: Map<number, GUMNode> = new Map();
+  private edges: Edge[] = [];
 
-  // Add a node to the graph
   addNode(node: GUMNode) {
-    this.nodes.push(node);
+    this.nodes.set(node.id, node);
   }
 
-  // Add an edge between two nodes in the graph
   addEdge(source: GUMNode, target: GUMNode) {
     this.edges.push({ source, target });
     source.connectionsCount++;
     target.connectionsCount++;
   }
 
-  // Get all nodes in the graph
   getNodes(): GUMNode[] {
-    return this.nodes;
+    return Array.from(this.nodes.values());
   }
 
-  // Get all edges in the graph
-  getEdges() {
+  getEdges(): Edge[] {
     return this.edges;
   }
 
-  // Remove nodes marked as deleted from the graph
   removeMarkedNodes() {
-    this.nodes = this.nodes.filter(node => !node.markedAsDeleted);
-    this.edges = this.edges.filter(edge => !edge.source.markedAsDeleted && !edge.target.markedAsDeleted);
+    this.nodes.forEach(node => {
+      if (node.markedAsDeleted) {
+        this.nodes.delete(node.id);
+      }
+    });
+    this.edges = this.edges.filter(edge => this.nodes.has(edge.source.id) && this.nodes.has(edge.target.id));
   }
 
-  // Check if two nodes are connected
   areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
     return this.edges.some(edge =>
       (edge.source.id === node1.id && edge.target.id === node2.id) ||
@@ -181,30 +181,27 @@ export enum OperationKindEnum {
 }
 
 // Class representing the Graph Unfolding Machine
+// gum.ts
 export class GraphUnfoldingMachine {
   public changeTable: ChangeTable;
-  private iterations: number = 0;
+  private iterations = 0;
 
   constructor(private graph: GUMGraph) {
     this.changeTable = new ChangeTable();
   }
 
-  // Add an item to the change table
   addChangeTableItem(item: ChangeTableItem) {
     this.changeTable.add(item);
   }
 
-  // Get all items in the change table
   getChangeTableItems() {
     return this.changeTable.items;
   }
 
-  // Clear the change table when loading a new gene
   clearChangeTable() {
     this.changeTable.items = [];
   }
 
-  // Run the Graph Unfolding Machine
   run() {
     const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
     console.log(`DEBUG: RUN`);
@@ -222,7 +219,6 @@ export class GraphUnfoldingMachine {
     this.graph.removeMarkedNodes();
   }
 
-  // Perform an operation on a node
   private performOperation(node: GUMNode, operation: Operation) {
     console.log(`Performing operation ${operation.kind} on node ${node.id}`);
     switch (operation.kind) {
@@ -230,14 +226,10 @@ export class GraphUnfoldingMachine {
         node.state = operation.operandNodeState;
         break;
       case OperationKindEnum.GiveBirthConnected:
-        const newNode = new GUMNode(this.graph.getNodes().length + 1, operation.operandNodeState);
-        newNode.parentsCount = node.parentsCount + 1;
-        this.graph.addNode(newNode);
-        this.graph.addEdge(node, newNode);
-        console.log(`Created new node ${newNode.id} connected to node ${node.id}`);
+        this.giveBirthConnected(node, operation.operandNodeState);
         break;
       case OperationKindEnum.DisconectFrom:
-        node.markedAsDeleted = true;
+        this.disconnectFrom(node, operation.operandNodeState);
         break;
       case OperationKindEnum.TryToConnectWithNearest:
         this.tryToConnectWithNearest(node, operation.operandNodeState);
@@ -257,12 +249,23 @@ export class GraphUnfoldingMachine {
     }
   }
 
+  private giveBirthConnected(node: GUMNode, state: NodeState) {
+    const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+    newNode.parentsCount = node.parentsCount + 1;
+    this.graph.addNode(newNode);
+    this.graph.addEdge(node, newNode);
+    console.log(`Created new node ${newNode.id} connected to node ${node.id}`);
+  }
+
+  private disconnectFrom(node: GUMNode, state: NodeState) {
+    node.markedAsDeleted = true;
+  }
+
   private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
     // Implement the logic to connect with the nearest node in the given state
     console.log(`Trying to connect node ${node.id} with nearest node in state ${state}`);
 
     const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-
     if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
       this.graph.addEdge(node, nearestNode);
       console.log(`Connected node ${node.id} with node ${nearestNode.id}`);
@@ -280,7 +283,6 @@ export class GraphUnfoldingMachine {
     console.log(`Trying to connect node ${node.id} with node in state ${state}`);
 
     const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-
     if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
       this.graph.addEdge(node, targetNode);
       console.log(`Connected node ${node.id} with node ${targetNode.id}`);
@@ -296,13 +298,11 @@ export class GraphUnfoldingMachine {
     console.log(`Created new node ${newNode.id}`);
   }
 
-  // Get the number of iterations
   getIterations() {
     return this.iterations;
   }
 
-  // instruction for Assistance: Could you update this pats to add also debug info about edges as list with start and end point (status of Node)
-  ResetInteratios() {
-    this.iterations = 0
+  resetIterations() {
+    this.iterations = 0;
   }
 }
