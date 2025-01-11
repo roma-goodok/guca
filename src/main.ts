@@ -249,7 +249,9 @@ function updateDebugInfo() {
           },
           isActive: item.isActive,
           isEnabled: item.isEnabled,
-          lastActivationInterationIndex: item.lastActivationInterationIndex
+          lastActivationInterationIndex: item.lastActivationInterationIndex,
+          // Include appliedToNodes in JSON output for completeness
+          appliedToNodes: item.appliedToNodes
       }));
       const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
       changeTableElement.innerHTML = `

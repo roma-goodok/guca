@@ -218,6 +218,7 @@ export function convertToShortForm(changeTableItems: ChangeTableItem[]): string 
                 operationStr = 'Unknown';
                 break;
         }
-        return `${index + 1}. ${conditionStr} : ${operationStr} IsActive: ${item.isActive ? 1 : 0}`;
+        const appliedToNodesStr = `Applied to: ${item.appliedToNodes.join(', ')}`;
+        return `${index + 1}. ${conditionStr} : ${operationStr} IsActive: ${item.isActive ? 1 : 0} ${appliedToNodesStr}`;
     }).join('\n');
 }

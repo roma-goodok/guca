@@ -52,13 +52,14 @@ export class OperationCondition {
 
 // Class representing an item in the change table
 export class ChangeTableItem {
-    constructor(
-        public condition: OperationCondition,
-        public operation: Operation,
-        public isActive: boolean = false,
-        public isEnabled: boolean = true,
-        public lastActivationInterationIndex: number = -1
-    ) { }
+  constructor(
+      public condition: OperationCondition,
+      public operation: Operation,
+      public isActive: boolean = false,
+      public isEnabled: boolean = true,
+      public lastActivationInterationIndex: number = -1,
+      public appliedToNodes: number[] = []
+  ) { }
 }
 
 // Class representing a change table
@@ -87,6 +88,7 @@ export class ChangeTable {
         }
         return null;
     }
+
 }
 
 // Class representing a node in the GUM graph
@@ -177,8 +179,11 @@ export class GraphUnfoldingMachine {
     }
 
     run() {
-      // Reset IsActive for all change table items
-      this.changeTable.items.forEach(item => item.isActive = false);
+      // Reset IsActive and appliedToNodes for all change table items
+      this.changeTable.items.forEach(item => {
+          item.isActive = false;
+          item.appliedToNodes = [];
+      });
 
       const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
       for (const node of nodes) {
@@ -187,12 +192,14 @@ export class GraphUnfoldingMachine {
               this.performOperation(node, item.operation);
               item.isActive = true;
               item.lastActivationInterationIndex++;
+              // Add node ID to appliedToNodes
+              item.appliedToNodes.push(node.id);
           }
           node.priorState = node.state;
       }
       this.iterations++;
       this.graph.removeMarkedNodes();
-  }
+   }
 
     private performOperation(node: GUMNode, operation: Operation) {
         switch (operation.kind) {
