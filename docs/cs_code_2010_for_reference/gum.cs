@@ -311,26 +311,7 @@ namespace GraphUnfoldingMachine {
                 default:
                     return _value.ToString();
             }
-        }
-        /// <summary>
-        /// Operation requires operand.
-        /// </summary>
-        /// <returns></returns>
-        static public bool IsNeedOperand(OperationKindEnum _value) {
-            switch (_value) {
-                case OperationKindEnum.TurnToState:
-                case OperationKindEnum.TryToConnectWith:
-                case OperationKindEnum.TryToConnectWithNearest:
-                    return true;
-                case OperationKindEnum.GiveBirth:
-                case OperationKindEnum.GiveBirthConnected:
-                case OperationKindEnum.Die:
-                case OperationKindEnum.DisconectFrom:
-                    return false;
-                default:
-                    return false;
-            }
-        }
+        }        
     }
 
     /// <summary>
