@@ -114,83 +114,112 @@ function loadGene(gene: any) {
 /**
  * Update the graph visualization with the current nodes and links.
  */
+// src/main.ts
+
+// main.ts
+
 function update() {
-    const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
-        .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
+  const gumNodes = gumGraph.getNodes();
+  const gumEdges = gumGraph.getEdges();
 
-    link.enter().append("line")
-        .attr("class", "link")
-        .attr("stroke-width", 2)
-        .merge(link);
+  nodes = gumNodes.map(gumNode => {
+      let existingNode = nodes.find(node => node.id === gumNode.id);
+      if (!existingNode) {
+          const centerNode = nodes[0];
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = Math.random() * 200;
+          existingNode = mapGUMNodeToNode(gumNode);
+          existingNode.x = centerNode.x! + distance * Math.cos(angle);
+          existingNode.y = centerNode.y! + distance * Math.sin(angle);
+      } else {
+          existingNode.state = gumNode.state;
+      }
+      return existingNode;
+  });
 
-    link
-        .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
-        .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
-        .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-        .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-        .attr("stroke", d => {
-            const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
-            return getVertexRenderColor(maxState);
-        });
+  links = gumEdges.map(gumEdge => {
+      const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;
+      const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;
+      return { source: sourceNode, target: targetNode };
+  });
 
-    link.exit().remove();
+  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
+      .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
-    const node = graphGroup.selectAll<SVGGElement, Node>(".node")
-        .data(nodes, d => d.id.toString());
+  link.enter().append("line")
+      .attr("class", "link")
+      .attr("stroke-width", 2)
+      .merge(link);
 
-    const nodeEnter = node.enter().append("g")
-        .attr("class", "node")
-        .call(d3.drag<SVGGElement, Node>()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended));
+  link
+      .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+      .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+      .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+      .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+      .attr("stroke", d => {
+          const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+          return 'lightGreen'
+          //return getVertexRenderColor(maxState);
+      });
 
-    nodeEnter.append("circle")
-        .attr("r", 12.5)
-        .attr("fill", d => getVertexRenderColor(d.state));
+  link.exit().remove();
 
-    nodeEnter.append("text")
-        .attr("dy", 3)
-        .attr("dx", -3)
-        .attr("fill", d => getVertexRenderTextColor(d.state))
-        .text(d => nodeStateToLetter(d.state));
+  const node = graphGroup.selectAll<SVGGElement, Node>(".node")
+      .data(nodes, d => d.id.toString());
 
-    const mergedNodes = nodeEnter.merge(node);
-    node.exit().remove();
+  const nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .call(d3.drag<SVGGElement, Node>()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended));
 
-    simulation.nodes(nodes).on("tick", () => {
-        link
-            .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
-            .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
-            .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-            .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-            .attr("stroke", d => {
-                const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
-                return getVertexRenderColor(maxState);
-            });
+  nodeEnter.append("circle")
+      .attr("r", 12.5)
+      .attr("fill", d => getVertexRenderColor(d.state));
 
-        mergedNodes.select("circle")
-            .attr("cx", d => d.x!)
-            .attr("cy", d => d.y!)
-            .attr("fill", d => getVertexRenderColor(d.state));
+  nodeEnter.append("text")
+      .attr("dy", 3)
+      .attr("dx", -3)
+      .attr("fill", d => getVertexRenderTextColor(d.state))
+      .text(d => nodeStateToLetter(d.state));
 
-        mergedNodes.select("text")
-            .attr("x", d => d.x!)
-            .attr("y", d => d.y!)
-            .attr("fill", d => getVertexRenderTextColor(d.state))
-            .text(d => nodeStateToLetter(d.state));
-    });
+  const mergedNodes = nodeEnter.merge(node);
+  node.exit().remove();
 
-    simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
-    simulation.alpha(0.5).restart();
-    updateDebugInfo();
+  simulation.nodes(nodes).on("tick", () => {
+      link
+          .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+          .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+          .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+          .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+          .attr("stroke", d => {
+              const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+              //return getVertexRenderColor(maxState);
+              return 'lightGreen'
+          });
+      mergedNodes.select("circle")
+          .attr("cx", d => d.x!)
+          .attr("cy", d => d.y!)
+          .attr("fill", d => getVertexRenderColor(d.state));
+      mergedNodes.select("text")
+          .attr("x", d => d.x!)
+          .attr("y", d => d.y!)
+          .attr("fill", d => getVertexRenderTextColor(d.state))
+          .text(d => nodeStateToLetter(d.state));
+  });
+  
+  // Populate combo boxes with current node IDs
+  const nodeIds = gumGraph.getNodes().map(node => node.id);
+  populateComboBox('source-node', nodeIds);
+  populateComboBox('target-node', nodeIds);
+  populateComboBox('remove-node-id', nodeIds);
 
-    // Populate combo boxes with current node IDs
-    const nodeIds = gumGraph.getNodes().map(node => node.id);
-    populateComboBox('source-node', nodeIds);
-    populateComboBox('target-node', nodeIds);
-    populateComboBox('remove-node-id', nodeIds);
+  simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
+  simulation.alpha(0.5).restart();
+  updateDebugInfo();
 }
+
 
 /**
  * Adjust edge coordinates for node radius to ensure edges don't overlap with node circles.
@@ -263,31 +292,7 @@ function unfoldGraph() {
     }
 
     gumMachine.run();
-    const gumNodes = gumGraph.getNodes();
-    const gumEdges = gumGraph.getEdges();
-
-    nodes = gumNodes.map(gumNode => {
-        let existingNode = nodes.find(node => node.id === gumNode.id);
-        if (!existingNode) {
-            const centerNode = nodes[0];
-            const angle = Math.random() * 2 * Math.PI;
-            const distance = Math.random() * 200;
-            existingNode = mapGUMNodeToNode(gumNode);
-            existingNode.x = centerNode.x! + distance * Math.cos(angle);
-            existingNode.y = centerNode.y! + distance * Math.sin(angle);
-        } else {
-            existingNode.state = gumNode.state;
-        }
-        return existingNode;
-    });
-
-    links = gumEdges.map(gumEdge => {
-        const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;
-        const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;
-        return { source: sourceNode, target: targetNode };
-    });
-
-    update();
+    update()
 }
 
 /**
