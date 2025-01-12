@@ -143,6 +143,16 @@ function adjustForRadius(source: Node, target: Node) {
   };
 }
 
+function populateComboBoxes() {
+
+  // Populate combo boxes with current node IDs
+  const nodeIds = gumGraph.getNodes().map(node => node.id);
+
+  populateComboBox('source-node', nodeIds);
+  populateComboBox('target-node', nodeIds);
+  populateComboBox('remove-node-id', nodeIds);
+}
+
 function update() {
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
@@ -235,19 +245,18 @@ function update() {
           });
   });
 
-  // Populate combo boxes with current node IDs
-  const nodeIds = gumGraph.getNodes().map(node => node.id);
-  populateComboBox('source-node', nodeIds);
-  populateComboBox('target-node', nodeIds);
-  populateComboBox('remove-node-id', nodeIds);
-
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
   updateDebugInfo();
 
+  // Populate combo boxes with the current nodes
+  populateComboBoxes();
+
   // Manually trigger the tick event to force the positions to update
   simulation.tick();
 }
+
+
 
 // Ensure `update()` is called after any modification to the GUMGraph
 document.getElementById('connect-button')!.addEventListener('click', () => {
@@ -317,6 +326,7 @@ function unfoldGraph() {
     simulation.tick();
     update()
     simulation.tick();
+    update();
 }
 
 /**
@@ -376,6 +386,13 @@ pauseResumeButton.addEventListener('click', () => {
     }
 });
 
+document.getElementById('next-step-button')!.addEventListener('click', () => {
+  if (!isSimulationRunning) {
+    isSimulationRunning = true
+    unfoldGraph();
+    isSimulationRunning = false
+  }
+});
 
 
 document.getElementById('connect-button')!.addEventListener('click', () => {
