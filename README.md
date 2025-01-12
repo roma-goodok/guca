@@ -2,7 +2,10 @@
   
 ## Project Vision  
   
-The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.  
+
+VOGUE is web visualization of GUCA
+  
+The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (GUCA) ontogeny by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.  
   
 ## Main Idea  
   
