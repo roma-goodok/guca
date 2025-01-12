@@ -1,5 +1,91 @@
 {
-    "genes": {
+    "genes": {        
+        "DumbBellyGenom": [
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "A",
+                    "allConnectionsCount_GE": 0,
+                    "allConnectionsCount_LE": 0,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": 0
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "B"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "B",
+                    "priorState": "Unknown",
+                    "allConnectionsCount_GE": -1,
+                    "allConnectionsCount_LE": -1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": 2
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "B"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "B",
+                    "priorState": "B",
+                    "allConnectionsCount_GE": -1,
+                    "allConnectionsCount_LE": -1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TurnToState",
+                    "operandNodeState": "C"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "A",
+                    "priorState": "A",
+                    "allConnectionsCount_GE": -1,
+                    "allConnectionsCount_LE": -1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TurnToState",
+                    "operandNodeState": "G"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "C",
+                    "priorState": "Min",
+                    "allConnectionsCount_GE": 1,
+                    "allConnectionsCount_LE": 1,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "TurnToState",
+                    "operandNodeState": "G"
+                }
+            },
+            {
+                "condition": {
+                    "currentState": "G",
+                    "priorState": "G",
+                    "allConnectionsCount_GE": -1,
+                    "allConnectionsCount_LE": 5,
+                    "parentsCount_GE": -1,
+                    "parentsCount_LE": -1
+                },
+                "operation": {
+                    "kind": "GiveBirthConnected",
+                    "operandNodeState": "H"
+                }
+            }
+        ],
         "HirsuteCircleGenom": [
             {
                 "condition": {
@@ -97,92 +183,6 @@
                 "operation": {
                     "kind": "GiveBirthConnected",
                     "operandNodeState": "G"
-                }
-            }
-        ],
-        "DumbBellyGenom": [
-            {
-                "condition": {
-                    "currentState": "A",
-                    "priorState": "A",
-                    "allConnectionsCount_GE": 0,
-                    "allConnectionsCount_LE": 0,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": 0
-                },
-                "operation": {
-                    "kind": "GiveBirthConnected",
-                    "operandNodeState": "B"
-                }
-            },
-            {
-                "condition": {
-                    "currentState": "B",
-                    "priorState": "Unknown",
-                    "allConnectionsCount_GE": -1,
-                    "allConnectionsCount_LE": -1,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": 2
-                },
-                "operation": {
-                    "kind": "GiveBirthConnected",
-                    "operandNodeState": "B"
-                }
-            },
-            {
-                "condition": {
-                    "currentState": "B",
-                    "priorState": "B",
-                    "allConnectionsCount_GE": -1,
-                    "allConnectionsCount_LE": -1,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": -1
-                },
-                "operation": {
-                    "kind": "TurnToState",
-                    "operandNodeState": "C"
-                }
-            },
-            {
-                "condition": {
-                    "currentState": "A",
-                    "priorState": "A",
-                    "allConnectionsCount_GE": -1,
-                    "allConnectionsCount_LE": -1,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": -1
-                },
-                "operation": {
-                    "kind": "TurnToState",
-                    "operandNodeState": "G"
-                }
-            },
-            {
-                "condition": {
-                    "currentState": "C",
-                    "priorState": "Min",
-                    "allConnectionsCount_GE": 1,
-                    "allConnectionsCount_LE": 1,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": -1
-                },
-                "operation": {
-                    "kind": "TurnToState",
-                    "operandNodeState": "G"
-                }
-            },
-            {
-                "condition": {
-                    "currentState": "G",
-                    "priorState": "G",
-                    "allConnectionsCount_GE": -1,
-                    "allConnectionsCount_LE": 5,
-                    "parentsCount_GE": -1,
-                    "parentsCount_LE": -1
-                },
-                "operation": {
-                    "kind": "GiveBirthConnected",
-                    "operandNodeState": "H"
                 }
             }
         ],
@@ -969,7 +969,7 @@
                 "condition": {
                     "currentState": "A",
                     "priorState": "Ignored",
-                    "allConnectionsCount_GE": 2,
+                    "allConnectionsCount_GE": -1,
                     "allConnectionsCount_LE": 2,
                     "parentsCount_GE": -1,
                     "parentsCount_LE": -1

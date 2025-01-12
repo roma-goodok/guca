@@ -10,7 +10,33 @@
       margin: 0;
       padding: 0;
       display: flex;
+      flex-direction: column;
       height: 100vh;
+    }
+    #header {
+      background: #333;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    #main {
+      display: flex;
+      flex: 1;
+    }
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      margin: 10px;
+      position: relative;
+    }
+    svg {
+      flex: 1;
+      border: 1px solid #ccc;
+      background-color: black;
     }
     #ui-panel {
       width: 500px;
@@ -33,21 +59,6 @@
       align-items: center;
       padding: 0 10px;
     }
-    #canvas-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      margin: 10px;
-      position: relative;
-    }
-    svg {
-      flex: 1;
-      border: 1px solid #ccc;
-      background-color: black;
-    }
     .control-buttons {
       display: flex;
       gap: 5px;
@@ -56,58 +67,63 @@
   </style>
 </head>
 <body>
-  <div id="canvas-container">
-    <svg></svg>
+  <div id="header">
+    <h1>Graph Unfolding Cellular Automata - Interactive Demonstration</h1>
+    <p>The interactive web application for animated visualization of artificial ontogeny - graph unfolding cellular automata (GUCA). The "gene" of the graph is a program of primitive operations, created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observing changes in real-time. This project demonstrates genetic programming over graphs and artificial life.</p>
+    <p>To start the unfolding, click the <b>"Resume"</b> button.</p>
+    <p>Project Code: <a href="https://github.com/roma-goodok/vogue" target="_blank">https://github.com/roma-goodok/vogue</a></p>
   </div>
-  <div id="ui-panel">
-    <label for="gene-select">Select Gene:</label>
-    <select id="gene-select"></select>
-    <div id="debug-info">
-      <h4>Debug Information</h4>
-      <p id="node-count">Nodes: 0</p>
-      <div id="node-details"></div>
-      <div id="edge-details"></div>
-      <p id="rule-table">Rule Table: Not loaded</p>
+  <div id="main">
+    <div id="canvas-container">
+      <svg></svg>
     </div>
-    <div class="control-buttons">      
-      <button id="pause-resume-button">Resume</button>
-      <button id="next-step-button">Next step</button>
-    </div>    
-    <div class="control-buttons-connect">
-      <button id="connect-button">Connect</button>
-      <label for="source-node">Source:</label>
-      <select id="source-node"></select>
-      <label for="target-node">Target:</label>
-      <select id="target-node"></select>
-    </div>
-    <div class="control-buttons-add">
-      <button id="add-node-button">Add Node</button>
-      <label for="node-state">State:</label>
-      <select id="node-state">
-        ${Object.keys(NodeState).map(state => `<option value="${state}">${state}</option>`).join('')}
-      </select>
-    </div>
-    <div class="control-buttons-remove">
-      <button id="remove-node-button">Remove Node</button>
-      <label for="remove-node-id">Node ID:</label>
-      <select id="remove-node-id"></select>
-    </div>
-    
-    <div class="control-group">
-      <h4>Visualization Options</h4>
-      <label for="display-options">Display Options:</label>
-      <select id="display-options">
-        <option value="edges">Display edges</option>
-        <option value="nodes">Display nodes</option>
-        <option value="both">Display nodes and edges</option>
-      </select>
-      <br>
-      <label for="simulation-interval">Simulation Interval:</label>
-      <input type="range" id="simulation-interval" min="50" max="2000" value="2000">
-      <span id="simulation-interval-value">2000</span> ms
-    </div>
-    <div id="status-bar">
-      <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+    <div id="ui-panel">
+      <label for="gene-select">Select Gene:</label>
+      <select id="gene-select"></select>
+      <div id="debug-info">
+        <h4>Debug Information</h4>
+        <p id="node-count">Nodes: 0</p>
+        <div id="node-details"></div>
+        <div id="edge-details"></div>
+        <p id="rule-table">Rule Table: Not loaded</p>
+      </div>
+      <div class="control-buttons">
+        <button id="pause-resume-button">Resume</button>
+        <button id="next-step-button">Next step</button>
+      </div>
+      <div class="control-buttons-connect">
+        <button id="connect-button">Connect</button>
+        <label for="source-node">Source:</label>
+        <select id="source-node"></select>
+        <label for="target-node">Target:</label>
+        <select id="target-node"></select>
+      </div>
+      <div class="control-buttons-add">
+        <button id="add-node-button">Add Node</button>
+        <label for="node-state">State:</label>
+        <select id="node-state"></select>
+      </div>
+      <div class="control-buttons-remove">
+        <button id="remove-node-button">Remove Node</button>
+        <label for="remove-node-id">Node ID:</label>
+        <select id="remove-node-id"></select>
+      </div>
+      <div class="control-group">
+        <h4>Visualization Options</h4>
+        <label for="display-options">Display Options:</label>
+        <select id="display-options">
+          <option value="edges">Display edges</option>
+          <option value="nodes">Display nodes</option>
+          <option value="both">Display nodes and edges</option>
+        </select>
+        <br>
+        <label for="simulation-interval">Simulation Interval:</label>
+        <input type="range" id="simulation-interval" min="50" max="2000" value="100">
+        <span id="simulation-interval-value">2000</span> ms
+      </div>
+      <div id="status-bar">
+        <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
+      </div>
     </div>
   </div>
   <script src="dist/main.js" type="module"></script>
