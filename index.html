@@ -67,12 +67,31 @@
       <p id="node-count">Nodes: 0</p>
       <div id="node-details"></div>
       <div id="edge-details"></div>
-      <p id="change-table">Change Table: Not loaded</p>
+      <p id="rule-table">Rule Table: Not loaded</p>
     </div>
-    <div class="control-buttons">
-      <button id="pause-button">Pause</button>
-      <button id="resume-button">Resume</button>
+    <div class="control-buttons">      
+      <button id="pause-resume-button">Resume</button>
     </div>
+    <div class="control-buttons-connect">
+      <button id="connect-button">Connect</button>
+      <label for="source-node">Source:</label>
+      <select id="source-node"></select>
+      <label for="target-node">Target:</label>
+      <select id="target-node"></select>
+    </div>
+    <div class="control-buttons-add">
+      <button id="add-node-button">Add Node</button>
+      <label for="node-state">State:</label>
+      <select id="node-state">
+        ${Object.keys(NodeState).map(state => `<option value="${state}">${state}</option>`).join('')}
+      </select>
+    </div>
+    <div class="control-buttons-remove">
+      <button id="remove-node-button">Remove Node</button>
+      <label for="remove-node-id">Node ID:</label>
+      <select id="remove-node-id"></select>
+    </div>
+    
     <div class="control-group">
       <h4>Visualization Options</h4>
       <label for="display-options">Display Options:</label>

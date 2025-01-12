@@ -1,6 +1,6 @@
 // main.ts
 import * as d3 from 'd3';
-import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, ChangeTableItem, OperationCondition, Operation, OperationKindEnum } from './gum';
+import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, RuleItem, OperationCondition, Operation, OperationKindEnum } from './gum';
 import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, nodeStateToLetter, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
 
 // Set the dimensions for the SVG container
@@ -52,7 +52,11 @@ const initialNode = new GUMNode(1, NodeState.A);
 gumGraph.addNode(initialNode);
 
 // Logical flag to control the simulation state
-let isSimulationRunning = true;
+let isSimulationRunning = false;
+
+// Immediately disable the "Resume" button
+const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
+pauseResumeButton.textContent = 'Resume';
 
 /**
  * Load the genes library from a JSON file and populate the gene select dropdown.
@@ -87,24 +91,24 @@ async function loadGenesLibrary() {
  * @param gene - The gene data to load.
  */
 function loadGene(gene: any) {
-    gumMachine.clearChangeTable();
-    gene.forEach((item: any) => {
-        const condition = new OperationCondition(
-            mapNodeState(item.condition.currentState),
-            mapNodeState(item.condition.priorState),
-            item.condition.allConnectionsCount_GE,
-            item.condition.allConnectionsCount_LE,
-            item.condition.parentsCount_GE,
-            item.condition.parentsCount_LE
-        );
-        const operation = new Operation(
-            mapOperationKind(item.operation.kind),
-            mapNodeState(item.operation.operandNodeState)
-        );
-        gumMachine.addChangeTableItem(new ChangeTableItem(condition, operation));
-    });
-    resetGraph();
-    gumMachine.resetIterations();
+  gumMachine.clearRuleTable();
+  gene.forEach((item: any) => {
+    const condition = new OperationCondition(
+      mapNodeState(item.condition.currentState),
+      mapNodeState(item.condition.priorState),
+      item.condition.allConnectionsCount_GE,
+      item.condition.allConnectionsCount_LE,
+      item.condition.parentsCount_GE,
+      item.condition.parentsCount_LE
+    );
+    const operation = new Operation(
+      mapOperationKind(item.operation.kind),
+      mapNodeState(item.operation.operandNodeState)
+    );
+    gumMachine.addRuleItem(new RuleItem(condition, operation));
+  });
+  resetGraph();
+  gumMachine.resetIterations();
 }
 
 /**
@@ -180,6 +184,12 @@ function update() {
     simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
     simulation.alpha(0.5).restart();
     updateDebugInfo();
+
+    // Populate combo boxes with current node IDs
+    const nodeIds = gumGraph.getNodes().map(node => node.id);
+    populateComboBox('source-node', nodeIds);
+    populateComboBox('target-node', nodeIds);
+    populateComboBox('remove-node-id', nodeIds);
 }
 
 /**
@@ -210,7 +220,7 @@ function adjustForRadius(source: Node, target: Node) {
 function updateDebugInfo() {
   const nodeCountElement = document.getElementById('node-count');
   const nodeDetailsElement = document.getElementById('node-details');
-  const changeTableElement = document.getElementById('change-table');
+  const ruleTableElement = document.getElementById('rule-table');
   const statusInfoElement = document.getElementById('status-info');
   const edgeDetailsElement = document.getElementById('edge-details');
 
@@ -231,42 +241,18 @@ function updateDebugInfo() {
       ).join('\n');
       edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
   }
-  if (changeTableElement) {
-      const changeTableItems = gumMachine.getChangeTableItems();
-      const shortForm = convertToShortForm(changeTableItems);
-      const changeTableItemsForJson = changeTableItems.map(item => ({
-          condition: {
-              currentState: NodeState[item.condition.currentState],
-              priorState: item.condition.priorState === NodeState.Ignored ? '-' : NodeState[item.condition.priorState],
-              allConnectionsCount_GE: item.condition.allConnectionsCount_GE,
-              allConnectionsCount_LE: item.condition.allConnectionsCount_LE,
-              parentsCount_GE: item.condition.parentsCount_GE,
-              parentsCount_LE: item.condition.parentsCount_LE
-          },
-          operation: {
-              kind: mapOperationKindToString(item.operation.kind),
-              operandNodeState: NodeState[item.operation.operandNodeState]
-          },
-          isActive: item.isActive,
-          isEnabled: item.isEnabled,
-          lastActivationInterationIndex: item.lastActivationInterationIndex,
-          // Include appliedToNodes in JSON output for completeness
-          appliedToNodes: item.appliedToNodes
-      }));
-      const rawJson = JSON.stringify(changeTableItemsForJson, null, 2);
-      changeTableElement.innerHTML = `
-          <h4>Change Table (Short Form)</h4>
-          <pre>${shortForm}</pre>
-          <details>
-              <summary>Raw JSON (collapsed)</summary>
-              <pre>${rawJson}</pre>
-          </details>
-      `;
+  if (ruleTableElement) {
+    const changeRuleItems = gumMachine.getRuleItems();
+    const shortForm = convertToShortForm(changeRuleItems);
+    ruleTableElement.innerHTML = `
+        <h4>Rule Table (Short Form)</h4>
+        <pre>${shortForm}</pre>`;
   }
   if (statusInfoElement) {
       statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
   }
 }
+
 
 /**
  * Unfold the graph using the Graph Unfolding Machine.
@@ -347,30 +333,80 @@ updateDisplay('edges');
 // Variable to store the interval for unfolding the graph
 let simulationInterval: any;
 
-// Control buttons for the simulation
-const pauseButton = document.getElementById('pause-button') as HTMLButtonElement;
-const resumeButton = document.getElementById('resume-button') as HTMLButtonElement;
-
-// Initially disable the "Resume" button
-resumeButton.disabled = true;
-
-pauseButton.addEventListener('click', () => {
-    isSimulationRunning = false;
-    clearInterval(simulationInterval);
-    setControlsEnabled(true);
-    pauseButton.disabled = true;
-    resumeButton.disabled = false;
-});
-
-resumeButton.addEventListener('click', () => {
-    if (!isSimulationRunning) {
-        isSimulationRunning = true;
+// Control button for the simulation
+pauseResumeButton.addEventListener('click', () => {
+    isSimulationRunning = !isSimulationRunning;
+    if (isSimulationRunning) {
         simulationInterval = setInterval(unfoldGraph, parseInt((document.getElementById('simulation-interval') as HTMLInputElement).value, 10));
+        pauseResumeButton.textContent = 'Pause';
+        setControlsEnabled(false);
+    } else {
+        clearInterval(simulationInterval);
+        pauseResumeButton.textContent = 'Resume';
+        setControlsEnabled(true);
     }
-    setControlsEnabled(false);
-    pauseButton.disabled = false;
-    resumeButton.disabled = true;
 });
+
+
+
+document.getElementById('connect-button')!.addEventListener('click', () => {
+  const sourceId = (document.getElementById('source-node') as HTMLSelectElement).value;
+  const targetId = (document.getElementById('target-node') as HTMLSelectElement).value;
+  if (sourceId && targetId) {
+    const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
+    const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
+    if (sourceNode && targetNode) {
+      gumGraph.addEdge(sourceNode, targetNode);
+      update();
+    }
+  }
+});
+
+document.getElementById('add-node-button')!.addEventListener('click', () => {
+  const state = (document.getElementById('node-state') as HTMLSelectElement).value as keyof typeof NodeState;
+  const newNode = new GUMNode(nodes.length + 1, NodeState[state]);
+  gumGraph.addNode(newNode);
+  nodes.push({ id: newNode.id, state: newNode.state });
+  update();
+});
+
+document.getElementById('remove-node-button')!.addEventListener('click', () => {
+  const nodeId = (document.getElementById('remove-node-id') as HTMLSelectElement).value;
+  if (nodeId) {
+    const nodeToRemove = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
+    if (nodeToRemove) {
+      nodeToRemove.markedAsDeleted = true;
+      gumGraph.removeMarkedNodes();
+      nodes = nodes.filter(node => node.id !== nodeToRemove.id);
+      update();
+    }
+  }
+});
+
+function populateStateComboBox(comboBoxId: string) {
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
+  comboBox.innerHTML = ''; // Clear existing options
+
+  // Populate options with letters from A to Z
+  for (let i = NodeState.A; i <= NodeState.Z; i++) {
+    const option = document.createElement('option');
+    option.value = NodeState[i];
+    option.text = String.fromCharCode(64 + i); // Convert to corresponding letter
+    comboBox.add(option);
+  }
+}
+
+function populateComboBox(comboBoxId: string, items: number[]) {
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
+  comboBox.innerHTML = ''; // Clear existing options
+
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.toString();
+    option.text = item.toString();
+    comboBox.add(option);
+  });
+}
 
 /**
  * Enable or disable controls based on the provided flag.
@@ -385,9 +421,12 @@ function setControlsEnabled(enabled: boolean) {
 
 // Load the genes library and start the unfolding process
 loadGenesLibrary().then(() => {
-    simulationInterval = setInterval(unfoldGraph, 2000);
+    //simulationInterval = setInterval(unfoldGraph, 2000);
     setControlsEnabled(false);
 });
+
+// Populate the state combo box with letters A to Z
+populateStateComboBox('node-state');
 
 /**
  * Drag event handler for when the drag starts.

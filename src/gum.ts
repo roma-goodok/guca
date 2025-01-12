@@ -50,45 +50,43 @@ export class OperationCondition {
     ) { }
 }
 
-// Class representing an item in the change table
-export class ChangeTableItem {
-  constructor(
-      public condition: OperationCondition,
-      public operation: Operation,
-      public isActive: boolean = false,
-      public isEnabled: boolean = true,
-      public lastActivationInterationIndex: number = -1,
-      public appliedToNodes: number[] = []
-  ) { }
+
+// Class representing a table of rules ("genom")
+export class RuleTable {
+  public items: RuleItem[] = [];
+
+  add(item: RuleItem) {
+    this.items.push(item);
+  }
+
+  find(node: GUMNode): RuleItem | null {
+    for (const item of this.items) {
+      const condition = item.condition;
+      const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;
+      const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;
+      const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
+                                      (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);
+      const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
+                                  (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);
+
+      if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {
+        return item;
+      }
+    }
+    return null;
+  }
 }
 
-// Class representing a change table
-export class ChangeTable {
-    public items: ChangeTableItem[] = [];
-
-    // Add an item to the change table
-    add(item: ChangeTableItem) {
-        this.items.push(item);
-    }
-
-    // Find an item in the change table that matches the given node
-    find(node: GUMNode): ChangeTableItem | null {
-        for (const item of this.items) {
-            const condition = item.condition;
-            const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;
-            const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;
-            const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
-                (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);
-            const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
-                (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);
-
-            if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {
-                return item;
-            }
-        }
-        return null;
-    }
-
+// Class representing an item in the Rule Table ("gene")
+export class RuleItem {
+  constructor(
+    public condition: OperationCondition,
+    public operation: Operation,
+    public isActive: boolean = false,
+    public isEnabled: boolean = true,
+    public lastActivationInterationIndex: number = -1,
+    public appliedToNodes: number[] = []
+  ) {}
 }
 
 // Class representing a node in the GUM graph
@@ -157,118 +155,115 @@ export enum OperationKindEnum {
     GiveBirth = 0x6,
 }
 
-// Class representing the Graph Unfolding Machine
 export class GraphUnfoldingMachine {
-    public changeTable: ChangeTable;
-    private iterations = 0;
+  public ruleTable: RuleTable;
+  private iterations = 0;
 
-    constructor(private graph: GUMGraph) {
-        this.changeTable = new ChangeTable();
-    }
+  constructor(private graph: GUMGraph) {
+    this.ruleTable = new RuleTable();
+  }
 
-    addChangeTableItem(item: ChangeTableItem) {
-        this.changeTable.add(item);
-    }
+  addRuleItem(item: RuleItem) {
+    this.ruleTable.add(item);
+  }
 
-    getChangeTableItems() {
-        return this.changeTable.items;
-    }
+  getRuleItems() {
+    return this.ruleTable.items;
+  }
 
-    clearChangeTable() {
-        this.changeTable.items = [];
-    }
+  clearRuleTable() {
+    this.ruleTable.items = [];
+  }
 
-    run() {
-      // Reset IsActive and appliedToNodes for all change table items
-      this.changeTable.items.forEach(item => {
-          item.isActive = false;
-          item.appliedToNodes = [];
-      });
+  run() {
+    this.ruleTable.items.forEach(item => {
+      item.isActive = false;
+      item.appliedToNodes = [];
+    });
 
-      const nodes = this.graph.getNodes().slice(); // Copy nodes to avoid mutation during iteration
-      for (const node of nodes) {
-          const item = this.changeTable.find(node);
-          if (item && item.isEnabled) {
-              this.performOperation(node, item.operation);
-              item.isActive = true;
-              item.lastActivationInterationIndex++;
-              // Add node ID to appliedToNodes
-              item.appliedToNodes.push(node.id);
-          }
-          node.priorState = node.state;
+    const nodes = this.graph.getNodes().slice();
+    for (const node of nodes) {
+      const item = this.ruleTable.find(node);
+      if (item && item.isEnabled) {
+        this.performOperation(node, item.operation);
+        item.isActive = true;
+        item.lastActivationInterationIndex++;
+        item.appliedToNodes.push(node.id);
       }
-      this.iterations++;
-      this.graph.removeMarkedNodes();
-   }
-
-    private performOperation(node: GUMNode, operation: Operation) {
-        switch (operation.kind) {
-            case OperationKindEnum.TurnToState:
-                node.state = operation.operandNodeState;
-                break;
-            case OperationKindEnum.GiveBirthConnected:
-                this.giveBirthConnected(node, operation.operandNodeState);
-                break;
-            case OperationKindEnum.DisconectFrom:
-                this.disconnectFrom(node, operation.operandNodeState);
-                break;
-            case OperationKindEnum.TryToConnectWithNearest:
-                this.tryToConnectWithNearest(node, operation.operandNodeState);
-                break;
-            case OperationKindEnum.Die:
-                this.die(node);
-                break;
-            case OperationKindEnum.TryToConnectWith:
-                this.tryToConnectWith(node, operation.operandNodeState);
-                break;
-            case OperationKindEnum.GiveBirth:
-                this.giveBirth(node, operation.operandNodeState);
-                break;
-            default:
-                break;
-        }
+      node.priorState = node.state;
     }
+    this.iterations++;
+    this.graph.removeMarkedNodes();
+  }
 
-    private giveBirthConnected(node: GUMNode, state: NodeState) {
-        const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
-        newNode.parentsCount = node.parentsCount + 1;
-        this.graph.addNode(newNode);
-        this.graph.addEdge(node, newNode);
+  private performOperation(node: GUMNode, operation: Operation) {
+    switch (operation.kind) {
+      case OperationKindEnum.TurnToState:
+        node.state = operation.operandNodeState;
+        break;
+      case OperationKindEnum.GiveBirthConnected:
+        this.giveBirthConnected(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.DisconectFrom:
+        this.disconnectFrom(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.TryToConnectWithNearest:
+        this.tryToConnectWithNearest(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.Die:
+        this.die(node);
+        break;
+      case OperationKindEnum.TryToConnectWith:
+        this.tryToConnectWith(node, operation.operandNodeState);
+        break;
+      case OperationKindEnum.GiveBirth:
+        this.giveBirth(node, operation.operandNodeState);
+        break;
+      default:
+        break;
     }
+  }
 
-    private disconnectFrom(node: GUMNode, state: NodeState) {
-        node.markedAsDeleted = true;
-    }
+  private giveBirthConnected(node: GUMNode, state: NodeState) {
+      const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+      newNode.parentsCount = node.parentsCount + 1;
+      this.graph.addNode(newNode);
+      this.graph.addEdge(node, newNode);
+  }
 
-    private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
-        const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-        if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
-            this.graph.addEdge(node, nearestNode);
-        }
-    }
+  private disconnectFrom(node: GUMNode, state: NodeState) {
+      node.markedAsDeleted = true;
+  }
 
-    private die(node: GUMNode) {
-        node.markedAsDeleted = true;
-    }
+  private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+      const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+      if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
+          this.graph.addEdge(node, nearestNode);
+      }
+  }
 
-    private tryToConnectWith(node: GUMNode, state: NodeState) {
-        const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-        if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
-            this.graph.addEdge(node, targetNode);
-        }
-    }
+  private die(node: GUMNode) {
+      node.markedAsDeleted = true;
+  }
 
-    private giveBirth(node: GUMNode, state: NodeState) {
-        const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
-        newNode.parentsCount = node.parentsCount + 1;
-        this.graph.addNode(newNode);
-    }
+  private tryToConnectWith(node: GUMNode, state: NodeState) {
+      const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+      if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
+          this.graph.addEdge(node, targetNode);
+      }
+  }
 
-    getIterations() {
-        return this.iterations;
-    }
+  private giveBirth(node: GUMNode, state: NodeState) {
+      const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+      newNode.parentsCount = node.parentsCount + 1;
+      this.graph.addNode(newNode);
+  }
 
-    resetIterations() {
-        this.iterations = 0;
-    }
+  getIterations() {
+      return this.iterations;
+  }
+
+  resetIterations() {
+      this.iterations = 0;
+  }
 }

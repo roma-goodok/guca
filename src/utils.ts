@@ -1,5 +1,5 @@
 // utils.ts
-import { NodeState, OperationKindEnum, GUMNode, ChangeTableItem } from './gum';
+import { NodeState, OperationKindEnum, GUMNode, RuleItem } from './gum';
 
 // Define the Node interface to represent a graph node with properties for position, velocity, force, and state.
 export interface Node {
@@ -174,12 +174,12 @@ export function mapGUMNodeToNode(gumNode: GUMNode): Node {
 }
 
 /**
- * Converts a list of ChangeTableItem objects to a short-form string representation.
- * @param changeTableItems - The list of ChangeTableItem objects.
+ * Converts a list of RuleItem objects to a short-form string representation.
+ * @param RuleItems - The list of RuleItem objects.
  * @returns A string representation of the change table items in short form.
  */
-export function convertToShortForm(changeTableItems: ChangeTableItem[]): string {
-    return changeTableItems.map((item, index) => {
+export function convertToShortForm(RuleItems: RuleItem[]): string {
+    return RuleItems.map((item, index) => {
         const condition = item.condition;
         const operation = item.operation;
 
