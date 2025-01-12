@@ -256,23 +256,6 @@ function update() {
   simulation.tick();
 }
 
-
-
-// Ensure `update()` is called after any modification to the GUMGraph
-document.getElementById('connect-button')!.addEventListener('click', () => {
-  const sourceId = (document.getElementById('source-node') as HTMLSelectElement).value;
-  const targetId = (document.getElementById('target-node') as HTMLSelectElement).value;
-  if (sourceId && targetId) {
-      const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
-      const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
-      if (sourceNode && targetNode) {
-          console.log('Adding edge between nodes:', sourceNode, targetNode);
-          gumGraph.addEdge(sourceNode, targetNode);
-          update(); // Ensure the visualization is updated immediately
-      }
-  }
-});
-
 /**
  * Update the debug information displayed on the page.
  */

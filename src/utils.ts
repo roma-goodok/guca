@@ -95,18 +95,10 @@ export function getVertexRenderColor(state: NodeState): string {
  * @param state - The state of the node.
  * @returns The text color corresponding to the node state.
  */
-export function getVertexRenderTextColor(state: NodeState): string {
-    switch (state % 16) {
-        case 2:
-        case 3:
-        case 5:
-        case 7:
-        case 0:
-            return 'white';
-        default:
-            return 'black';
-    }
-}
+export function getVertexRenderTextColor(state: NodeState): string {   
+    const darkColors = [2, 3, 5, 7, 0];   
+    return darkColors.includes(state % 16) ? 'white' : 'black';   
+  }  
 
 /**
  * Maps a string representation of a node state to its corresponding enum value.
