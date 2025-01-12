@@ -114,13 +114,41 @@ function loadGene(gene: any) {
 /**
  * Update the graph visualization with the current nodes and links.
  */
-// src/main.ts
 
 // main.ts
+
+
+/**
+ * Adjust edge coordinates for node radius to ensure edges don't overlap with node circles.
+ * @param source - The source node.
+ * @param target - The target node.
+ * @returns The adjusted coordinates for the edge.
+ */
+
+// src/main.ts
+
+function adjustForRadius(source: Node, target: Node) {
+  const radius = 12.5;
+  const dx = target.x! - source.x!;
+  const dy = target.y! - source.y!;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const padding = radius;
+  const ratio = (distance - padding) / distance;
+
+  return {
+      x1: source.x! + dx * (padding / distance),
+      y1: source.y! + dy * (padding / distance),
+      x2: target.x! - dx * (padding / distance),
+      y2: target.y! - dy * (padding / distance),
+  };
+}
 
 function update() {
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
+
+  console.log('GUM Nodes:', gumNodes);
+  console.log('GUM Edges:', gumEdges);
 
   nodes = gumNodes.map(gumNode => {
       let existingNode = nodes.find(node => node.id === gumNode.id);
@@ -143,24 +171,23 @@ function update() {
       return { source: sourceNode, target: targetNode };
   });
 
+  console.log('D3 Nodes:', nodes);
+  console.log('D3 Links:', links);
+
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
       .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
-  link.enter().append("line")
+  const linkEnter = link.enter().append("line")
       .attr("class", "link")
       .attr("stroke-width", 2)
-      .merge(link);
+      .attr("stroke", 'lightBlue');
 
-  link
+  linkEnter.merge(link)
       .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
       .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
       .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
       .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-      .attr("stroke", d => {
-          const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
-          return 'lightGreen'
-          //return getVertexRenderColor(maxState);
-      });
+      .attr("stroke", 'white');
 
   link.exit().remove();
 
@@ -188,16 +215,6 @@ function update() {
   node.exit().remove();
 
   simulation.nodes(nodes).on("tick", () => {
-      link
-          .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
-          .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
-          .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-          .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-          .attr("stroke", d => {
-              const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
-              //return getVertexRenderColor(maxState);
-              return 'lightGreen'
-          });
       mergedNodes.select("circle")
           .attr("cx", d => d.x!)
           .attr("cy", d => d.y!)
@@ -207,8 +224,17 @@ function update() {
           .attr("y", d => d.y!)
           .attr("fill", d => getVertexRenderTextColor(d.state))
           .text(d => nodeStateToLetter(d.state));
+      link
+          .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
+          .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
+          .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
+          .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+          .attr("stroke", d => {
+              const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
+              return getVertexRenderColor(maxState);
+          });
   });
-  
+
   // Populate combo boxes with current node IDs
   const nodeIds = gumGraph.getNodes().map(node => node.id);
   populateComboBox('source-node', nodeIds);
@@ -218,30 +244,25 @@ function update() {
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
   updateDebugInfo();
+
+  // Manually trigger the tick event to force the positions to update
+  simulation.tick();
 }
 
-
-/**
- * Adjust edge coordinates for node radius to ensure edges don't overlap with node circles.
- * @param source - The source node.
- * @param target - The target node.
- * @returns The adjusted coordinates for the edge.
- */
-function adjustForRadius(source: Node, target: Node) {
-    const radius = 12.5;
-    const dx = target.x! - source.x!;
-    const dy = target.y! - source.y!;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const padding = radius;
-    const ratio = (distance - padding) / distance;
-
-    return {
-        x1: source.x! + dx * (padding / distance),
-        y1: source.y! + dy * (padding / distance),
-        x2: target.x! - dx * (padding / distance),
-        y2: target.y! - dy * (padding / distance),
-    };
-}
+// Ensure `update()` is called after any modification to the GUMGraph
+document.getElementById('connect-button')!.addEventListener('click', () => {
+  const sourceId = (document.getElementById('source-node') as HTMLSelectElement).value;
+  const targetId = (document.getElementById('target-node') as HTMLSelectElement).value;
+  if (sourceId && targetId) {
+      const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
+      const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
+      if (sourceNode && targetNode) {
+          console.log('Adding edge between nodes:', sourceNode, targetNode);
+          gumGraph.addEdge(sourceNode, targetNode);
+          update(); // Ensure the visualization is updated immediately
+      }
+  }
+});
 
 /**
  * Update the debug information displayed on the page.
@@ -291,8 +312,11 @@ function unfoldGraph() {
         return;
     }
 
+    simulation.tick();
     gumMachine.run();
+    simulation.tick();
     update()
+    simulation.tick();
 }
 
 /**
@@ -363,6 +387,7 @@ document.getElementById('connect-button')!.addEventListener('click', () => {
     if (sourceNode && targetNode) {
       gumGraph.addEdge(sourceNode, targetNode);
       update();
+
     }
   }
 });
