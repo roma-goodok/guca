@@ -120,6 +120,12 @@ export class GUMGraph {
         target.connectionsCount++;
     }
 
+    removeEdge(source: GUMNode, target: GUMNode) {
+      this.graph.removeEdge(source.id.toString(), target.id.toString());
+      source.connectionsCount--;
+      target.connectionsCount--;
+    }
+
     getNodes(): GUMNode[] {
         return this.graph.nodes().map(nodeId => this.graph.node(nodeId) as GUMNode);
     }

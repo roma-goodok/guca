@@ -7,7 +7,7 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: false, // Set this to true for debugging and false for production
+    debug: true, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
@@ -169,14 +169,17 @@ function adjustForRadius(source: Node, target: Node) {
 }
 
 function populateComboBoxes() {
+    const nodeIds = gumGraph.getNodes().map(node => node.id);
 
-  // Populate combo boxes with current node IDs
-  const nodeIds = gumGraph.getNodes().map(node => node.id);
+    populateComboBox('source-node', nodeIds);
+    populateComboBox('target-node', nodeIds);
+    populateComboBox('remove-node-id', nodeIds);
+    populateComboBox('change-node-id', nodeIds);
+    populateComboBox('disconnect-source-node', nodeIds);
+    populateComboBox('disconnect-target-node', nodeIds);
+    populateComboBox('connect-nearest-node', nodeIds);
+  }
 
-  populateComboBox('source-node', nodeIds);
-  populateComboBox('target-node', nodeIds);
-  populateComboBox('remove-node-id', nodeIds);
-}
 
 function update() {
   const gumNodes = gumGraph.getNodes();
@@ -284,8 +287,6 @@ function update() {
 /**
  * Update the debug information displayed on the page.
  */
-
-// Update the `updateDebugInfo` function to respect the `config.debug` flag
 function updateDebugInfo() {
     const ruleTableElement = document.getElementById('rule-table');
     const statusInfoElement = document.getElementById('status-info');
@@ -322,24 +323,24 @@ function updateDebugInfo() {
         const edgeDetailsElement = document.getElementById('edge-details');
 
         if (nodeCountElement) {
-        nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+            nodeCountElement.textContent = `Nodes: ${nodes.length}`;
         }
         if (nodeDetailsElement) {
-        const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
+            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
             <p>
             ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
             </p>
-        `).join('');
-        nodeDetailsElement.innerHTML = nodeDetails;
+            `).join('');
+            nodeDetailsElement.innerHTML = nodeDetails;
         }
         if (edgeDetailsElement) {
-        const edgeDetails = gumGraph.getEdges().map(edge =>
+            const edgeDetails = gumGraph.getEdges().map(edge =>
             `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
-        ).join('\n');
-        edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
+            ).join('\n');
+            edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
         }
     }
-}
+  }
 
 
 /**
@@ -463,6 +464,42 @@ document.getElementById('remove-node-button')!.addEventListener('click', () => {
   }
 });
 
+document.getElementById('change-node-state-button')!.addEventListener('click', () => {
+    const nodeId = (document.getElementById('change-node-id') as HTMLSelectElement).value;
+    const state = (document.getElementById('change-node-state') as HTMLSelectElement).value as keyof typeof NodeState;
+    const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
+    if (node) {
+      node.state = NodeState[state];
+      update();
+    }
+  });
+
+document.getElementById('disconnect-button')!.addEventListener('click', () => {
+const sourceId = (document.getElementById('disconnect-source-node') as HTMLSelectElement).value;
+const targetId = (document.getElementById('disconnect-target-node') as HTMLSelectElement).value;
+if (sourceId && targetId) {
+    const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
+    const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
+    if (sourceNode && targetNode) {
+    gumGraph.removeEdge(sourceNode, targetNode);
+    update();
+    }
+}
+});
+
+document.getElementById('connect-nearest-button')!.addEventListener('click', () => {
+const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectElement).value;
+const state = (document.getElementById('connect-nearest-state') as HTMLSelectElement).value as keyof typeof NodeState;
+const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
+if (node) {
+    const nearestNode = gumGraph.getNodes().find(n => n.state === NodeState[state] && n.id !== node.id);
+    if (nearestNode && !gumGraph.areNodesConnected(node, nearestNode)) {
+    gumGraph.addEdge(node, nearestNode);
+    update();
+    }
+}
+});
+
 function populateStateComboBox(comboBoxId: string) {
   const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
   comboBox.innerHTML = ''; // Clear existing options
@@ -507,6 +544,9 @@ loadGenesLibrary().then(() => {
 
 // Populate the state combo box with letters A to Z
 populateStateComboBox('node-state');
+populateStateComboBox('change-node-state');
+populateStateComboBox('connect-nearest-state');
+
 
 /**
  * Drag event handler for when the drag starts.
