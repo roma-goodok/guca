@@ -3,9 +3,16 @@ import * as d3 from 'd3';
 import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, RuleItem, OperationCondition, Operation, OperationKindEnum } from './gum';
 import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, nodeStateToLetter, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
 
+// src/main.ts
+
+// Add a global configuration object
+const config = {
+    debug: false, // Set this to true for debugging and false for production
+  };
+
 // Set the dimensions for the SVG container
 const width = 960;
-const height = 960;
+const height = 800;
 
 // Create an SVG container
 const svg = d3.select("#canvas-container svg")
@@ -56,7 +63,8 @@ let isSimulationRunning = false;
 
 // Immediately disable the "Resume" button
 const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
-pauseResumeButton.textContent = 'Resume';
+pauseResumeButton.textContent = 'Start'; // Change initial text to 'Start'
+pauseResumeButton.style.backgroundColor = 'lightgreen'; // Set button color to light green
 
 /**
  * Load the genes library from a JSON file and populate the gene select dropdown.
@@ -86,31 +94,48 @@ async function loadGenesLibrary() {
     }
 }
 
+
+// Function to reset the zoom level
+// Function to reset the zoom level
+function resetZoom() {
+    svg.call(
+      (zoomBehavior as any).transform,
+      d3.zoomIdentity as any // Explicitly cast to `any` to avoid type mismatch
+    );
+  }
+
 /**
  * Load a specific gene into the Graph Unfolding Machine.
  * @param gene - The gene data to load.
  */
-function loadGene(gene: any) {
-  gumMachine.clearRuleTable();
-  gene.forEach((item: any) => {
-    const condition = new OperationCondition(
-      mapNodeState(item.condition.currentState),
-      mapNodeState(item.condition.priorState),
-      item.condition.allConnectionsCount_GE,
-      item.condition.allConnectionsCount_LE,
-      item.condition.parentsCount_GE,
-      item.condition.parentsCount_LE
-    );
-    const operation = new Operation(
-      mapOperationKind(item.operation.kind),
-      mapNodeState(item.operation.operandNodeState)
-    );
-    gumMachine.addRuleItem(new RuleItem(condition, operation));
-  });
-  resetGraph();
-  gumMachine.resetIterations();
-}
+// src/main.ts
 
+// Function to load a specific gene into the Graph Unfolding Machine
+function loadGene(gene: any) {
+    gumMachine.clearRuleTable();
+    gene.forEach((item: any) => {
+      const condition = new OperationCondition(
+        mapNodeState(item.condition.currentState),
+        mapNodeState(item.condition.priorState),
+        item.condition.allConnectionsCount_GE,
+        item.condition.allConnectionsCount_LE,
+        item.condition.parentsCount_GE,
+        item.condition.parentsCount_LE
+      );
+      const operation = new Operation(
+        mapOperationKind(item.operation.kind),
+        mapNodeState(item.operation.operandNodeState)
+      );
+      gumMachine.addRuleItem(new RuleItem(condition, operation));
+    });
+    resetGraph();
+    gumMachine.resetIterations();
+    // Reset the pause/resume button text to 'Start'
+    pauseResumeButton.textContent = 'Start';
+    pauseResumeButton.style.backgroundColor = 'lightgreen';
+    // Reset the zoom level
+    resetZoom();
+  }
 /**
  * Update the graph visualization with the current nodes and links.
  */
@@ -259,40 +284,61 @@ function update() {
 /**
  * Update the debug information displayed on the page.
  */
-function updateDebugInfo() {
-  const nodeCountElement = document.getElementById('node-count');
-  const nodeDetailsElement = document.getElementById('node-details');
-  const ruleTableElement = document.getElementById('rule-table');
-  const statusInfoElement = document.getElementById('status-info');
-  const edgeDetailsElement = document.getElementById('edge-details');
 
-  if (nodeCountElement) {
-      nodeCountElement.textContent = `Nodes: ${nodes.length}`;
-  }
-  if (nodeDetailsElement) {
-      const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
-          <p>
-              ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
-          </p>
-      `).join('');
-      nodeDetailsElement.innerHTML = nodeDetails;
-  }
-  if (edgeDetailsElement) {
-      const edgeDetails = gumGraph.getEdges().map(edge =>
-          `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
-      ).join('\n');
-      edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
-  }
-  if (ruleTableElement) {
-    const changeRuleItems = gumMachine.getRuleItems();
-    const shortForm = convertToShortForm(changeRuleItems);
-    ruleTableElement.innerHTML = `
+// Update the `updateDebugInfo` function to respect the `config.debug` flag
+function updateDebugInfo() {
+    const ruleTableElement = document.getElementById('rule-table');
+    const statusInfoElement = document.getElementById('status-info');
+
+    if (!config.debug) {
+        // Clear debug information if debugging is disabled
+        const nodeCountElement = document.getElementById('node-count');
+        const nodeDetailsElement = document.getElementById('node-details');
+        const edgeDetailsElement = document.getElementById('edge-details');
+
+        if (nodeCountElement) nodeCountElement.textContent = '';
+        if (nodeDetailsElement) nodeDetailsElement.innerHTML = '';
+        if (edgeDetailsElement) edgeDetailsElement.innerHTML = '';
+    }
+
+    // Always update the rule table information
+    if (ruleTableElement) {
+        const changeRuleItems = gumMachine.getRuleItems();
+        const shortForm = convertToShortForm(changeRuleItems);
+        ruleTableElement.innerHTML = `
         <h4>Rule Table (Short Form)</h4>
         <pre>${shortForm}</pre>`;
-  }
-  if (statusInfoElement) {
-      statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
-  }
+    }
+
+    // Always update the status info
+    if (statusInfoElement) {
+        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+    }
+
+    // If debugging is enabled, update the rest of the debug information
+    if (config.debug) {
+        const nodeCountElement = document.getElementById('node-count');
+        const nodeDetailsElement = document.getElementById('node-details');
+        const edgeDetailsElement = document.getElementById('edge-details');
+
+        if (nodeCountElement) {
+        nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+        }
+        if (nodeDetailsElement) {
+        const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
+            <p>
+            ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
+            </p>
+        `).join('');
+        nodeDetailsElement.innerHTML = nodeDetails;
+        }
+        if (edgeDetailsElement) {
+        const edgeDetails = gumGraph.getEdges().map(edge =>
+            `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+        ).join('\n');
+        edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
+        }
+    }
 }
 
 
@@ -330,11 +376,15 @@ document.getElementById('display-options')!.addEventListener('change', function 
     updateDisplay(displayOption);
 });
 
-document.getElementById('simulation-interval')!.addEventListener('input', function () {
-    const interval = (this as HTMLInputElement).value;
-    simulationInterval = parseInt(interval, 10);
-    document.getElementById('simulation-interval-value')!.textContent = interval;
-    resetGraph();
+// Initialize the simulation interval slider correctly
+const simulationIntervalSlider = document.getElementById('simulation-interval') as HTMLInputElement;
+simulationIntervalSlider.value = '100';
+document.getElementById('simulation-interval-value')!.textContent = '100';
+
+simulationIntervalSlider.addEventListener('input', function () {
+  const interval = (this as HTMLInputElement).value;
+  simulationInterval = parseInt(interval, 10);
+  document.getElementById('simulation-interval-value')!.textContent = interval;
 });
 
 /**
