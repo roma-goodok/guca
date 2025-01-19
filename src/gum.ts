@@ -85,11 +85,10 @@ export class RuleItem {
     public isActive: boolean = false,
     public isEnabled: boolean = true,
     public lastActivationInterationIndex: number = -1,
-    public appliedToNodes: number[] = []
+    public isActiveInNodes: number[] = []
   ) {}
 }
 
-// Class representing a node in the GUM graph
 export class GUMNode {
   public connectionsCount = 0;
   public parentsCount = 0;
@@ -100,6 +99,10 @@ export class GUMNode {
   public force: { fx: number | null; fy: number | null } | null = null;
 
   constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
+
+  updatePriorState() {
+      this.priorState = this.state;
+  }
 }
 
 // Class representing the GUM graph
@@ -118,6 +121,12 @@ export class GUMGraph {
         this.graph.setEdge(source.id.toString(), target.id.toString());
         source.connectionsCount++;
         target.connectionsCount++;
+    }
+
+    removeEdge(source: GUMNode, target: GUMNode) {
+      this.graph.removeEdge(source.id.toString(), target.id.toString());
+      source.connectionsCount--;
+      target.connectionsCount--;
     }
 
     getNodes(): GUMNode[] {
@@ -178,7 +187,7 @@ export class GraphUnfoldingMachine {
   run() {
     this.ruleTable.items.forEach(item => {
       item.isActive = false;
-      item.appliedToNodes = [];
+      item.isActiveInNodes = [];
     });
 
     const nodes = this.graph.getNodes().slice();
@@ -188,9 +197,9 @@ export class GraphUnfoldingMachine {
         this.performOperation(node, item.operation);
         item.isActive = true;
         item.lastActivationInterationIndex++;
-        item.appliedToNodes.push(node.id);
+        item.isActiveInNodes.push(node.id);
       }
-      node.priorState = node.state;
+      node.updatePriorState()
     }
     this.iterations++;
     this.graph.removeMarkedNodes();

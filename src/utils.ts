@@ -95,10 +95,10 @@ export function getVertexRenderColor(state: NodeState): string {
  * @param state - The state of the node.
  * @returns The text color corresponding to the node state.
  */
-export function getVertexRenderTextColor(state: NodeState): string {   
-    const darkColors = [2, 3, 5, 7, 0];   
-    return darkColors.includes(state % 16) ? 'white' : 'black';   
-  }  
+export function getVertexRenderTextColor(state: NodeState): string {
+    const darkColors = [2, 3, 5, 7, 0];
+    return darkColors.includes(state % 16) ? 'white' : 'black';
+  }
 
 /**
  * Maps a string representation of a node state to its corresponding enum value.
@@ -182,7 +182,9 @@ export function convertToShortForm(RuleItems: RuleItem[]): string {
         const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';
         const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';
 
-        const conditionStr = `${currentState}(${priorState})${connectionsCountGE}${connectionsCountLE}${parentsCountGE}${parentsCountLE}`;
+        // Separate the connections and parents conditions with a space
+        const conditionStr = `${currentState}(${priorState}) ${connectionsCountGE} ${connectionsCountLE} ${parentsCountGE} ${parentsCountLE}`.trim().replace(/\s+/g, ' ');
+
         let operationStr = '';
         switch (operation.kind) {
             case OperationKindEnum.TurnToState:
@@ -210,7 +212,11 @@ export function convertToShortForm(RuleItems: RuleItem[]): string {
                 operationStr = 'Unknown';
                 break;
         }
-        const appliedToNodesStr = `Applied to: ${item.appliedToNodes.join(', ')}`;
-        return `${index + 1}. ${conditionStr} : ${operationStr} IsActive: ${item.isActive ? 1 : 0} ${appliedToNodesStr}`;
+
+        const isActiveInNodesStr = `Is Active in: ${item.isActiveInNodes.join(', ')}`;
+
+        // Format the rule item string with bold text if the item is active
+        const ruleItemStr = `${index + 1}. ${conditionStr} : ${operationStr} ${isActiveInNodesStr}`;
+        return item.isActive ? `<b>${ruleItemStr}</b>` : ruleItemStr;
     }).join('\n');
 }

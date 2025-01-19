@@ -14,14 +14,16 @@ const config = {
 const width = 960;
 const height = 800;
 
+const  widthRect = 300;
+
 // Create an SVG container
 const svg = d3.select("#canvas-container svg")
-    .attr("width", width)
+    .attr("width", "100%")
     .attr("height", height);
 
 // Add a rectangle overlay to capture zoom events
 const zoomOverlay = svg.append("rect")
-    .attr("width", width)
+    .attr("width", widthRect)
     .attr("height", height)
     .attr("fill", "none")
     .attr("pointer-events", "all");
@@ -35,7 +37,8 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
         graphGroup.attr("transform", event.transform);
     });
 
-(zoomOverlay as any).call(zoomBehavior as any);
+//(zoomOverlay as any).call(zoomBehavior as any);
+(svg as any).call(zoomBehavior as any);
 
 // Initialize the force simulation
 const simulation = d3.forceSimulation<Node, Link>()
@@ -169,14 +172,17 @@ function adjustForRadius(source: Node, target: Node) {
 }
 
 function populateComboBoxes() {
+    const nodeIds = gumGraph.getNodes().map(node => node.id);
 
-  // Populate combo boxes with current node IDs
-  const nodeIds = gumGraph.getNodes().map(node => node.id);
+    populateComboBox('source-node', nodeIds);
+    populateComboBox('target-node', nodeIds);
+    populateComboBox('remove-node-id', nodeIds);
+    populateComboBox('change-node-id', nodeIds);
+    populateComboBox('disconnect-source-node', nodeIds);
+    populateComboBox('disconnect-target-node', nodeIds);
+    populateComboBox('connect-nearest-node', nodeIds);
+  }
 
-  populateComboBox('source-node', nodeIds);
-  populateComboBox('target-node', nodeIds);
-  populateComboBox('remove-node-id', nodeIds);
-}
 
 function update() {
   const gumNodes = gumGraph.getNodes();
@@ -284,8 +290,6 @@ function update() {
 /**
  * Update the debug information displayed on the page.
  */
-
-// Update the `updateDebugInfo` function to respect the `config.debug` flag
 function updateDebugInfo() {
     const ruleTableElement = document.getElementById('rule-table');
     const statusInfoElement = document.getElementById('status-info');
@@ -301,6 +305,11 @@ function updateDebugInfo() {
         if (edgeDetailsElement) edgeDetailsElement.innerHTML = '';
     }
 
+    // Always update the status info
+    if (statusInfoElement) {
+        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+    }
+
     // Always update the rule table information
     if (ruleTableElement) {
         const changeRuleItems = gumMachine.getRuleItems();
@@ -310,11 +319,6 @@ function updateDebugInfo() {
         <pre>${shortForm}</pre>`;
     }
 
-    // Always update the status info
-    if (statusInfoElement) {
-        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
-    }
-
     // If debugging is enabled, update the rest of the debug information
     if (config.debug) {
         const nodeCountElement = document.getElementById('node-count');
@@ -322,24 +326,24 @@ function updateDebugInfo() {
         const edgeDetailsElement = document.getElementById('edge-details');
 
         if (nodeCountElement) {
-        nodeCountElement.textContent = `Nodes: ${nodes.length}`;
+            nodeCountElement.textContent = `Nodes: ${nodes.length}`;
         }
+
         if (nodeDetailsElement) {
-        const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
-            <p>
-            ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
-            </p>
-        `).join('');
-        nodeDetailsElement.innerHTML = nodeDetails;
+            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node =>
+                `ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}`
+            ).join('\n');
+            nodeDetailsElement.innerHTML = `<pre>${nodeDetails}</pre>`;
         }
+
         if (edgeDetailsElement) {
-        const edgeDetails = gumGraph.getEdges().map(edge =>
-            `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
-        ).join('\n');
-        edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
+            const edgeDetails = gumGraph.getEdges().map(edge =>
+                `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+            ).join('\n');
+            edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
         }
     }
-}
+  }
 
 
 /**
@@ -463,6 +467,43 @@ document.getElementById('remove-node-button')!.addEventListener('click', () => {
   }
 });
 
+document.getElementById('change-node-state-button')!.addEventListener('click', () => {
+    const nodeId = (document.getElementById('change-node-id') as HTMLSelectElement).value;
+    const state = (document.getElementById('change-node-state') as HTMLSelectElement).value as keyof typeof NodeState;
+    const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
+    if (node) {
+      node.priorState = node.state;
+      node.state = NodeState[state];
+      update();
+    }
+});
+
+document.getElementById('disconnect-button')!.addEventListener('click', () => {
+const sourceId = (document.getElementById('disconnect-source-node') as HTMLSelectElement).value;
+const targetId = (document.getElementById('disconnect-target-node') as HTMLSelectElement).value;
+if (sourceId && targetId) {
+    const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
+    const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
+    if (sourceNode && targetNode) {
+    gumGraph.removeEdge(sourceNode, targetNode);
+    update();
+    }
+}
+});
+
+document.getElementById('connect-nearest-button')!.addEventListener('click', () => {
+const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectElement).value;
+const state = (document.getElementById('connect-nearest-state') as HTMLSelectElement).value as keyof typeof NodeState;
+const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
+if (node) {
+    const nearestNode = gumGraph.getNodes().find(n => n.state === NodeState[state] && n.id !== node.id);
+    if (nearestNode && !gumGraph.areNodesConnected(node, nearestNode)) {
+    gumGraph.addEdge(node, nearestNode);
+    update();
+    }
+}
+});
+
 function populateStateComboBox(comboBoxId: string) {
   const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
   comboBox.innerHTML = ''; // Clear existing options
@@ -507,6 +548,9 @@ loadGenesLibrary().then(() => {
 
 // Populate the state combo box with letters A to Z
 populateStateComboBox('node-state');
+populateStateComboBox('change-node-state');
+populateStateComboBox('connect-nearest-state');
+
 
 /**
  * Drag event handler for when the drag starts.

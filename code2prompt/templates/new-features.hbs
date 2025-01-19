@@ -1,0 +1,38 @@
+Project Path: {{ absolute_code_path }}
+
+I need your help to add some improvements and/or features to my project (an interactive web application in TypeScript). Here are the files involved:
+
+Source Tree:
+```
+{{ source_tree }}
+```
+
+{{#each files}} 
+{{#if code}}
+`{{path}}`: 
+
+{{code}}
+
+{{/if}}
+{{/each}}
+
+Here is the list of improvements,new features and instructions:
+
+Before executing the instructions:
+
+Review the code carefully and systematically.
+1. Trace the relevant code paths.
+2. Run the code mentally with example inputs.
+3. Think about interactions between components.
+4. Take a deep breath and think step by step about how to best complete this task.
+
+For each change, please provide:
+1. The file path.
+2. A description of the modification and explanation.
+3. A code snippet (lines, functions) that needs to be changed.
+
+(!) You don't need to return all the lines of the modified files. Only if I ask for it.
+Please remember that during our further communication, there is no need to include parts of the code that are not expected to be modified, just to 'ensure'.
+
+After analysis, please update the code with your proposed modifications. Try to match the existing code style. Add regression tests if possible to prevent bugs from recurring.
+I appreciate your diligence and attention to detail! Let me know if you need any clarification on the intended behavior of the code.

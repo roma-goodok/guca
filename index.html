@@ -14,7 +14,7 @@
       height: 100vh;
     }
     #header {
-      background: #f4f4f4;      
+      background: #f4f4f4;
       padding: 10px;
       text-align: center;
     }
@@ -34,20 +34,25 @@
     }
     svg {
       flex: 1;
-      border: 1px solid #ccc;
+      min-width: 200px;
       background-color: black;
     }
     #ui-panel {
       width: 500px;
+      min-width: 200px;
       background: #f4f4f4;
       border-left: 1px solid #ccc;
       padding: 10px;
-      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+      /* box-shadow: -2px 0 1px #f00000; */
       display: flex;
       flex-direction: column;
     }
     #debug-info {
       flex: 1;
+      overflow-y: auto;
+    }
+    #node-details, #edge-details {
+      max-height: 100px; /* Adjust the height as needed */
       overflow-y: auto;
     }
     #status-bar {
@@ -63,15 +68,19 @@
       gap: 5px;
       margin-bottom: 10px;
     }
+
+    rect {
+     /* fill: #502020; */
+    }
   </style>
 </head>
 <body>
-  <div id="header">  
-    <h1>Graph Unfolding Cellular Automata - Interactive Demonstration</h1>  
-    <p>The interactive web application for animated visualization of artificial ontogeny - graph unfolding cellular automata (GUCA). The "gene" of the graph is a program of primitive operations, created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observing changes in real-time. This project demonstrates genetic programming over graphs and artificial life.</p>  
-    <p>To start the unfolding, click the <b>"Start"</b> button.</p>  
-    <p>Project Code: <a href="https://github.com/roma-goodok/guca-vogue" target="_blank">https://github.com/roma-goodok/guca-vogue</a></p>  
-  </div>  
+  <div id="header">
+    <h1>Graph Unfolding Cellular Automata - Interactive Demonstration</h1>
+    <p>The interactive web application for animated visualization of artificial ontogeny - graph unfolding cellular automata (GUCA). The "gene" of the graph is a program of primitive operations, created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observing changes in real-time. This project demonstrates genetic programming over graphs and artificial life.</p>
+    <p>To start the unfolding, click the <b>"Start"</b> button.</p>
+    <p>Project Code: <a href="https://github.com/roma-goodok/guca-vogue" target="_blank">https://github.com/roma-goodok/guca-vogue</a></p>
+  </div>
   <div id="main">
     <div id="canvas-container">
       <svg></svg>
@@ -106,6 +115,27 @@
         <button id="remove-node-button">Remove Node</button>
         <label for="remove-node-id">Node ID:</label>
         <select id="remove-node-id"></select>
+      </div>
+      <div class="control-buttons-change-state">
+        <button id="change-node-state-button">Change Node State</button>
+        <label for="change-node-id">Node:</label>
+        <select id="change-node-id"></select>
+        <label for="change-node-state">State:</label>
+        <select id="change-node-state"></select>
+      </div>
+      <div class="control-buttons-disconnect">
+        <button id="disconnect-button">Disconnect</button>
+        <label for="disconnect-source-node">Source:</label>
+        <select id="disconnect-source-node"></select>
+        <label for="disconnect-target-node">Target:</label>
+        <select id="disconnect-target-node"></select>
+      </div>
+      <div class="control-buttons-connect-nearest">
+        <button id="connect-nearest-button">Connect Nearest</button>
+        <label for="connect-nearest-node">Node:</label>
+        <select id="connect-nearest-node"></select>
+        <label for="connect-nearest-state">State:</label>
+        <select id="connect-nearest-state"></select>
       </div>
       <div class="control-group">
         <h4>Visualization Options</h4>
