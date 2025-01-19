@@ -191,15 +191,15 @@ export class GraphUnfoldingMachine {
     });
 
     const nodes = this.graph.getNodes().slice();
-    for (const node of nodes) {      
-      node.updatePriorState()
+    for (const node of nodes) {
       const item = this.ruleTable.find(node);
       if (item && item.isEnabled) {
         this.performOperation(node, item.operation);
         item.isActive = true;
         item.lastActivationInterationIndex++;
         item.isActiveInNodes.push(node.id);
-      }      
+      }
+      node.updatePriorState()
     }
     this.iterations++;
     this.graph.removeMarkedNodes();
@@ -230,7 +230,7 @@ export class GraphUnfoldingMachine {
         break;
       default:
         break;
-    }    
+    }
   }
 
   private giveBirthConnected(node: GUMNode, state: NodeState) {
