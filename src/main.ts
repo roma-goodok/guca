@@ -302,6 +302,11 @@ function updateDebugInfo() {
         if (edgeDetailsElement) edgeDetailsElement.innerHTML = '';
     }
 
+    // Always update the status info
+    if (statusInfoElement) {
+        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+    }
+
     // Always update the rule table information
     if (ruleTableElement) {
         const changeRuleItems = gumMachine.getRuleItems();
@@ -309,11 +314,6 @@ function updateDebugInfo() {
         ruleTableElement.innerHTML = `
         <h4>Rule Table (Short Form)</h4>
         <pre>${shortForm}</pre>`;
-    }
-
-    // Always update the status info
-    if (statusInfoElement) {
-        statusInfoElement.textContent = `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
     }
 
     // If debugging is enabled, update the rest of the debug information
@@ -325,17 +325,17 @@ function updateDebugInfo() {
         if (nodeCountElement) {
             nodeCountElement.textContent = `Nodes: ${nodes.length}`;
         }
+
         if (nodeDetailsElement) {
-            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node => `
-            <p>
-            ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}
-            </p>
-            `).join('');
-            nodeDetailsElement.innerHTML = nodeDetails;
+            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node =>
+                `ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}`
+            ).join('\n');
+            nodeDetailsElement.innerHTML = `<pre>${nodeDetails}</pre>`;
         }
+
         if (edgeDetailsElement) {
             const edgeDetails = gumGraph.getEdges().map(edge =>
-            `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+                `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
             ).join('\n');
             edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
         }

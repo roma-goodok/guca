@@ -85,7 +85,7 @@ export class RuleItem {
     public isActive: boolean = false,
     public isEnabled: boolean = true,
     public lastActivationInterationIndex: number = -1,
-    public appliedToNodes: number[] = []
+    public isActiveInNodes: number[] = []
   ) {}
 }
 
@@ -184,7 +184,7 @@ export class GraphUnfoldingMachine {
   run() {
     this.ruleTable.items.forEach(item => {
       item.isActive = false;
-      item.appliedToNodes = [];
+      item.isActiveInNodes = [];
     });
 
     const nodes = this.graph.getNodes().slice();
@@ -194,7 +194,7 @@ export class GraphUnfoldingMachine {
         this.performOperation(node, item.operation);
         item.isActive = true;
         item.lastActivationInterationIndex++;
-        item.appliedToNodes.push(node.id);
+        item.isActiveInNodes.push(node.id);
       }
       node.priorState = node.state;
     }
