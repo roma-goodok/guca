@@ -34,15 +34,16 @@
     }
     svg {
       flex: 1;
-      border: 1px solid #ccc;
+      min-width: 200px;
       background-color: black;
     }
     #ui-panel {
       width: 500px;
+      min-width: 200px;
       background: #f4f4f4;
       border-left: 1px solid #ccc;
       padding: 10px;
-      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+      /* box-shadow: -2px 0 1px #f00000; */
       display: flex;
       flex-direction: column;
     }
@@ -66,6 +67,10 @@
       display: flex;
       gap: 5px;
       margin-bottom: 10px;
+    }
+
+    rect {
+     /* fill: #502020; */
     }
   </style>
 </head>

@@ -7,21 +7,23 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: true, // Set this to true for debugging and false for production
+    debug: false, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
 const width = 960;
 const height = 800;
 
+const  widthRect = 300;
+
 // Create an SVG container
 const svg = d3.select("#canvas-container svg")
-    .attr("width", width)
+    .attr("width", "100%")
     .attr("height", height);
 
 // Add a rectangle overlay to capture zoom events
 const zoomOverlay = svg.append("rect")
-    .attr("width", width)
+    .attr("width", widthRect)
     .attr("height", height)
     .attr("fill", "none")
     .attr("pointer-events", "all");
@@ -35,7 +37,8 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
         graphGroup.attr("transform", event.transform);
     });
 
-(zoomOverlay as any).call(zoomBehavior as any);
+//(zoomOverlay as any).call(zoomBehavior as any);
+(svg as any).call(zoomBehavior as any);
 
 // Initialize the force simulation
 const simulation = d3.forceSimulation<Node, Link>()
