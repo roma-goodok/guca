@@ -469,10 +469,11 @@ document.getElementById('change-node-state-button')!.addEventListener('click', (
     const state = (document.getElementById('change-node-state') as HTMLSelectElement).value as keyof typeof NodeState;
     const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
     if (node) {
+      node.priorState = node.state;
       node.state = NodeState[state];
       update();
     }
-  });
+});
 
 document.getElementById('disconnect-button')!.addEventListener('click', () => {
 const sourceId = (document.getElementById('disconnect-source-node') as HTMLSelectElement).value;

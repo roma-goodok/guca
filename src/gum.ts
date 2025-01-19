@@ -89,7 +89,6 @@ export class RuleItem {
   ) {}
 }
 
-// Class representing a node in the GUM graph
 export class GUMNode {
   public connectionsCount = 0;
   public parentsCount = 0;
@@ -100,6 +99,10 @@ export class GUMNode {
   public force: { fx: number | null; fy: number | null } | null = null;
 
   constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
+
+  updatePriorState() {
+      this.priorState = this.state;
+  }
 }
 
 // Class representing the GUM graph
@@ -188,15 +191,15 @@ export class GraphUnfoldingMachine {
     });
 
     const nodes = this.graph.getNodes().slice();
-    for (const node of nodes) {
+    for (const node of nodes) {      
+      node.updatePriorState()
       const item = this.ruleTable.find(node);
       if (item && item.isEnabled) {
         this.performOperation(node, item.operation);
         item.isActive = true;
         item.lastActivationInterationIndex++;
         item.isActiveInNodes.push(node.id);
-      }
-      node.priorState = node.state;
+      }      
     }
     this.iterations++;
     this.graph.removeMarkedNodes();
@@ -227,7 +230,7 @@ export class GraphUnfoldingMachine {
         break;
       default:
         break;
-    }
+    }    
   }
 
   private giveBirthConnected(node: GUMNode, state: NodeState) {
