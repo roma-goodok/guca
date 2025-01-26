@@ -109,16 +109,12 @@ export function mapNodeState(state: string): NodeState {
     return NodeState[state as keyof typeof NodeState];
 }
 
-/**
- * Converts a node state to its corresponding letter representation.
- * @param state - The state of the node.
- * @returns The letter representation of the node state.
- */
-export function nodeStateToLetter(state: NodeState): string {
+export function getNodeDisplayText(state: NodeState, id: number, debug: boolean): string {
+    let letter = '';
     if (state >= NodeState.A && state <= NodeState.Z) {
-        return String.fromCharCode(64 + state);
-    }
-    return '';
+        letter = String.fromCharCode(64 + state);
+    }    
+    return debug ? `${letter}/${id}` : letter;
 }
 
 /**

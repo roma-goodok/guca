@@ -1,7 +1,7 @@
 // main.ts
 import * as d3 from 'd3';
 import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, RuleItem, OperationCondition, Operation, OperationKindEnum } from './gum';
-import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, nodeStateToLetter, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
+import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, getNodeDisplayText, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
 
 // src/main.ts
 
@@ -243,20 +243,21 @@ function update() {
           .on("end", dragended));
 
   nodeEnter.append("circle")
-      .attr("r", 12.5)
+      .attr("r", d => config.debug ? 20 : 12.5) // Double radius in debug mode
       .attr("fill", d => getVertexRenderColor(d.state));
 
   nodeEnter.append("text")
       .attr("dy", 3)
-      .attr("dx", -3)
+      .attr("dx", config.debug ? -10 : -6)
       .attr("fill", d => getVertexRenderTextColor(d.state))
-      .text(d => nodeStateToLetter(d.state));
+      .text(d => getNodeDisplayText(d.state, d.id, config.debug));
 
   const mergedNodes = nodeEnter.merge(node);
   node.exit().remove();
 
   simulation.nodes(nodes).on("tick", () => {
       mergedNodes.select("circle")
+          .attr("r", d => config.debug ? 20 : 12.5)
           .attr("cx", d => d.x!)
           .attr("cy", d => d.y!)
           .attr("fill", d => getVertexRenderColor(d.state));
@@ -264,7 +265,7 @@ function update() {
           .attr("x", d => d.x!)
           .attr("y", d => d.y!)
           .attr("fill", d => getVertexRenderTextColor(d.state))
-          .text(d => nodeStateToLetter(d.state));
+          .text(d => getNodeDisplayText(d.state, d.id, config.debug));
       link
           .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
           .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
