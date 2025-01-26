@@ -213,7 +213,7 @@ export function convertToShortForm(RuleItems: RuleItem[]): string {
                 break;
         }
 
-        const isActiveInNodesStr = `Is Active in: ${item.isActiveInNodes.join(', ')}`;
+        const isActiveInNodesStr = `` //`Is Active in: ${item.isActiveInNodes.join(', ')}`;
 
         // Format the rule item string with bold text if the item is active
         const ruleItemStr = `${index + 1}. ${conditionStr} : ${operationStr} ${isActiveInNodesStr}`;
