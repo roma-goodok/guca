@@ -7,7 +7,7 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: false, // Set this to true for debugging and false for production
+    debug: true, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
@@ -330,7 +330,7 @@ function updateDebugInfo() {
         }
 
         if (nodeDetailsElement) {
-            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node =>
+            const nodeDetails = gumGraph.getNodes().map(node =>
                 `ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}`
             ).join('\n');
             nodeDetailsElement.innerHTML = `<pre>${nodeDetails}</pre>`;
