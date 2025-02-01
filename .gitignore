@@ -9,7 +9,10 @@ code2prompt/output.txt
 # TypeScript compiled files  
 *.js  
 *.js.map  
-  
+
+# Exclude jest.config.js from being ignored
+!jest.config.js
+
 # Logs  
 logs  
 *.log  
