@@ -132,6 +132,31 @@ function loadGene(gene: any) {
       gumMachine.addRuleItem(new RuleItem(condition, operation));
     });
     resetGraph();
+
+    
+    // const nodeA = gumGraph.getNodes().find(node => node.id === 1);
+
+    // if (nodeA) {
+
+    //     const newNode2 = new GUMNode(nodes.length + 1, NodeState["C"]);
+    //     gumGraph.addNode(newNode2);
+    //     nodes.push({ id: newNode2.id, state: newNode2.state });
+
+    //     const newNode3 = new GUMNode(nodes.length + 1, NodeState["B"]);
+    //     gumGraph.addNode(newNode3);
+    //     nodes.push({ id: newNode3.id, state: newNode3.state });
+
+    //     const newNode4 = new GUMNode(nodes.length + 1, NodeState["B"]);
+    //     gumGraph.addNode(newNode4);
+    //     nodes.push({ id: newNode4.id, state: newNode4.state });
+
+    //     gumGraph.addEdge(nodeA, newNode2);
+    //     gumGraph.addEdge(newNode2, newNode4);
+    //     gumGraph.addEdge(newNode3, newNode4);
+    //     update();
+    // }
+
+
     gumMachine.resetIterations();
     // Reset the pause/resume button text to 'Start'
     pauseResumeButton.textContent = 'Start';
@@ -339,7 +364,8 @@ function updateDebugInfo() {
 
         if (edgeDetailsElement) {
             const edgeDetails = gumGraph.getEdges().map(edge =>
-                `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+                `Edge (${NodeState[edge.source.state]}/${edge.source.id}, ${NodeState[edge.target.state]}/${edge.target.id})`
+                //`Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
             ).join('\n');
             edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
         }
@@ -497,11 +523,8 @@ const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectEle
 const state = (document.getElementById('connect-nearest-state') as HTMLSelectElement).value as keyof typeof NodeState;
 const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
 if (node) {
-    const nearestNode = gumGraph.getNodes().find(n => n.state === NodeState[state] && n.id !== node.id);
-    if (nearestNode && !gumGraph.areNodesConnected(node, nearestNode)) {
-    gumGraph.addEdge(node, nearestNode);
-    update();
-    }
+    gumMachine.tryToConnectWithNearest(node, NodeState[state])    
+    update();    
 }
 });
 
