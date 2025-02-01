@@ -293,17 +293,18 @@ export class GraphUnfoldingMachine {
     }
 }
 
-   /*
-  * Finds the nearest node with a specified state in terms of graph distance.
-  * The search starts from the given node and skips nodes that are directly connected to the starting node.
-  *
-  * @param node - The starting node from which the search begins.
-  * @param state - The desired state of the target node.
-  * @returns The nearest node with the specified state that is not directly connected to the starting node, or null if no such node exists.
-  */
-   private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
+  /**
+   * Finds the nearest node with a specified state in terms of graph distance.
+   * The search starts from the given node and skips nodes that are directly connected to the starting node.
+   *
+   * @param node - The starting node from which the search begins.
+   * @param state - The desired state of the target node.
+   * @returns The nearest node with the specified state that is not directly connected to the starting node, or null if no such node exists.
+   */
+  private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
     const visited = new Set<GUMNode>();
     const queue: { node: GUMNode, distance: number }[] = [{ node, distance: 0 }];
+    const edges = this.graph.getEdges();
 
     while (queue.length > 0) {
         const { node: currentNode, distance } = queue.shift()!;
@@ -314,7 +315,9 @@ export class GraphUnfoldingMachine {
 
         visited.add(currentNode);
 
-        this.graph.getEdges().forEach(edge => {
+        // Iterate over edges in reverse order
+        for (let i = edges.length - 1; i >= 0; i--) {
+            const edge = edges[i];
             // Check if the current edge is connected to the current node
             if (edge.source === currentNode || edge.target === currentNode) {
                 const neighbor = edge.source === currentNode ? edge.target : edge.source;
@@ -324,11 +327,11 @@ export class GraphUnfoldingMachine {
                     queue.push({ node: neighbor, distance: distance + 1 });
                 }
             }
-        });
+        }
     }
 
     return null;
-}
+  }
 
 // public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
 //     const nearestNode = this.findNearest(node, state);
