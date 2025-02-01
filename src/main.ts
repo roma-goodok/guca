@@ -7,7 +7,7 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: true, // Set this to true for debugging and false for production
+    debug: false, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
