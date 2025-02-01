@@ -98,11 +98,17 @@ export class GUMNode {
   public velocity: { vx: number; vy: number } | null = null;
   public force: { fx: number | null; fy: number | null } | null = null;
 
+  protected savedCurrentState = NodeState.Unknown
+
   constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
 
   updatePriorState() {
-      this.priorState = this.state;
+      this.priorState = this.savedCurrentState;
   }
+
+  saveCurrentState() {
+    this.savedCurrentState = this.state;
+}
 }
 
 // Class representing the GUM graph
@@ -192,6 +198,7 @@ export class GraphUnfoldingMachine {
 
     const nodes = this.graph.getNodes().slice();
     for (const node of nodes) {
+      node.saveCurrentState()
       const item = this.ruleTable.find(node);
       if (item && item.isEnabled) {
         this.performOperation(node, item.operation);
@@ -208,6 +215,7 @@ export class GraphUnfoldingMachine {
   private performOperation(node: GUMNode, operation: Operation) {
     switch (operation.kind) {
       case OperationKindEnum.TurnToState:
+
         node.state = operation.operandNodeState;
         break;
       case OperationKindEnum.GiveBirthConnected:
@@ -241,15 +249,97 @@ export class GraphUnfoldingMachine {
   }
 
   private disconnectFrom(node: GUMNode, state: NodeState) {
-      node.markedAsDeleted = true;
+    const edgesToRemove = this.graph.getEdges().filter(edge =>
+        (edge.source === node && edge.target.state === state) ||
+        (edge.target === node && edge.source.state === state)
+    );
+    edgesToRemove.forEach(edge => {
+        this.graph.removeEdge(edge.source, edge.target);
+    });
   }
 
-  private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
-      const nearestNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-      if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
-          this.graph.addEdge(node, nearestNode);
-      }
+  // private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
+  //     const visited = new Set<GUMNode>();
+  //     const queue: {node: GUMNode, distance: number}[] = [{node, distance: 0}];
+
+  //     while (queue.length > 0) {
+  //         const {node: currentNode, distance} = queue.shift()!;
+  //         if (currentNode.state === state && currentNode !== node) {
+  //             return currentNode;
+  //         }
+  //         visited.add(currentNode);
+  //         this.graph.getEdges().forEach(edge => {
+  //             const neighbor = edge.source === currentNode ? edge.target : edge.source;
+  //             if (!visited.has(neighbor)) {
+  //                 queue.push({node: neighbor, distance: distance + 1});
+  //             }
+  //         });
+  //     }
+  //     return null;
+  // }
+
+  // private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+  //     const nearestNode = this.findNearest(node, state);
+  //     if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
+  //         this.graph.addEdge(node, nearestNode);
+  //     }
+  // }
+
+  public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+    const nearestNode = this.findNearest(node, state);
+    // if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
+    if (nearestNode) {
+        this.graph.addEdge(node, nearestNode);
+    }
+}
+
+  /**
+   * Finds the nearest node with a specified state in terms of graph distance.
+   * The search starts from the given node and skips nodes that are directly connected to the starting node.
+   *
+   * @param node - The starting node from which the search begins.
+   * @param state - The desired state of the target node.
+   * @returns The nearest node with the specified state that is not directly connected to the starting node, or null if no such node exists.
+   */
+  private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
+    const visited = new Set<GUMNode>();
+    const queue: { node: GUMNode, distance: number }[] = [{ node, distance: 0 }];
+    const edges = this.graph.getEdges();
+
+    while (queue.length > 0) {
+        const { node: currentNode, distance } = queue.shift()!;
+
+        if (currentNode.state === state && currentNode !== node && distance > 1) {
+            return currentNode;
+        }
+
+        visited.add(currentNode);
+
+        // Iterate over edges in reverse order
+        for (let i = edges.length - 1; i >= 0; i--) {
+            const edge = edges[i];
+            // Check if the current edge is connected to the current node
+            if (edge.source === currentNode || edge.target === currentNode) {
+                const neighbor = edge.source === currentNode ? edge.target : edge.source;
+
+                if (!visited.has(neighbor)) {
+                    // Note that we're not adding the neighbor to visited here to allow revisiting through different paths
+                    queue.push({ node: neighbor, distance: distance + 1 });
+                }
+            }
+        }
+    }
+
+    return null;
   }
+
+// public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+//     const nearestNode = this.findNearest(node, state);
+//     // if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
+//     if (nearestNode) {
+//         this.graph.addEdge(node, nearestNode);
+//     }
+// }
 
   private die(node: GUMNode) {
       node.markedAsDeleted = true;

@@ -1,7 +1,7 @@
 // main.ts
 import * as d3 from 'd3';
 import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, RuleItem, OperationCondition, Operation, OperationKindEnum } from './gum';
-import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, nodeStateToLetter, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
+import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, getNodeDisplayText, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
 
 // src/main.ts
 
@@ -132,6 +132,31 @@ function loadGene(gene: any) {
       gumMachine.addRuleItem(new RuleItem(condition, operation));
     });
     resetGraph();
+
+    
+    // const nodeA = gumGraph.getNodes().find(node => node.id === 1);
+
+    // if (nodeA) {
+
+    //     const newNode2 = new GUMNode(nodes.length + 1, NodeState["C"]);
+    //     gumGraph.addNode(newNode2);
+    //     nodes.push({ id: newNode2.id, state: newNode2.state });
+
+    //     const newNode3 = new GUMNode(nodes.length + 1, NodeState["B"]);
+    //     gumGraph.addNode(newNode3);
+    //     nodes.push({ id: newNode3.id, state: newNode3.state });
+
+    //     const newNode4 = new GUMNode(nodes.length + 1, NodeState["B"]);
+    //     gumGraph.addNode(newNode4);
+    //     nodes.push({ id: newNode4.id, state: newNode4.state });
+
+    //     gumGraph.addEdge(nodeA, newNode2);
+    //     gumGraph.addEdge(newNode2, newNode4);
+    //     gumGraph.addEdge(newNode3, newNode4);
+    //     update();
+    // }
+
+
     gumMachine.resetIterations();
     // Reset the pause/resume button text to 'Start'
     pauseResumeButton.textContent = 'Start';
@@ -243,20 +268,21 @@ function update() {
           .on("end", dragended));
 
   nodeEnter.append("circle")
-      .attr("r", 12.5)
+      .attr("r", d => config.debug ? 20 : 12.5) // Double radius in debug mode
       .attr("fill", d => getVertexRenderColor(d.state));
 
   nodeEnter.append("text")
       .attr("dy", 3)
-      .attr("dx", -3)
+      .attr("dx", config.debug ? -10 : -6)
       .attr("fill", d => getVertexRenderTextColor(d.state))
-      .text(d => nodeStateToLetter(d.state));
+      .text(d => getNodeDisplayText(d.state, d.id, config.debug));
 
   const mergedNodes = nodeEnter.merge(node);
   node.exit().remove();
 
   simulation.nodes(nodes).on("tick", () => {
       mergedNodes.select("circle")
+          .attr("r", d => config.debug ? 20 : 12.5)
           .attr("cx", d => d.x!)
           .attr("cy", d => d.y!)
           .attr("fill", d => getVertexRenderColor(d.state));
@@ -264,7 +290,7 @@ function update() {
           .attr("x", d => d.x!)
           .attr("y", d => d.y!)
           .attr("fill", d => getVertexRenderTextColor(d.state))
-          .text(d => nodeStateToLetter(d.state));
+          .text(d => getNodeDisplayText(d.state, d.id, config.debug));
       link
           .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
           .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
@@ -330,7 +356,7 @@ function updateDebugInfo() {
         }
 
         if (nodeDetailsElement) {
-            const nodeDetails = gumGraph.getNodes().slice(0, 5).map(node =>
+            const nodeDetails = gumGraph.getNodes().map(node =>
                 `ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}`
             ).join('\n');
             nodeDetailsElement.innerHTML = `<pre>${nodeDetails}</pre>`;
@@ -338,7 +364,8 @@ function updateDebugInfo() {
 
         if (edgeDetailsElement) {
             const edgeDetails = gumGraph.getEdges().map(edge =>
-                `Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
+                `Edge (${NodeState[edge.source.state]}/${edge.source.id}, ${NodeState[edge.target.state]}/${edge.target.id})`
+                //`Edge from Node ${edge.source.id} (State: ${NodeState[edge.source.state]}) to Node ${edge.target.id} (State: ${NodeState[edge.target.state]})`
             ).join('\n');
             edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
         }
@@ -496,11 +523,8 @@ const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectEle
 const state = (document.getElementById('connect-nearest-state') as HTMLSelectElement).value as keyof typeof NodeState;
 const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
 if (node) {
-    const nearestNode = gumGraph.getNodes().find(n => n.state === NodeState[state] && n.id !== node.id);
-    if (nearestNode && !gumGraph.areNodesConnected(node, nearestNode)) {
-    gumGraph.addEdge(node, nearestNode);
-    update();
-    }
+    gumMachine.tryToConnectWithNearest(node, NodeState[state])    
+    update();    
 }
 });
 
