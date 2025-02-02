@@ -35,6 +35,10 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
     .scaleExtent([0.01, 10])
     .on("zoom", (event) => {
         graphGroup.attr("transform", event.transform);
+
+         // Adjust the stroke-width of edges based on the zoom level
+         graphGroup.selectAll<SVGLineElement, Link>(".link")
+         .attr("stroke-width", 2 / event.transform.k);
     });
 
 //(zoomOverlay as any).call(zoomBehavior as any);
@@ -74,7 +78,7 @@ pauseResumeButton.style.backgroundColor = 'lightgreen'; // Set button color to l
  */
 async function loadGenesLibrary() {
     try {
-        const response = await fetch('data/demo_2010_dict_genes.json');
+        const response = await fetch(config.debug ? 'data/debug.json' : 'data/demo_2010_dict_genes.json');
         const data = await response.json();
         const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
 
@@ -96,7 +100,6 @@ async function loadGenesLibrary() {
         console.error("Error loading genes library:", error);
     }
 }
-
 
 // Function to reset the zoom level
 // Function to reset the zoom level

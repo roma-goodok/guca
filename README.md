@@ -1,13 +1,10 @@
-# VOGUE: Visualization of Ontogeny in Graph Unfolding Evolution  
+# Graph Unfolding Cellular Automata (GUCA) Interactive Demonstration Project
   
-## Project Vision  
-
-[VOGUE: Interactive Demonstration](https://roma-goodok.github.io/guca-vogue)  
- 
+[GUCA Interactive Demonstration](https://roma-goodok.github.io/guca)  
 
 ## Main Idea
 
-VOGUE is web visualization of graph unfolding cellular automata (GUCA). The "gene" of the graph is a program of primitive operations (add node, connect nodes, change node status by conditions), created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata. This project demonstrates genetic programming over graphs and artificial life.  
+The web visualization of graph unfolding cellular automata (GUCA) showcases a "gene" of the graph, which is a program of primitive operations (add node, connect nodes, change node status by conditions), created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata. This project demonstrates genetic programming over graphs and artificial life, particularly morphogenesis.
   
 ## Requirements  
   
@@ -26,7 +23,7 @@ VOGUE is web visualization of graph unfolding cellular automata (GUCA). The "gen
 - **Backend**: Go with a web framework (e.g., Gin, Revel, or Echo)  
   - Motivation: Go is a performant and efficient programming language with excellent concurrency handling. It is suitable for building a fast and responsive server-side application to support the frontend's interactive requirements.  
   
-By using JavaScript/TypeScript with Three.js for the frontend and Go for the backend, VOGUE aims to create a visually stunning, high-performance, and interactive graph visualization application that meets the project's vision and requirements.  
+By using JavaScript/TypeScript with Three.js for the frontend and Go for the backend, The project aims to create a visually stunning, high-performance, and interactive graph visualization application that meets the project's vision and requirements.  
 
 
 ## Links
