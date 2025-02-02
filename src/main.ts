@@ -7,7 +7,7 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: true, // Set this to true for debugging and false for production
+    debug: false, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
@@ -35,6 +35,10 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
     .scaleExtent([0.01, 10])
     .on("zoom", (event) => {
         graphGroup.attr("transform", event.transform);
+
+         // Adjust the stroke-width of edges based on the zoom level
+         graphGroup.selectAll<SVGLineElement, Link>(".link")
+         .attr("stroke-width", 2 / event.transform.k);
     });
 
 //(zoomOverlay as any).call(zoomBehavior as any);

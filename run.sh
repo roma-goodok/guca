@@ -1,2 +1,2 @@
-webpack
-http-server -c-1  
+webpack --config webpack.config.js
+http-server -c-1

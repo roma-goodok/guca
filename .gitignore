@@ -12,6 +12,7 @@ code2prompt/output.txt
 
 # Exclude jest.config.js from being ignored
 !jest.config.js
+!webpack.config.js
 
 # Logs  
 logs  
