@@ -7,7 +7,7 @@ import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNo
 
 // Add a global configuration object
 const config = {
-    debug: false, // Set this to true for debugging and false for production
+    debug: true, // Set this to true for debugging and false for production
   };
 
 // Set the dimensions for the SVG container
@@ -74,7 +74,7 @@ pauseResumeButton.style.backgroundColor = 'lightgreen'; // Set button color to l
  */
 async function loadGenesLibrary() {
     try {
-        const response = await fetch('data/demo_2010_dict_genes.json');
+        const response = await fetch(config.debug ? 'data/debug.json' : 'data/demo_2010_dict_genes.json');
         const data = await response.json();
         const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
 
@@ -96,7 +96,6 @@ async function loadGenesLibrary() {
         console.error("Error loading genes library:", error);
     }
 }
-
 
 // Function to reset the zoom level
 // Function to reset the zoom level
