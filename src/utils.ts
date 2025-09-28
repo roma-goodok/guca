@@ -27,24 +27,19 @@ export interface Link {
  */
 export function mapOperationKind(kind: string): OperationKindEnum {
     switch (kind) {
-        case "TurnToState":
-            return OperationKindEnum.TurnToState;
-        case "TryToConnectWithNearest":
-            return OperationKindEnum.TryToConnectWithNearest;
-        case "GiveBirthConnected":
-            return OperationKindEnum.GiveBirthConnected;
-        case "DisconectFrom":
-            return OperationKindEnum.DisconectFrom;
-        case "Die":
-            return OperationKindEnum.Die;
-        case "TryToConnectWith":
-            return OperationKindEnum.TryToConnectWith;
-        case "GiveBirth":
-            return OperationKindEnum.GiveBirth;
-        default:
-            throw new Error(`Unknown operation kind: ${kind}`);
+      case "TurnToState": return OperationKindEnum.TurnToState;
+      case "TryToConnectWithNearest": return OperationKindEnum.TryToConnectWithNearest;
+      case "GiveBirthConnected": return OperationKindEnum.GiveBirthConnected;
+      case "DisconnectFrom":
+      case "DisconectFrom":      // legacy
+        return OperationKindEnum.DisconectFrom;
+      case "Die": return OperationKindEnum.Die;
+      case "TryToConnectWith": return OperationKindEnum.TryToConnectWith;
+      case "GiveBirth": return OperationKindEnum.GiveBirth;
+      default: throw new Error(`Unknown operation kind: ${kind}`);
     }
-}
+  }
+  
 
 /**
  * Gets the color used to render a vertex based on its state.
@@ -105,9 +100,13 @@ export function getVertexRenderTextColor(state: NodeState): string {
  * @param state - The string representation of the node state.
  * @returns The corresponding NodeState enum value.
  */
+
 export function mapNodeState(state: string): NodeState {
+    if (state === 'any') return NodeState.Ignored;
+    if (state === 'Unknown') return NodeState.Unknown;
     return NodeState[state as keyof typeof NodeState];
 }
+  
 
 export function getNodeDisplayText(state: NodeState, id: number, debug: boolean): string {
     let letter = '';

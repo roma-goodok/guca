@@ -1,9 +1,25 @@
-// main.ts
 import * as d3 from 'd3';
 import { GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState, RuleItem, OperationCondition, Operation, OperationKindEnum } from './gum';
 import { mapOperationKind, getVertexRenderColor, getVertexRenderTextColor, mapNodeState, getNodeDisplayText, mapOperationKindToString, mapGUMNodeToNode, convertToShortForm, Node, Link } from './utils';
+import yaml from 'js-yaml';
 
-// src/main.ts
+
+import { MachineCfg, TranscriptionWay, CountCompare } from './gum';
+
+const DEFAULT_MACHINE_CFG: MachineCfg = {
+  start_state: NodeState.A,
+  transcription: 'resettable' as TranscriptionWay,
+  count_compare: 'range' as CountCompare,
+  max_vertices: 0,    // 0 = unlimited
+  max_steps: 120,
+  rng_seed: 123,
+  nearest_search: {
+    max_depth: 2,
+    tie_breaker: 'stable',
+    connect_all: false,
+  },
+};
+
 
 // Add a global configuration object
 const config = {
@@ -59,7 +75,9 @@ let links: Link[] = [];
 
 // Initialize GUM graph and machine
 const gumGraph = new GUMGraph();
-const gumMachine = new GraphUnfoldingMachine(gumGraph);
+let gumMachine = new GraphUnfoldingMachine(gumGraph, DEFAULT_MACHINE_CFG);
+
+
 
 // Add an initial node to the GUM graph
 const initialNode = new GUMNode(1, NodeState.A);
@@ -73,35 +91,118 @@ const pauseResumeButton = document.getElementById('pause-resume-button') as HTML
 pauseResumeButton.textContent = 'Start'; // Change initial text to 'Start'
 pauseResumeButton.style.backgroundColor = 'lightgreen'; // Set button color to light green
 
-/**
- * Load the genes library from a JSON file and populate the gene select dropdown.
- */
-async function loadGenesLibrary() {
-    try {
-        const response = await fetch(config.debug ? 'data/debug.json' : 'data/demo_2010_dict_genes.json');
-        const data = await response.json();
-        const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
 
-        for (const geneName in data.genes) {
-            const option = document.createElement('option');
-            option.value = geneName;
-            option.text = geneName;
-            geneSelect.add(option);
-        }
+// Hardcode a small catalog or generate it server-side
+const YAML_CATALOG = [
+  { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
+  { name: 'Dumbbell and Hairy circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },
+  { name: 'fractal7_genom', path: 'data/genoms/fractal7_genom.yaml' },
+  { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml' },
+  { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml' },
+];
 
-        loadGene(data.genes[geneSelect.value]);
-        geneSelect.addEventListener('change', (event) => {
-            const selectedGene = (event.target as HTMLSelectElement).value;
-            loadGene(data.genes[selectedGene]);
-        });
-
-        updateDebugInfo();
-    } catch (error) {
-        console.error("Error loading genes library:", error);
-    }
+async function fetchYaml(path: string): Promise<any> {
+  const txt = await (await fetch(path)).text();
+  return yaml.load(txt);
 }
 
-// Function to reset the zoom level
+async function loadGenesLibrary() {
+  const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
+  geneSelect.innerHTML = '';
+  YAML_CATALOG.forEach(({name, path}) => {
+    const opt = document.createElement('option');
+    opt.value = path; opt.text = name; geneSelect.add(opt);
+  });
+
+  // load initial
+  await loadGenomFromYaml(geneSelect.value);
+
+  geneSelect.addEventListener('change', async (ev) => {
+    const path = (ev.target as HTMLSelectElement).value;
+    await loadGenomFromYaml(path);
+  });
+
+  updateDebugInfo();
+}
+
+function toNodeState(s: any): NodeState {
+  // supports numbers or strings
+  if (typeof s === 'number') return s as NodeState;
+  return mapNodeState(String(s));
+}
+
+async function loadGenomFromYaml(path: string) {
+  const cfg = await fetchYaml(path);
+
+  // Build MachineCfg
+  const mc: MachineCfg = {
+    start_state: toNodeState(cfg?.machine?.start_state ?? 'A'),
+    transcription: (cfg?.machine?.transcription ?? 'resettable') as TranscriptionWay,
+    count_compare: (cfg?.machine?.count_compare ?? 'range') as CountCompare,
+    max_vertices: Number(cfg?.machine?.max_vertices ?? 2000),
+    max_steps: Number(cfg?.machine?.max_steps ?? 120),
+    rng_seed: cfg?.machine?.rng_seed,
+    nearest_search: {
+      max_depth: Number(cfg?.machine?.nearest_search?.max_depth ?? 2),
+      tie_breaker: (cfg?.machine?.nearest_search?.tie_breaker ?? 'stable'),
+      connect_all: Boolean(cfg?.machine?.nearest_search?.connect_all ?? false),
+    }
+  };
+
+  // Reset graph and machine with machine config
+  nodes = [{ id: 1, x: width / 2, y: height / 2, state: mc.start_state }];
+  links = [];
+  gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
+  gumGraph.removeMarkedNodes();
+
+  // NEW machine with config
+  // (we keep one instance; you can also recreate GraphUnfoldingMachine)
+  // For simplicity, recreate:
+  // @ts-ignore reassign
+  window['gumMachine'] = null;
+
+  // Recreate engine
+  (gumMachine as any) = new (GraphUnfoldingMachine as any)(gumGraph, mc);
+
+  // Seed graph per init_graph
+  if (cfg?.init_graph?.nodes && Array.isArray(cfg.init_graph.nodes) && cfg.init_graph.nodes.length > 0) {
+    // clear & add listed nodes
+    gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
+    gumGraph.removeMarkedNodes();
+    for (let i=0; i<cfg.init_graph.nodes.length; i++) {
+      const st = toNodeState(cfg.init_graph.nodes[i]?.state ?? mc.start_state);
+      gumGraph.addNode(new GUMNode(i+1, st));
+    }
+  } else {
+    // single start node already present
+    gumGraph.addNode(new GUMNode(1, mc.start_state));
+  }
+
+  // Rules
+  gumMachine.clearRuleTable();
+  for (const r of (cfg?.rules ?? [])) {
+    const c = r?.condition ?? {};
+    const o = r?.op ?? r?.operation ?? {};
+    const cond = new OperationCondition(
+      toNodeState(c.current),
+      mapNodeState(String(c.prior ?? 'any')),
+      Number(c.conn_ge ?? c.allConnectionsCount_GE ?? -1),
+      Number(c.conn_le ?? c.allConnectionsCount_LE ?? -1),
+      Number(c.parents_ge ?? c.parentsCount_GE ?? -1),
+      Number(c.parents_le ?? c.parentsCount_LE ?? -1),
+    );
+    const op = new Operation(mapOperationKind(String(o.kind)), toNodeState(o.operand));
+    gumMachine.addRuleItem(new RuleItem(cond, op));
+  }
+
+  resetGraph();
+  gumMachine.resetIterations();
+  pauseResumeButton.textContent = 'Start';
+  pauseResumeButton.style.backgroundColor = 'lightgreen';
+  resetZoom();
+}
+
+
 // Function to reset the zoom level
 function resetZoom() {
     svg.call(
@@ -110,63 +211,7 @@ function resetZoom() {
     );
   }
 
-/**
- * Load a specific gene into the Graph Unfolding Machine.
- * @param gene - The gene data to load.
- */
-// src/main.ts
 
-// Function to load a specific gene into the Graph Unfolding Machine
-function loadGene(gene: any) {
-    gumMachine.clearRuleTable();
-    gene.forEach((item: any) => {
-      const condition = new OperationCondition(
-        mapNodeState(item.condition.currentState),
-        mapNodeState(item.condition.priorState),
-        item.condition.allConnectionsCount_GE,
-        item.condition.allConnectionsCount_LE,
-        item.condition.parentsCount_GE,
-        item.condition.parentsCount_LE
-      );
-      const operation = new Operation(
-        mapOperationKind(item.operation.kind),
-        mapNodeState(item.operation.operandNodeState)
-      );
-      gumMachine.addRuleItem(new RuleItem(condition, operation));
-    });
-    resetGraph();
-
-    
-    // const nodeA = gumGraph.getNodes().find(node => node.id === 1);
-
-    // if (nodeA) {
-
-    //     const newNode2 = new GUMNode(nodes.length + 1, NodeState["C"]);
-    //     gumGraph.addNode(newNode2);
-    //     nodes.push({ id: newNode2.id, state: newNode2.state });
-
-    //     const newNode3 = new GUMNode(nodes.length + 1, NodeState["B"]);
-    //     gumGraph.addNode(newNode3);
-    //     nodes.push({ id: newNode3.id, state: newNode3.state });
-
-    //     const newNode4 = new GUMNode(nodes.length + 1, NodeState["B"]);
-    //     gumGraph.addNode(newNode4);
-    //     nodes.push({ id: newNode4.id, state: newNode4.state });
-
-    //     gumGraph.addEdge(nodeA, newNode2);
-    //     gumGraph.addEdge(newNode2, newNode4);
-    //     gumGraph.addEdge(newNode3, newNode4);
-    //     update();
-    // }
-
-
-    gumMachine.resetIterations();
-    // Reset the pause/resume button text to 'Start'
-    pauseResumeButton.textContent = 'Start';
-    pauseResumeButton.style.backgroundColor = 'lightgreen';
-    // Reset the zoom level
-    resetZoom();
-  }
 /**
  * Update the graph visualization with the current nodes and links.
  */
@@ -384,8 +429,20 @@ function unfoldGraph() {
         return;
     }
 
+    // Stop when max_steps reached
+    if (gumMachine.reachedMaxSteps()) {
+        clearInterval(simulationInterval);
+        isSimulationRunning = false;
+        pauseResumeButton.textContent = 'Start';
+        pauseResumeButton.style.backgroundColor = 'lightgreen';
+        setControlsEnabled(true);
+        updateDebugInfo();
+        return;
+    }
+
+
     simulation.tick();
-    gumMachine.run();
+    gumMachine.runOneStep();    
     simulation.tick();
     update()
     simulation.tick();

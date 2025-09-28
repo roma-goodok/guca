@@ -3,7 +3,7 @@ machine:
   transcription: resettable
   count_compare: range
   max_vertices: 2000
-  max_steps: 121
+  max_steps: 50
 
   nearest_search:
     max_depth: 5          # int >= 1 (default: 2)
