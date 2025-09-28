@@ -1,0 +1,156 @@
+machine:
+  start_state: A
+  transcription: resettable
+  count_compare: range
+  max_vertices: 2000
+  max_steps: 121
+
+  nearest_search:
+    max_depth: 5          # int >= 1 (default: 2)
+    tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
+    connect_all: false    # false = choose 1; true = connect to all at minimal distance
+  rng_seed: 42            # optional; if missing, engine will pick a default
+
+init_graph:
+  nodes:
+    - {state: A }
+    
+rules:
+- condition:
+    current: M
+    prior: M
+    conn_ge: 3
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: -1
+    conn_le: 2
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: M
+- condition:
+    current: M
+    prior: M
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 1
+    parents_le: 15
+  op:
+    kind: GiveBirthConnected
+    operand: N
+- condition:
+    current: A
+    prior: A
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: E
+- condition:
+    current: E
+    prior: any
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: N
+    prior: any
+    conn_ge: -1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TryToConnectWithNearest
+    operand: M
+- condition:
+    current: N
+    prior: N
+    conn_ge: 2
+    conn_le: 2
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: G
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 0
+    parents_ge: -1
+    parents_le: 0
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: Unknown
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: 2
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: B
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: A
+    prior: A
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: C
+    prior: any
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: G
+    prior: G
+    conn_ge: -1
+    conn_le: 5
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: H
+expected:
+  steps: 120
+  nodes: 7
+  edges: 6
+  states_count:
+    A: 1
+    M: 3
+    N: 3

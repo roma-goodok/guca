@@ -1,0 +1,1717 @@
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 100
+  max_steps: 50
+  nearest_search:
+    max_depth: 5
+    tie_breaker: stable
+    connect_all: true
+init_graph:
+  nodes:
+  - state: A
+rules:
+- condition:
+    current: A
+    prior: F
+    conn_ge: 4
+    conn_le: 4
+    parents_ge: 4
+    parents_le: 0
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: F
+    conn_ge: 1
+    conn_le: 5
+    parents_ge: 5
+    parents_le: 11
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: F
+    conn_ge: 7
+    conn_le: 14
+    parents_ge: 2
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: F
+    prior: C
+    conn_ge: 2
+    conn_le: 10
+    parents_ge: 12
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: C
+    prior: D
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: 1
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: E
+    prior: F
+    conn_ge: 8
+    conn_le: 13
+    parents_ge: 7
+    parents_le: 8
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 3
+    parents_ge: 1
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 8
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: F
+    prior: D
+    conn_ge: 0
+    conn_le: 12
+    parents_ge: 2
+    parents_le: 5
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: A
+    prior: G
+    conn_ge: 0
+    conn_le: 6
+    parents_ge: 5
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: G
+    prior: C
+    conn_ge: 1
+    conn_le: 13
+    parents_ge: 1
+    parents_le: 1
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: G
+    prior: G
+    conn_ge: 0
+    conn_le: 2
+    parents_ge: 0
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: E
+    conn_ge: 1
+    conn_le: 4
+    parents_ge: 3
+    parents_le: 3
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: B
+    prior: E
+    conn_ge: 6
+    conn_le: 12
+    parents_ge: 2
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: H
+    prior: A
+    conn_ge: 0
+    conn_le: 3
+    parents_ge: 5
+    parents_le: 6
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: G
+    prior: E
+    conn_ge: 3
+    conn_le: 6
+    parents_ge: 3
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: B
+    conn_ge: 10
+    conn_le: 12
+    parents_ge: 3
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: D
+    conn_ge: 3
+    conn_le: 13
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: E
+    prior: A
+    conn_ge: 1
+    conn_le: 9
+    parents_ge: 9
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: G
+    conn_ge: 7
+    conn_le: 9
+    parents_ge: 3
+    parents_le: 5
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: F
+    conn_ge: 12
+    conn_le: 14
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 7
+    conn_le: 12
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: H
+    prior: F
+    conn_ge: 7
+    conn_le: 7
+    parents_ge: 4
+    parents_le: 6
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: C
+    conn_ge: 10
+    conn_le: 14
+    parents_ge: 7
+    parents_le: 9
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: H
+    prior: A
+    conn_ge: 4
+    conn_le: 9
+    parents_ge: 1
+    parents_le: 10
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: C
+    prior: H
+    conn_ge: 0
+    conn_le: 5
+    parents_ge: 7
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: E
+    prior: D
+    conn_ge: 9
+    conn_le: 12
+    parents_ge: 8
+    parents_le: 11
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: G
+    prior: A
+    conn_ge: 0
+    conn_le: 4
+    parents_ge: 9
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 7
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: F
+    conn_ge: 4
+    conn_le: 10
+    parents_ge: 2
+    parents_le: 4
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: F
+    conn_ge: 12
+    conn_le: 14
+    parents_ge: 12
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: A
+    prior: C
+    conn_ge: 8
+    conn_le: 12
+    parents_ge: 13
+    parents_le: 0
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: G
+    conn_ge: 14
+    conn_le: 0
+    parents_ge: 4
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: F
+    conn_ge: 0
+    conn_le: 0
+    parents_ge: 0
+    parents_le: 2
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: G
+    conn_ge: 0
+    conn_le: 9
+    parents_ge: 5
+    parents_le: 10
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: G
+    conn_ge: 10
+    conn_le: 12
+    parents_ge: 0
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: F
+    prior: A
+    conn_ge: 11
+    conn_le: 12
+    parents_ge: 3
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: C
+    prior: H
+    conn_ge: 8
+    conn_le: 9
+    parents_ge: 9
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: H
+    prior: D
+    conn_ge: 7
+    conn_le: 13
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 3
+    parents_ge: 1
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 10
+    conn_le: 14
+    parents_ge: 2
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: E
+    prior: B
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 12
+    parents_le: 13
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: G
+    conn_ge: 0
+    conn_le: 6
+    parents_ge: 0
+    parents_le: 9
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: G
+    prior: B
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 6
+    parents_le: 8
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: A
+    conn_ge: 9
+    conn_le: 10
+    parents_ge: 3
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: F
+    conn_ge: 6
+    conn_le: 10
+    parents_ge: 7
+    parents_le: 11
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: D
+    conn_ge: 4
+    conn_le: 0
+    parents_ge: 10
+    parents_le: 13
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: C
+    prior: E
+    conn_ge: 7
+    conn_le: 14
+    parents_ge: 0
+    parents_le: 12
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 3
+    parents_ge: 1
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 8
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: D
+    prior: E
+    conn_ge: 8
+    conn_le: 9
+    parents_ge: 7
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: D
+    prior: E
+    conn_ge: 8
+    conn_le: 8
+    parents_ge: 7
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: B
+    prior: D
+    conn_ge: 5
+    conn_le: 7
+    parents_ge: 0
+    parents_le: 7
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 2
+    conn_le: 11
+    parents_ge: 3
+    parents_le: 9
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: C
+    prior: A
+    conn_ge: 6
+    conn_le: 8
+    parents_ge: 0
+    parents_le: 10
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: A
+    conn_ge: 3
+    conn_le: 4
+    parents_ge: 1
+    parents_le: 12
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: G
+    prior: C
+    conn_ge: 9
+    conn_le: 10
+    parents_ge: 6
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: H
+    prior: C
+    conn_ge: 12
+    conn_le: 13
+    parents_ge: 5
+    parents_le: 6
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: H
+    prior: H
+    conn_ge: 11
+    conn_le: 13
+    parents_ge: 9
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: F
+    prior: C
+    conn_ge: 8
+    conn_le: 11
+    parents_ge: 13
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: B
+    prior: D
+    conn_ge: 1
+    conn_le: 6
+    parents_ge: 2
+    parents_le: 5
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: H
+    conn_ge: 10
+    conn_le: 11
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 0
+    conn_le: 12
+    parents_ge: 8
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: G
+    prior: H
+    conn_ge: 3
+    conn_le: 5
+    parents_ge: 2
+    parents_le: 12
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: C
+    prior: A
+    conn_ge: 9
+    conn_le: 10
+    parents_ge: 3
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: A
+    conn_ge: 2
+    conn_le: 3
+    parents_ge: 3
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: B
+    prior: E
+    conn_ge: 7
+    conn_le: 14
+    parents_ge: 13
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: C
+    prior: E
+    conn_ge: 7
+    conn_le: 14
+    parents_ge: 0
+    parents_le: 12
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: A
+    conn_ge: 10
+    conn_le: 14
+    parents_ge: 8
+    parents_le: 10
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 10
+    conn_le: 14
+    parents_ge: 2
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: H
+    prior: A
+    conn_ge: 1
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 5
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: D
+    prior: B
+    conn_ge: 1
+    conn_le: 7
+    parents_ge: 0
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: D
+    conn_ge: 1
+    conn_le: 12
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 10
+    conn_le: 11
+    parents_ge: 1
+    parents_le: 14
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: A
+    prior: F
+    conn_ge: 4
+    conn_le: 4
+    parents_ge: 9
+    parents_le: 13
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: G
+    prior: A
+    conn_ge: 1
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: G
+    conn_ge: 1
+    conn_le: 10
+    parents_ge: 5
+    parents_le: 11
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 7
+    conn_le: 12
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: H
+    prior: F
+    conn_ge: 7
+    conn_le: 7
+    parents_ge: 4
+    parents_le: 6
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: A
+    prior: C
+    conn_ge: 0
+    conn_le: 0
+    parents_ge: 0
+    parents_le: 1
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: G
+    conn_ge: 4
+    conn_le: 5
+    parents_ge: 2
+    parents_le: 8
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: H
+    conn_ge: 2
+    conn_le: 11
+    parents_ge: 3
+    parents_le: 7
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: G
+    prior: E
+    conn_ge: 8
+    conn_le: 14
+    parents_ge: 4
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 4
+    conn_le: 8
+    parents_ge: 8
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    prior: A
+    conn_ge: 0
+    conn_le: 4
+    parents_ge: 3
+    parents_le: 13
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: G
+    prior: A
+    conn_ge: 1
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: C
+    prior: A
+    conn_ge: 12
+    conn_le: 14
+    parents_ge: 6
+    parents_le: 11
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: E
+    conn_ge: 6
+    conn_le: 13
+    parents_ge: 5
+    parents_le: 7
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: F
+    prior: E
+    conn_ge: 5
+    conn_le: 8
+    parents_ge: 8
+    parents_le: 11
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: H
+    conn_ge: 7
+    conn_le: 0
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: TurnToState
+    operand: E
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: E
+    prior: G
+    conn_ge: 3
+    conn_le: 3
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: F
+    conn_ge: 7
+    conn_le: 7
+    parents_ge: 4
+    parents_le: 6
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: C
+    conn_ge: 10
+    conn_le: 14
+    parents_ge: 7
+    parents_le: 9
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: A
+    conn_ge: 4
+    conn_le: 9
+    parents_ge: 1
+    parents_le: 10
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 1
+    conn_le: 6
+    parents_ge: 1
+    parents_le: 10
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: D
+    conn_ge: 2
+    conn_le: 4
+    parents_ge: 8
+    parents_le: 11
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    prior: B
+    conn_ge: 4
+    conn_le: 11
+    parents_ge: 9
+    parents_le: 12
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 7
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: C
+    prior: G
+    conn_ge: 9
+    conn_le: 13
+    parents_ge: 4
+    parents_le: 6
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: C
+    prior: F
+    conn_ge: 12
+    conn_le: 14
+    parents_ge: 12
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: D
+    prior: A
+    conn_ge: 0
+    conn_le: 0
+    parents_ge: 1
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: H
+    prior: C
+    conn_ge: 8
+    conn_le: 12
+    parents_ge: 13
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: D
+    prior: E
+    conn_ge: 8
+    conn_le: 9
+    parents_ge: 7
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 0
+    parents_le: 13
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: G
+    prior: E
+    conn_ge: 10
+    conn_le: 13
+    parents_ge: 0
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: A
+    prior: D
+    conn_ge: 0
+    conn_le: 11
+    parents_ge: 0
+    parents_le: 11
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: H
+    conn_ge: 11
+    conn_le: 0
+    parents_ge: 2
+    parents_le: 4
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: B
+    prior: E
+    conn_ge: 4
+    conn_le: 8
+    parents_ge: 4
+    parents_le: 8
+  op:
+    kind: TurnToState
+    operand: A
+meta:
+  graph_summary:
+    edges: 277
+    nodes: 100
+    states_count:
+      G: 97
+      A: 3
+    edge_list:
+    - - 0
+      - 1
+    - - 0
+      - 2
+    - - 0
+      - 3
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 2
+      - 3
+    - - 2
+      - 5
+    - - 2
+      - 7
+    - - 3
+      - 4
+    - - 3
+      - 5
+    - - 3
+      - 6
+    - - 4
+      - 6
+    - - 4
+      - 8
+    - - 4
+      - 11
+    - - 5
+      - 6
+    - - 5
+      - 7
+    - - 5
+      - 9
+    - - 6
+      - 8
+    - - 6
+      - 9
+    - - 6
+      - 10
+    - - 7
+      - 9
+    - - 7
+      - 12
+    - - 7
+      - 15
+    - - 8
+      - 10
+    - - 8
+      - 11
+    - - 8
+      - 13
+    - - 9
+      - 10
+    - - 9
+      - 12
+    - - 9
+      - 14
+    - - 10
+      - 13
+    - - 10
+      - 14
+    - - 10
+      - 16
+    - - 11
+      - 13
+    - - 11
+      - 17
+    - - 11
+      - 21
+    - - 12
+      - 14
+    - - 12
+      - 15
+    - - 12
+      - 18
+    - - 13
+      - 16
+    - - 13
+      - 17
+    - - 13
+      - 19
+    - - 14
+      - 16
+    - - 14
+      - 18
+    - - 14
+      - 20
+    - - 15
+      - 18
+    - - 15
+      - 22
+    - - 15
+      - 26
+    - - 16
+      - 19
+    - - 16
+      - 20
+    - - 16
+      - 23
+    - - 17
+      - 19
+    - - 17
+      - 21
+    - - 17
+      - 24
+    - - 18
+      - 20
+    - - 18
+      - 22
+    - - 18
+      - 25
+    - - 19
+      - 23
+    - - 19
+      - 24
+    - - 19
+      - 27
+    - - 20
+      - 23
+    - - 20
+      - 25
+    - - 20
+      - 28
+    - - 21
+      - 24
+    - - 21
+      - 29
+    - - 21
+      - 34
+    - - 22
+      - 25
+    - - 22
+      - 26
+    - - 22
+      - 30
+    - - 23
+      - 27
+    - - 23
+      - 28
+    - - 23
+      - 31
+    - - 24
+      - 27
+    - - 24
+      - 29
+    - - 24
+      - 32
+    - - 25
+      - 28
+    - - 25
+      - 30
+    - - 25
+      - 33
+    - - 26
+      - 30
+    - - 26
+      - 35
+    - - 26
+      - 41
+    - - 27
+      - 31
+    - - 27
+      - 32
+    - - 27
+      - 36
+    - - 28
+      - 31
+    - - 28
+      - 33
+    - - 28
+      - 37
+    - - 29
+      - 32
+    - - 29
+      - 34
+    - - 29
+      - 38
+    - - 30
+      - 33
+    - - 30
+      - 35
+    - - 30
+      - 39
+    - - 31
+      - 36
+    - - 31
+      - 37
+    - - 31
+      - 40
+    - - 32
+      - 36
+    - - 32
+      - 38
+    - - 32
+      - 42
+    - - 33
+      - 37
+    - - 33
+      - 39
+    - - 33
+      - 43
+    - - 34
+      - 38
+    - - 34
+      - 44
+    - - 34
+      - 51
+    - - 35
+      - 39
+    - - 35
+      - 41
+    - - 35
+      - 45
+    - - 36
+      - 40
+    - - 36
+      - 42
+    - - 36
+      - 46
+    - - 37
+      - 40
+    - - 37
+      - 43
+    - - 37
+      - 47
+    - - 38
+      - 42
+    - - 38
+      - 44
+    - - 38
+      - 48
+    - - 39
+      - 43
+    - - 39
+      - 45
+    - - 39
+      - 49
+    - - 40
+      - 46
+    - - 40
+      - 47
+    - - 40
+      - 50
+    - - 41
+      - 45
+    - - 41
+      - 52
+    - - 41
+      - 59
+    - - 42
+      - 46
+    - - 42
+      - 48
+    - - 42
+      - 53
+    - - 43
+      - 47
+    - - 43
+      - 49
+    - - 43
+      - 54
+    - - 44
+      - 48
+    - - 44
+      - 51
+    - - 44
+      - 55
+    - - 45
+      - 49
+    - - 45
+      - 52
+    - - 45
+      - 56
+    - - 46
+      - 50
+    - - 46
+      - 53
+    - - 46
+      - 57
+    - - 47
+      - 50
+    - - 47
+      - 54
+    - - 47
+      - 58
+    - - 48
+      - 53
+    - - 48
+      - 55
+    - - 48
+      - 60
+    - - 49
+      - 54
+    - - 49
+      - 56
+    - - 49
+      - 61
+    - - 50
+      - 57
+    - - 50
+      - 58
+    - - 50
+      - 62
+    - - 51
+      - 55
+    - - 51
+      - 63
+    - - 52
+      - 56
+    - - 52
+      - 59
+    - - 52
+      - 64
+    - - 53
+      - 57
+    - - 53
+      - 60
+    - - 53
+      - 65
+    - - 54
+      - 58
+    - - 54
+      - 61
+    - - 54
+      - 66
+    - - 55
+      - 60
+    - - 55
+      - 63
+    - - 55
+      - 67
+    - - 56
+      - 61
+    - - 56
+      - 64
+    - - 56
+      - 68
+    - - 57
+      - 62
+    - - 57
+      - 65
+    - - 57
+      - 69
+    - - 58
+      - 62
+    - - 58
+      - 66
+    - - 58
+      - 70
+    - - 59
+      - 64
+    - - 59
+      - 71
+    - - 60
+      - 65
+    - - 60
+      - 67
+    - - 60
+      - 72
+    - - 61
+      - 66
+    - - 61
+      - 68
+    - - 61
+      - 73
+    - - 62
+      - 69
+    - - 62
+      - 70
+    - - 62
+      - 74
+    - - 63
+      - 67
+    - - 63
+      - 75
+    - - 64
+      - 68
+    - - 64
+      - 71
+    - - 64
+      - 76
+    - - 65
+      - 69
+    - - 65
+      - 72
+    - - 65
+      - 77
+    - - 66
+      - 70
+    - - 66
+      - 73
+    - - 66
+      - 78
+    - - 67
+      - 72
+    - - 67
+      - 75
+    - - 67
+      - 79
+    - - 68
+      - 73
+    - - 68
+      - 76
+    - - 68
+      - 80
+    - - 69
+      - 74
+    - - 69
+      - 77
+    - - 69
+      - 81
+    - - 70
+      - 74
+    - - 70
+      - 78
+    - - 70
+      - 82
+    - - 71
+      - 76
+    - - 71
+      - 83
+    - - 72
+      - 77
+    - - 72
+      - 79
+    - - 72
+      - 84
+    - - 73
+      - 78
+    - - 73
+      - 80
+    - - 73
+      - 85
+    - - 74
+      - 81
+    - - 74
+      - 82
+    - - 74
+      - 86
+    - - 75
+      - 79
+    - - 75
+      - 87
+    - - 76
+      - 80
+    - - 76
+      - 83
+    - - 76
+      - 88
+    - - 77
+      - 81
+    - - 77
+      - 84
+    - - 77
+      - 89
+    - - 78
+      - 82
+    - - 78
+      - 85
+    - - 78
+      - 90
+    - - 79
+      - 84
+    - - 79
+      - 87
+    - - 79
+      - 91
+    - - 80
+      - 85
+    - - 80
+      - 88
+    - - 80
+      - 92
+    - - 81
+      - 86
+    - - 81
+      - 89
+    - - 81
+      - 93
+    - - 82
+      - 86
+    - - 82
+      - 90
+    - - 82
+      - 94
+    - - 83
+      - 88
+    - - 83
+      - 95
+    - - 84
+      - 89
+    - - 84
+      - 91
+    - - 84
+      - 96
+    - - 85
+      - 90
+    - - 85
+      - 92
+    - - 85
+      - 97
+    - - 86
+      - 93
+    - - 86
+      - 94
+    - - 86
+      - 98
+    - - 87
+      - 91
+    - - 87
+      - 92
+    - - 87
+      - 99
+    - - 88
+      - 92
+    - - 88
+      - 95
+    - - 89
+      - 93
+    - - 89
+      - 96
+    - - 90
+      - 94
+    - - 90
+      - 97
+    - - 91
+      - 96
+    - - 91
+      - 99
+    - - 92
+      - 97
+    - - 92
+      - 99
+    - - 93
+      - 96
+    - - 93
+      - 98
+    - - 94
+      - 97
+    - - 94
+      - 98
+    - - 96
+      - 98
+    - - 96
+      - 99
+    - - 97
+      - 98
+    - - 97
+      - 99
+    - - 98
+      - 99
+  activity_scheme: 6xxx1x1x9x6x11x2x6xx1x2x8x12x1x7x5x13x4
