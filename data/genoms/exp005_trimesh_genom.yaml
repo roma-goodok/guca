@@ -3,7 +3,7 @@ machine:
   transcription: continuable
   count_compare: range
   max_vertices: 100
-  max_steps: 50
+  max_steps: -1
   nearest_search:
     max_depth: 5
     tie_breaker: stable

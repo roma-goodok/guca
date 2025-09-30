@@ -22,6 +22,7 @@ export interface MachineCfg {
   max_steps: number;
   rng_seed?: number;
   nearest_search: NearestSearchCfg;
+  maintain_single_component?: boolean;
 }
 
 // ----------------- RNG -----------------
@@ -144,13 +145,21 @@ export class GUMNode {
 
 export class GUMGraph {
   private graph: Graph;
+  private nextId = 1;
 
   constructor() {
     this.graph = new Graph({ directed: false });
   }
 
+  allocateNodeId(): number {
+    // Skip any ids that might exist (e.g., after loading a YAML with explicit ids)
+    while (this.graph.hasNode(this.nextId.toString())) this.nextId++;
+    return this.nextId++;
+  }
+
   addNode(node: GUMNode) {
     this.graph.setNode(node.id.toString(), node);
+    if (node.id >= this.nextId) this.nextId = node.id + 1;  // NEW
   }
 
   addEdge(source: GUMNode, target: GUMNode) {
@@ -190,6 +199,35 @@ export class GUMGraph {
   areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
     return this.graph.hasEdge(node1.id.toString(), node2.id.toString());
   }
+
+  getNodeById(id: number): GUMNode | undefined {
+    return this.graph.node(id.toString()) as GUMNode | undefined;
+  }
+
+  getNeighbors(node: GUMNode): GUMNode[] {
+    const ids = this.graph.neighbors(node.id.toString()) || [];
+    return ids
+      .map(id => this.graph.node(id) as GUMNode)
+      .filter(n => n && !n.markedAsDeleted);
+  }
+
+  getConnectedComponents(): GUMNode[][] {
+    const comps: GUMNode[][] = [];
+    const seen = new Set<number>();
+    for (const n of this.getNodes().filter(n => !n.markedAsDeleted)) {
+      if (seen.has(n.id)) continue;
+      const q = [n]; seen.add(n.id); const comp = [n];
+      while (q.length) {
+        const u = q.shift()!;
+        for (const v of this.getNeighbors(u)) {
+          if (!seen.has(v.id)) { seen.add(v.id); q.push(v); comp.push(v); }
+        }
+      }
+      comps.push(comp);
+    }
+    return comps;
+  }
+
 }
 
 // ----------------- Graph Unfolding Machine -----------------
@@ -208,10 +246,47 @@ export class GraphUnfoldingMachine {
     this.rng = new RNG(cfg?.rng_seed);
 
     if (this.graph.getNodes().length === 0) {
-      const seed = new GUMNode(1, cfg.start_state ?? NodeState.A);
+      const seed = new GUMNode(this.graph.allocateNodeId(), cfg.start_state ?? NodeState.A);
       this.graph.addNode(seed);
     }
+
+
+    if (this.cfg.maintain_single_component === undefined) {
+      (this.cfg as any).maintain_single_component = true;
+    }
   }
+
+  public setMaintainSingleComponent(on: boolean) {
+    (this.cfg as any).maintain_single_component = on;
+  }
+
+  public enforceSingleComponentIfEnabled(): void {
+    if (!this.cfg.maintain_single_component) return;
+    const comps = this.graph.getConnectedComponents();
+    if (comps.length <= 1) return;
+
+    const score = (comp: GUMNode[]) => {
+      return {
+        minParents: Math.min(...comp.map(n => n.parentsCount)),
+        minId: Math.min(...comp.map(n => n.id)),
+      };
+    };
+
+    let keep = 0, best = score(comps[0]);
+    for (let i = 1; i < comps.length; i++) {
+      const s = score(comps[i]);
+      if (s.minParents < best.minParents || (s.minParents === best.minParents && s.minId < best.minId)) {
+        best = s; keep = i;
+      }
+    }
+
+    comps.forEach((comp, i) => {
+      if (i === keep) return;
+      comp.forEach(n => n.markedAsDeleted = true);
+    });
+    this.graph.removeMarkedNodes();
+  }
+
 
   public reachedMaxSteps(): boolean {
     return this.cfg.max_steps >= 0 && this.iterations >= this.cfg.max_steps;
@@ -362,7 +437,8 @@ export class GraphUnfoldingMachine {
   private giveBirthConnected(node: GUMNode, state: NodeState) {
     if (this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices) return;
 
-    const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+    const newId = this.graph.allocateNodeId();
+    const newNode = new GUMNode(newId, state);
     newNode.parentsCount = node.parentsCount + 1;
     newNode.markedNew = true;
     this.graph.addNode(newNode);
@@ -372,7 +448,8 @@ export class GraphUnfoldingMachine {
   private giveBirth(node: GUMNode, state: NodeState) {
     if (this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices) return;
 
-    const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
+    const newId = this.graph.allocateNodeId();
+    const newNode = new GUMNode(newId, state);
     newNode.parentsCount = node.parentsCount + 1;
     newNode.markedNew = true;
     this.graph.addNode(newNode);
@@ -420,6 +497,7 @@ export class GraphUnfoldingMachine {
 
     this.iterations++;
     this.graph.removeMarkedNodes();
+    this.enforceSingleComponentIfEnabled();
     return didAnything;
   }
 

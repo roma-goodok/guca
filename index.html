@@ -72,6 +72,9 @@
     rect {
      /* fill: #502020; */
     }
+    .toggle-group { display: flex; gap: 6px; margin-bottom: 10px; }
+    .toggle-btn { border: 1px solid #999; padding: 6px 10px; background: #fff; border-radius: 4px; cursor: pointer; }
+    .toggle-btn.active { background: #333; color: #fff; }
   </style>
 </head>
 <body>
@@ -88,6 +91,22 @@
     <div id="ui-panel">
       <label for="gene-select">Select Genom (YAML):</label>
       <select id="gene-select"></select>
+      <div class="control-group">
+        <h4>Tools</h4>
+        <div class="toggle-group">
+          <button id="tool-move-button" class="toggle-btn" title="Move / pan / drag nodes">🖐️ Move</button>
+          <button id="tool-scissors-button" class="toggle-btn active" title="Cut edges while dragging">✂️ Scissors</button>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <h4>Graph Constraints</h4>
+        <label>
+          <input type="checkbox" id="maintain-single-component" checked>
+          Maintain a single component
+        </label>
+      </div>
+      
       <div id="debug-info">
         <h4>Debug Information</h4>
         <p id="node-count">Nodes: 0</p>
