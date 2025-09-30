@@ -5,7 +5,7 @@ import {
   MachineCfg, TranscriptionWay, CountCompare
 } from './gum';
 import {
-  mapOperationKind, getVertexRenderColor, getVertexRenderTextColor,
+  mapOperationKind, mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
   Node, Link
 } from './utils';
@@ -30,6 +30,10 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
 
 // Global configuration (debug UI verbosity)
 const config = { debug: false };
+let showAllRules = false;
+let lastLoadedConfig: any = null;
+
+
 
 // ---------------------- SVG / D3 setup ----------------------
 const width = 960;
@@ -205,6 +209,7 @@ if (uploadInput) {
       }
     }
     await applyGenomConfig(cfg, f.name);
+    refreshMaxStepsInput();
     updateDebugInfo();
   });
 }
@@ -219,9 +224,11 @@ function toNodeState(s: any): NodeState {
 async function loadGenomFromYaml(path: string) {
   const cfg = await fetchYaml(path);
   await applyGenomConfig(cfg, /*labelForSelect*/ null);
+  refreshMaxStepsInput();
 }
 
 async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
+  lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {}; // keep a clone for export base  
   // Build machine + graph from config
   (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
 
@@ -517,8 +524,17 @@ function updateDebugInfo() {
   if (ruleTableElement) {
     const changeRuleItems = gumMachine.getRuleItems();
     const shortForm = convertToShortForm(changeRuleItems);
-    ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${shortForm}</pre>`;
+  
+    const lines = shortForm.split('\n');
+    const maxLines = 10;
+    const body = (!showAllRules && lines.length > maxLines)
+      ? lines.slice(0, maxLines).join('\n') + `\n… (${lines.length - maxLines} more hidden)`
+      : shortForm;
+  
+    ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${body}</pre>`;
+    if (toggleRulesBtn) toggleRulesBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
   }
+  
 
   if (config.debug) {
     const nodeCountElement = document.getElementById('node-count');
@@ -542,6 +558,14 @@ function updateDebugInfo() {
     }
   }
 }
+
+const toggleRulesBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
+toggleRulesBtn?.addEventListener('click', () => {
+  showAllRules = !showAllRules;
+  toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';
+  updateDebugInfo();
+});
+
 
 // ---------------------- Unfolding / control wiring ----------------------
 function unfoldGraph() {
@@ -745,10 +769,65 @@ function setControlsEnabled(enabled: boolean) {
   });
 }
 
+const downloadBtn = document.getElementById('download-yaml-button') as HTMLButtonElement | null;
+downloadBtn?.addEventListener('click', () => {
+  const items = gumMachine.getRuleItems();
+  // Rebuild a clean JSON structure
+  const toName = (s:number)=> (typeof s==='number' ? (NodeState as any)[s] ?? s : s);
+  const toRule = (it:any)=>({
+    condition: {
+      current: toName(it.condition.currentState),
+      prior:   toName(it.condition.priorState === undefined ? 'any' : it.condition.priorState),
+      conn_ge: it.condition.allConnectionsCount_GE,
+      conn_le: it.condition.allConnectionsCount_LE,
+      parents_ge: it.condition.parentsCount_GE,
+      parents_le: it.condition.parentsCount_LE,
+    },
+    op: {
+      kind: (it.operation.kind !== undefined) ? mapOperationKindToString(it.operation.kind) : String(it.operation.kind),
+      operand: toName(it.operation.operandNodeState),
+    }
+  });
+
+  // Compose machine block (keep current max_steps)
+  const machineBlock: any = {
+    ...(lastLoadedConfig?.machine ?? {}),
+    max_steps: gumMachine.getMaxSteps(), // ensure current GUI-ed value
+  };
+
+  const out = {
+    machine: machineBlock,
+    init_graph: lastLoadedConfig?.init_graph ?? { nodes: [{ state: toName((machineBlock.start_state ?? NodeState.A)) }] },
+    rules: items.map(toRule),
+  };
+
+  const text = yaml.dump(out, { lineWidth: 120 });
+  const blob = new Blob([text], { type: 'application/x-yaml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'genome_export.yaml';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+});
+
+
+const maxStepsInput = document.getElementById('max-steps-input') as HTMLInputElement | null;
+function refreshMaxStepsInput() {
+  if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
+}
+maxStepsInput?.addEventListener('change', () => {
+  const v = parseInt(maxStepsInput.value, 10);
+  gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
+  // No need to restart; the stop condition will use the new value
+});
+
+
+
 // ---------------------- Boot ----------------------
 loadGenesLibrary().then(() => {
   // Initially disabled until user starts
   setControlsEnabled(false);
+  refreshMaxStepsInput();
 });
 
 // Populate state combos

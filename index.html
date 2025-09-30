@@ -96,6 +96,10 @@
         <input id="gene-upload" type="file"
               accept=".yaml,.yml,.json,application/x-yaml,text/yaml,application/json" />
       </div>
+      <div class="control-group" style="margin-top:8px;">
+        <button id="download-yaml-button" class="toggle-btn">Download current genome (YAML)</button>
+      </div>
+      
       <div class="control-group">
         <h4>Tools</h4>
         <div class="toggle-group">
@@ -120,6 +124,9 @@
         <div id="node-details"></div>
         <div id="edge-details"></div>
         <p id="rule-table">Rule Table: Not loaded</p>
+        <div style="margin-top:4px;">
+          <button id="toggle-rules-btn" class="toggle-btn" style="padding:4px 8px;">Show more</button>
+        </div>
       </div>
       <div class="control-buttons">
         <button id="pause-resume-button">Start</button>
@@ -163,6 +170,11 @@
         <label for="connect-nearest-state">State:</label>
         <select id="connect-nearest-state"></select>
       </div>
+      <div class="control-group" style="margin-top:8px;">
+        <label for="max-steps-input">Max iterations:</label>
+        <input id="max-steps-input" type="number" value="120" min="-1" step="1" style="width:120px;">
+        <small>(-1 = unlimited) <!-- TODO: expose more params next sprint --></small>
+      </div>      
       <div class="control-group">
         <h4>Visualization Options</h4>
         <label for="display-options">Display Options:</label>

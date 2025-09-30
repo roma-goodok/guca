@@ -260,6 +260,10 @@ export class GraphUnfoldingMachine {
     (this.cfg as any).maintain_single_component = on;
   }
 
+  public setMaxSteps(n: number) {
+    (this as any).cfg.max_steps = Number.isFinite(n) ? Math.trunc(n) : this.getMaxSteps();
+  }  
+
   public enforceSingleComponentIfEnabled(): void {
     if (!this.cfg.maintain_single_component) return;
     const comps = this.graph.getConnectedComponents();
