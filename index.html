@@ -91,6 +91,11 @@
     <div id="ui-panel">
       <label for="gene-select">Select Genom (YAML):</label>
       <select id="gene-select"></select>
+      <div style="margin-top:8px;">
+        <label for="gene-upload">Or upload a genome (YAML/JSON):</label>
+        <input id="gene-upload" type="file"
+              accept=".yaml,.yml,.json,application/x-yaml,text/yaml,application/json" />
+      </div>
       <div class="control-group">
         <h4>Tools</h4>
         <div class="toggle-group">
@@ -98,6 +103,8 @@
           <button id="tool-scissors-button" class="toggle-btn active" title="Cut edges while dragging">✂️ Scissors</button>
         </div>
       </div>
+      <!-- BELOW the existing <select id="gene-select"></select> -->
+
       
       <div class="control-group">
         <h4>Graph Constraints</h4>

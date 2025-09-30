@@ -10,6 +10,7 @@ import {
   Node, Link
 } from './utils';
 import yaml from 'js-yaml';
+import { buildMachineFromConfig } from './genomeLoader';
 
 // ---------------------- Machine defaults ----------------------
 const DEFAULT_MACHINE_CFG: MachineCfg = {
@@ -184,6 +185,31 @@ async function loadGenesLibrary() {
   updateDebugInfo();
 }
 
+const uploadInput = document.getElementById('gene-upload') as HTMLInputElement | null;
+if (uploadInput) {
+  uploadInput.addEventListener('change', async () => {
+    const f = uploadInput.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    let cfg: any = null;
+    try {
+      // try YAML first; if it fails, try JSON
+      cfg = yaml.load(text);
+      if (!cfg || typeof cfg !== 'object') throw new Error('Empty YAML');
+    } catch {
+      try {
+        cfg = JSON.parse(text);
+      } catch (e) {
+        alert('Unable to parse file. Please upload a valid YAML or JSON genome.');
+        return;
+      }
+    }
+    await applyGenomConfig(cfg, f.name);
+    updateDebugInfo();
+  });
+}
+
+
 function toNodeState(s: any): NodeState {
   // supports numbers or strings
   if (typeof s === 'number') return s as NodeState;
@@ -192,73 +218,37 @@ function toNodeState(s: any): NodeState {
 
 async function loadGenomFromYaml(path: string) {
   const cfg = await fetchYaml(path);
+  await applyGenomConfig(cfg, /*labelForSelect*/ null);
+}
 
-  // Build MachineCfg from YAML (+ honor GUI Maintain checkbox)
-  const mc: MachineCfg = {
-    start_state: toNodeState(cfg?.machine?.start_state ?? 'A'),
-    transcription: (cfg?.machine?.transcription ?? 'resettable') as TranscriptionWay,
-    count_compare: (cfg?.machine?.count_compare ?? 'range') as CountCompare,
-    max_vertices: Number(cfg?.machine?.max_vertices ?? 2000),
-    max_steps: Number(cfg?.machine?.max_steps ?? 120),
-    rng_seed: cfg?.machine?.rng_seed,
-    nearest_search: {
-      max_depth: Number(cfg?.machine?.nearest_search?.max_depth ?? 2),
-      tie_breaker: (cfg?.machine?.nearest_search?.tie_breaker ?? 'stable'),
-      connect_all: Boolean(cfg?.machine?.nearest_search?.connect_all ?? false),
-    },
-    maintain_single_component: maintainChk?.checked ?? true,
-  };
+async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
+  // Build machine + graph from config
+  (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
 
-  // Reset graph and machine with machine config
-  nodes = [{ id: 1, x: width / 2, y: height / 2, state: mc.start_state }];
-  links = [];
-  gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
-  gumGraph.removeMarkedNodes();
-
-  // Recreate engine with new config
-  // @ts-ignore attach to window for debugging if needed
-  window['gumMachine'] = null;
-  (gumMachine as any) = new (GraphUnfoldingMachine as any)(gumGraph, mc);
-
-  // Seed graph per init_graph
-  if (cfg?.init_graph?.nodes && Array.isArray(cfg.init_graph.nodes) && cfg.init_graph.nodes.length > 0) {
-    gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
-    gumGraph.removeMarkedNodes();
-    for (let i = 0; i < cfg.init_graph.nodes.length; i++) {
-      const st = toNodeState(cfg.init_graph.nodes[i]?.state ?? mc.start_state);
-      gumGraph.addNode(new GUMNode(i + 1, st));
-    }
-  } else {
-    gumGraph.addNode(new GUMNode(1, mc.start_state));
-  }
-
-  // Rules
-  gumMachine.clearRuleTable();
-  for (const r of (cfg?.rules ?? [])) {
-    const c = r?.condition ?? {};
-    const o = r?.op ?? r?.operation ?? {};
-    const cond = new OperationCondition(
-      toNodeState(c.current),
-      mapNodeState(String(c.prior ?? 'any')),
-      Number(c.conn_ge ?? c.allConnectionsCount_GE ?? -1),
-      Number(c.conn_le ?? c.allConnectionsCount_LE ?? -1),
-      Number(c.parents_ge ?? c.parentsCount_GE ?? -1),
-      Number(c.parents_le ?? c.parentsCount_LE ?? -1),
-    );
-    const op = new Operation(mapOperationKind(String(o.kind)), toNodeState(o.operand));
-    gumMachine.addRuleItem(new RuleItem(cond, op));
-  }
-
-  // Sync maintain-single-component from GUI, if method exists
-  const setMSC = (gumMachine as any)?.setMaintainSingleComponent;
-  if (typeof setMSC === 'function') setMSC.call(gumMachine, mc.maintain_single_component ?? true);
-
-  resetGraph();
+  // Reset UI run state, zoom & redraw
+  resetGraph();                      // keep your visual state reset flow
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   resetZoom();
+
+  // (optional) Replace the select’s current option label to reflect a custom upload
+  if (labelForSelect) {
+    const sel = document.getElementById('gene-select') as HTMLSelectElement;
+    if (sel) {
+      let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.setAttribute('data-custom', '1');
+        sel.insertBefore(opt, sel.firstChild);
+      }
+      opt.value = '__custom__';
+      opt.text = `Custom: ${labelForSelect}`;
+      sel.selectedIndex = 0;
+    }
+  }
 }
+
 
 // Reset zoom transform to identity
 function resetZoom() {
