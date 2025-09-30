@@ -1,83 +1,90 @@
 // gum.ts
-// This module defines the core classes and logic for the Graph Unfolding Machine (GUM).
-// It includes definitions for node states, operations, conditions, change table items, and the change table itself.
-// The GUMNode and GUMGraph classes represent the nodes and graph structure, respectively.
-// The GraphUnfoldingMachine class manages the graph unfolding process based on the change table and specified operations.
-//
-// Author of the code: AI Assistant
-// Author of the ideas: Roman G.
+// Graph Unfolding Machine (TypeScript version, aligned with Python M2 implementation)
 
 import { Graph } from 'graphlib';
 
-// Enumeration for different states a node can be in
+// ----------------- Machine Config Types -----------------
+
+export type CountCompare = 'range' | 'exact';
+export type TranscriptionWay = 'resettable' | 'continuable';
+
+export interface NearestSearchCfg {
+  max_depth: number;
+  tie_breaker: 'stable' | 'random' | 'by_id' | 'by_creation';
+  connect_all: boolean;
+}
+
+export interface MachineCfg {
+  start_state: NodeState;
+  transcription: TranscriptionWay;
+  count_compare: CountCompare;
+  max_vertices: number;
+  max_steps: number;
+  rng_seed?: number;
+  nearest_search: NearestSearchCfg;
+  maintain_single_component?: boolean;
+}
+
+// ----------------- RNG -----------------
+
+class RNG {
+  private s: number;
+  constructor(seed: number | undefined) {
+    this.s = (seed ?? 1234567) >>> 0;
+  }
+  next() {
+    let x = this.s;
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    this.s = x >>> 0;
+    return this.s;
+  }
+  choice<T>(arr: T[]): T {
+    return arr[this.next() % arr.length];
+  }
+}
+
+// ----------------- Enums -----------------
+
 export enum NodeState {
-    Max = 255,
-    Min = 0,
-    Ignored = 0,
-    Unknown = 254,
-    A = 1, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    s27 = 27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38, s39, s40, s41, s42, s43, s44, s45, s46, s47, s48, s49,
-    s50 = 50, s51, s52, s53, s54, s55, s56, s57, s58, s59, s60, s61, s62, s63, s64, s65, s66, s67, s68, s69, s70, s71, s72,
-    s73 = 73, s74, s75, s76, s77, s78, s79, s80, s81, s82, s83, s84, s85, s86, s87, s88, s89, s90, s91, s92, s93, s94, s95,
-    s96 = 96, s97, s98, s99, s100, s101, s102, s103, s104, s105, s106, s107, s108, s109, s110, s111, s112, s113, s114, s115,
-    s116 = 116, s117, s118, s119, s120, s121, s122, s123, s124, s125, s126, s127, s128, s129, s130, s131, s132, s133, s134,
-    s135 = 135, s136, s137, s138, s139, s140, s141, s142, s143, s144, s145, s146, s147, s148, s149, s150, s151, s152, s153,
-    s154 = 154, s155, s156, s157, s158, s159, s160, s161, s162, s163, s164, s165, s166, s167, s168, s169, s170, s171, s172,
-    s173 = 173, s174, s175, s176, s177, s178, s179, s180, s181, s182, s183, s184, s185, s186, s187, s188, s189, s190, s191,
-    s192 = 192, s193, s194, s195, s196, s197, s198, s199, s200, s201, s202, s203, s204, s205, s206, s207, s208, s209, s210,
-    s211 = 211, s212, s213, s214, s215, s216, s217, s218, s219, s220, s221, s222, s223, s224, s225, s226, s227, s228, s229,
-    s230 = 230, s231, s232, s233, s234, s235, s236, s237, s238, s239, s240, s241, s242, s243, s244, s245, s246, s247, s248,
-    s249 = 249, s250, s251, s252, s253
+  Max = 255,
+  Min = 0,
+  Ignored = 0,
+  Unknown = 254,
+  A = 1, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 }
 
-// Class representing an operation in the GUM
+export enum OperationKindEnum {
+  TurnToState = 0x0,
+  TryToConnectWithNearest = 0x1,
+  GiveBirthConnected = 0x2,
+  DisconectFrom = 0x3, // keep legacy spelling
+  Die = 0x4,
+  TryToConnectWith = 0x5,
+  GiveBirth = 0x6,
+}
+
+// ----------------- Rule / Condition / Operation -----------------
+
 export class Operation {
-    constructor(
-        public kind: OperationKindEnum,
-        public operandNodeState: NodeState = NodeState.Ignored
-    ) { }
+  constructor(
+    public kind: OperationKindEnum,
+    public operandNodeState: NodeState = NodeState.Ignored
+  ) {}
 }
 
-// Class representing a condition for an operation
 export class OperationCondition {
-    constructor(
-        public currentState: NodeState,
-        public priorState: NodeState = NodeState.Ignored,
-        public allConnectionsCount_GE: number = -1,
-        public allConnectionsCount_LE: number = -1,
-        public parentsCount_GE: number = -1,
-        public parentsCount_LE: number = -1
-    ) { }
+  constructor(
+    public currentState: NodeState,
+    public priorState: NodeState = NodeState.Ignored,
+    public allConnectionsCount_GE: number = -1,
+    public allConnectionsCount_LE: number = -1,
+    public parentsCount_GE: number = -1,
+    public parentsCount_LE: number = -1
+  ) {}
 }
 
-
-// Class representing a table of rules ("genom")
-export class RuleTable {
-  public items: RuleItem[] = [];
-
-  add(item: RuleItem) {
-    this.items.push(item);
-  }
-
-  find(node: GUMNode): RuleItem | null {
-    for (const item of this.items) {
-      const condition = item.condition;
-      const currentStateMatches = condition.currentState === node.state || condition.currentState === NodeState.Ignored;
-      const priorStateMatches = condition.priorState === node.priorState || condition.priorState === NodeState.Ignored;
-      const connectionsCountMatches = (condition.allConnectionsCount_GE <= node.connectionsCount || condition.allConnectionsCount_GE === -1) &&
-                                      (condition.allConnectionsCount_LE >= node.connectionsCount || condition.allConnectionsCount_LE === -1);
-      const parentsCountMatches = (condition.parentsCount_GE <= node.parentsCount || condition.parentsCount_GE === -1) &&
-                                  (condition.parentsCount_LE >= node.parentsCount || condition.parentsCount_LE === -1);
-
-      if (currentStateMatches && priorStateMatches && connectionsCountMatches && parentsCountMatches) {
-        return item;
-      }
-    }
-    return null;
-  }
-}
-
-// Class representing an item in the Rule Table ("gene")
 export class RuleItem {
   constructor(
     public condition: OperationCondition,
@@ -89,93 +96,213 @@ export class RuleItem {
   ) {}
 }
 
+export class RuleTable {
+  public items: RuleItem[] = [];
+
+  add(item: RuleItem) {
+    this.items.push(item);
+  }
+
+  clear() {
+    this.items = [];
+  }
+}
+
+// ----------------- Graph / Node -----------------
+
 export class GUMNode {
   public connectionsCount = 0;
   public parentsCount = 0;
   public markedAsDeleted = false;
+  public markedNew = true;
   public priorState = NodeState.Unknown;
+
+  // step snapshots
+  public savedDegree = 0;
+  public savedParents = 0;
+  protected savedCurrentState = NodeState.Unknown;
+
+  public ruleIndex = 0; // for continuable transcription
+
   public position: { x: number; y: number } | null = null;
   public velocity: { vx: number; vy: number } | null = null;
   public force: { fx: number | null; fy: number | null } | null = null;
 
-  protected savedCurrentState = NodeState.Unknown
-
-  constructor(public id: number, public state: NodeState = NodeState.Unknown) { }
+  constructor(public id: number, public state: NodeState = NodeState.Unknown) {}
 
   updatePriorState() {
-      this.priorState = this.savedCurrentState;
+    this.priorState = this.savedCurrentState;
   }
 
   saveCurrentState() {
     this.savedCurrentState = this.state;
-}
+  }
+
+  public getSavedCurrentState(): NodeState {
+    return this.savedCurrentState;
+  }
 }
 
-// Class representing the GUM graph
 export class GUMGraph {
-    private graph: Graph;
+  private graph: Graph;
+  private nextId = 1;
 
-    constructor() {
-        this.graph = new Graph({ directed: false });
-    }
+  constructor() {
+    this.graph = new Graph({ directed: false });
+  }
 
-    addNode(node: GUMNode) {
-        this.graph.setNode(node.id.toString(), node);
-    }
+  allocateNodeId(): number {
+    // Skip any ids that might exist (e.g., after loading a YAML with explicit ids)
+    while (this.graph.hasNode(this.nextId.toString())) this.nextId++;
+    return this.nextId++;
+  }
 
-    addEdge(source: GUMNode, target: GUMNode) {
-        this.graph.setEdge(source.id.toString(), target.id.toString());
-        source.connectionsCount++;
-        target.connectionsCount++;
-    }
+  addNode(node: GUMNode) {
+    this.graph.setNode(node.id.toString(), node);
+    if (node.id >= this.nextId) this.nextId = node.id + 1;  // NEW
+  }
 
-    removeEdge(source: GUMNode, target: GUMNode) {
+  addEdge(source: GUMNode, target: GUMNode) {
+    if (this.graph.hasEdge(source.id.toString(), target.id.toString())) return;
+    this.graph.setEdge(source.id.toString(), target.id.toString());
+    source.connectionsCount++;
+    target.connectionsCount++;
+  }
+
+  removeEdge(source: GUMNode, target: GUMNode) {
+    if (this.graph.hasEdge(source.id.toString(), target.id.toString())) {
       this.graph.removeEdge(source.id.toString(), target.id.toString());
       source.connectionsCount--;
       target.connectionsCount--;
     }
+  }
 
-    getNodes(): GUMNode[] {
-        return this.graph.nodes().map(nodeId => this.graph.node(nodeId) as GUMNode);
-    }
+  getNodes(): GUMNode[] {
+    return this.graph.nodes().map(nodeId => this.graph.node(nodeId) as GUMNode);
+  }
 
-    getEdges(): { source: GUMNode; target: GUMNode }[] {
-        return this.graph.edges().map(edge => ({
-            source: this.graph.node(edge.v) as GUMNode,
-            target: this.graph.node(edge.w) as GUMNode
-        }));
-    }
+  getEdges(): { source: GUMNode; target: GUMNode }[] {
+    return this.graph.edges().map(edge => ({
+      source: this.graph.node(edge.v) as GUMNode,
+      target: this.graph.node(edge.w) as GUMNode,
+    }));
+  }
 
-    removeMarkedNodes() {
-        this.getNodes().forEach(node => {
-            if (node.markedAsDeleted) {
-                this.graph.removeNode(node.id.toString());
-            }
-        });
-    }
+  removeMarkedNodes() {
+    this.getNodes().forEach(node => {
+      if (node.markedAsDeleted) {
+        this.graph.removeNode(node.id.toString());
+      }
+    });
+  }
 
-    areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
-        return this.graph.hasEdge(node1.id.toString(), node2.id.toString());
+  areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
+    return this.graph.hasEdge(node1.id.toString(), node2.id.toString());
+  }
+
+  getNodeById(id: number): GUMNode | undefined {
+    return this.graph.node(id.toString()) as GUMNode | undefined;
+  }
+
+  getNeighbors(node: GUMNode): GUMNode[] {
+    const ids = this.graph.neighbors(node.id.toString()) || [];
+    return ids
+      .map(id => this.graph.node(id) as GUMNode)
+      .filter(n => n && !n.markedAsDeleted);
+  }
+
+  getConnectedComponents(): GUMNode[][] {
+    const comps: GUMNode[][] = [];
+    const seen = new Set<number>();
+    for (const n of this.getNodes().filter(n => !n.markedAsDeleted)) {
+      if (seen.has(n.id)) continue;
+      const q = [n]; seen.add(n.id); const comp = [n];
+      while (q.length) {
+        const u = q.shift()!;
+        for (const v of this.getNeighbors(u)) {
+          if (!seen.has(v.id)) { seen.add(v.id); q.push(v); comp.push(v); }
+        }
+      }
+      comps.push(comp);
     }
+    return comps;
+  }
+
 }
 
-// Enumeration for different kinds of operations in the GUM
-export enum OperationKindEnum {
-    TurnToState = 0x0,
-    TryToConnectWithNearest = 0x1,
-    GiveBirthConnected = 0x2,
-    DisconectFrom = 0x3,
-    Die = 0x4,
-    TryToConnectWith = 0x5,
-    GiveBirth = 0x6,
-}
+// ----------------- Graph Unfolding Machine -----------------
 
 export class GraphUnfoldingMachine {
   public ruleTable: RuleTable;
-  private iterations = 0;
+  public getStepCount(): number { return this.iterations; }
+  public getMaxSteps(): number { return this.cfg.max_steps; }
+  public getMaxVertices(): number { return this.cfg.max_vertices; }
 
-  constructor(private graph: GUMGraph) {
+  private iterations = 0;
+  private rng: RNG;
+
+  constructor(private graph: GUMGraph, private cfg: MachineCfg) {
     this.ruleTable = new RuleTable();
+    this.rng = new RNG(cfg?.rng_seed);
+
+    if (this.graph.getNodes().length === 0) {
+      const seed = new GUMNode(this.graph.allocateNodeId(), cfg.start_state ?? NodeState.A);
+      this.graph.addNode(seed);
+    }
+
+
+    if (this.cfg.maintain_single_component === undefined) {
+      (this.cfg as any).maintain_single_component = true;
+    }
+  }
+
+  public setMaintainSingleComponent(on: boolean) {
+    (this.cfg as any).maintain_single_component = on;
+  }
+
+  public setMaxSteps(n: number) {
+    (this as any).cfg.max_steps = Number.isFinite(n) ? Math.trunc(n) : this.getMaxSteps();
+  }  
+
+  public enforceSingleComponentIfEnabled(): void {
+    if (!this.cfg.maintain_single_component) return;
+    const comps = this.graph.getConnectedComponents();
+    if (comps.length <= 1) return;
+
+    const score = (comp: GUMNode[]) => {
+      return {
+        minParents: Math.min(...comp.map(n => n.parentsCount)),
+        minId: Math.min(...comp.map(n => n.id)),
+      };
+    };
+
+    let keep = 0, best = score(comps[0]);
+    for (let i = 1; i < comps.length; i++) {
+      const s = score(comps[i]);
+      if (s.minParents < best.minParents || (s.minParents === best.minParents && s.minId < best.minId)) {
+        best = s; keep = i;
+      }
+    }
+
+    comps.forEach((comp, i) => {
+      if (i === keep) return;
+      comp.forEach(n => n.markedAsDeleted = true);
+    });
+    this.graph.removeMarkedNodes();
+  }
+
+
+  public reachedMaxSteps(): boolean {
+    return this.cfg.max_steps >= 0 && this.iterations >= this.cfg.max_steps;
+  }
+
+  public atVertexLimit(): boolean {
+    return this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices;
+  }
+
+
+  clearRuleTable() {
+    this.ruleTable.clear();
   }
 
   addRuleItem(item: RuleItem) {
@@ -186,36 +313,108 @@ export class GraphUnfoldingMachine {
     return this.ruleTable.items;
   }
 
-  clearRuleTable() {
-    this.ruleTable.items = [];
+  getIterations() {
+    return this.iterations;
   }
 
-  run() {
-    this.ruleTable.items.forEach(item => {
-      item.isActive = false;
-      item.isActiveInNodes = [];
-    });
+  resetIterations() {
+    this.iterations = 0;
+  }
 
-    const nodes = this.graph.getNodes().slice();
-    for (const node of nodes) {
-      node.saveCurrentState()
-      const item = this.ruleTable.find(node);
-      if (item && item.isEnabled) {
-        this.performOperation(node, item.operation);
-        item.isActive = true;
-        item.lastActivationInterationIndex++;
-        item.isActiveInNodes.push(node.id);
-      }
-      node.updatePriorState()
+  private snapshotAllNodes() {
+    const nodes = this.graph.getNodes();
+    for (const n of nodes) {
+      n.markedNew = false;
+      n.saveCurrentState();
+      n.savedDegree = this.graph.getEdges().filter(e => e.source === n || e.target === n).length;
+      n.savedParents = n.parentsCount;
     }
-    this.iterations++;
-    this.graph.removeMarkedNodes();
+  }
+
+  private matchInts(val: number, ge: number, le: number): boolean {
+    if (this.cfg.count_compare === 'exact' && ge >= 0) {
+      if (val !== ge) return false;
+      if (le >= 0 && val > le) return false;
+      return true;
+    }
+    if (ge >= 0 && val < ge) return false;
+    if (le >= 0 && val > le) return false;
+    return true;
+  }
+
+  private findMatchingRule(node: GUMNode): RuleItem | null {
+    const items = this.ruleTable.items;
+    if (items.length === 0) return null;
+
+    const start = (this.cfg.transcription === 'continuable') ? node.ruleIndex : 0;
+
+    const scan = (lo: number, hi: number) => {
+      for (let i = lo; i < hi; i++) {
+        const it = items[i];
+        const c = it.condition;        
+        const currentOk = c.currentState === node.getSavedCurrentState() || c.currentState === NodeState.Ignored;
+        const priorOk = c.priorState === NodeState.Ignored || c.priorState === node.priorState;
+        const connOk = this.matchInts(node.savedDegree, c.allConnectionsCount_GE, c.allConnectionsCount_LE);
+        const parOk = this.matchInts(node.savedParents, c.parentsCount_GE, c.parentsCount_LE);
+        if (currentOk && priorOk && connOk && parOk) return it;
+      }
+      return null;
+    };
+
+    return scan(start, items.length) ?? scan(0, start);
+  }
+
+  private eligibleForNearest(u: GUMNode, v: GUMNode, required: NodeState): boolean {
+    if (u === v) return false;
+    if (this.graph.areNodesConnected(u, v)) return false;
+    if (v.markedNew) return false;
+    const savedState = (v.getSavedCurrentState() ?? v.state);
+    return savedState === required;
+  }
+
+  public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
+    const maxD = this.cfg.nearest_search.max_depth;
+    const q: Array<{ n: GUMNode; d: number }> = [{ n: node, d: 0 }];
+    const visited = new Set<GUMNode>([node]);
+    let foundDepth: number | null = null;
+    const found: GUMNode[] = [];
+
+    while (q.length) {
+      const { n, d } = q.shift()!;
+      if (foundDepth !== null && d > foundDepth) break;
+
+      if (d > 0 && d <= maxD && this.eligibleForNearest(node, n, state)) {
+        foundDepth = d; found.push(n); continue;
+      }
+
+      if (d < maxD) {
+        const nbs = this.graph.getEdges()
+          .filter(e => e.source === n || e.target === n)
+          .map(e => e.source === n ? e.target : e.source)
+          .filter(x => !visited.has(x))
+          .sort((a, b) => a.id - b.id);
+        nbs.forEach(nb => { visited.add(nb); q.push({ n: nb, d: d + 1 }); });
+      }
+    }
+
+    if (found.length === 0) return;
+
+    if (this.cfg.nearest_search.connect_all) {
+      found.forEach(v => this.graph.addEdge(node, v));
+      return;
+    }
+
+    let pick: GUMNode;
+    switch (this.cfg.nearest_search.tie_breaker) {
+      case 'random': pick = this.rng.choice(found); break;
+      default: pick = found.slice().sort((a, b) => a.id - b.id)[0];
+    }
+    this.graph.addEdge(node, pick);
   }
 
   private performOperation(node: GUMNode, operation: Operation) {
     switch (operation.kind) {
       case OperationKindEnum.TurnToState:
-
         node.state = operation.operandNodeState;
         break;
       case OperationKindEnum.GiveBirthConnected:
@@ -228,7 +427,7 @@ export class GraphUnfoldingMachine {
         this.tryToConnectWithNearest(node, operation.operandNodeState);
         break;
       case OperationKindEnum.Die:
-        this.die(node);
+        node.markedAsDeleted = true;
         break;
       case OperationKindEnum.TryToConnectWith:
         this.tryToConnectWith(node, operation.operandNodeState);
@@ -236,133 +435,83 @@ export class GraphUnfoldingMachine {
       case OperationKindEnum.GiveBirth:
         this.giveBirth(node, operation.operandNodeState);
         break;
-      default:
-        break;
     }
   }
 
   private giveBirthConnected(node: GUMNode, state: NodeState) {
-      const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
-      newNode.parentsCount = node.parentsCount + 1;
-      this.graph.addNode(newNode);
-      this.graph.addEdge(node, newNode);
+    if (this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices) return;
+
+    const newId = this.graph.allocateNodeId();
+    const newNode = new GUMNode(newId, state);
+    newNode.parentsCount = node.parentsCount + 1;
+    newNode.markedNew = true;
+    this.graph.addNode(newNode);
+    this.graph.addEdge(node, newNode);
+  }
+
+  private giveBirth(node: GUMNode, state: NodeState) {
+    if (this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices) return;
+
+    const newId = this.graph.allocateNodeId();
+    const newNode = new GUMNode(newId, state);
+    newNode.parentsCount = node.parentsCount + 1;
+    newNode.markedNew = true;
+    this.graph.addNode(newNode);
   }
 
   private disconnectFrom(node: GUMNode, state: NodeState) {
     const edgesToRemove = this.graph.getEdges().filter(edge =>
-        (edge.source === node && edge.target.state === state) ||
-        (edge.target === node && edge.source.state === state)
+      (edge.source === node && edge.target.state === state) ||
+      (edge.target === node && edge.source.state === state)
     );
     edgesToRemove.forEach(edge => {
-        this.graph.removeEdge(edge.source, edge.target);
+      this.graph.removeEdge(edge.source, edge.target);
     });
   }
 
-  // private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
-  //     const visited = new Set<GUMNode>();
-  //     const queue: {node: GUMNode, distance: number}[] = [{node, distance: 0}];
-
-  //     while (queue.length > 0) {
-  //         const {node: currentNode, distance} = queue.shift()!;
-  //         if (currentNode.state === state && currentNode !== node) {
-  //             return currentNode;
-  //         }
-  //         visited.add(currentNode);
-  //         this.graph.getEdges().forEach(edge => {
-  //             const neighbor = edge.source === currentNode ? edge.target : edge.source;
-  //             if (!visited.has(neighbor)) {
-  //                 queue.push({node: neighbor, distance: distance + 1});
-  //             }
-  //         });
-  //     }
-  //     return null;
-  // }
-
-  // private tryToConnectWithNearest(node: GUMNode, state: NodeState) {
-  //     const nearestNode = this.findNearest(node, state);
-  //     if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
-  //         this.graph.addEdge(node, nearestNode);
-  //     }
-  // }
-
-  public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
-    const nearestNode = this.findNearest(node, state);
-    // if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
-    if (nearestNode) {
-        this.graph.addEdge(node, nearestNode);
-    }
-}
-
-  /**
-   * Finds the nearest node with a specified state in terms of graph distance.
-   * The search starts from the given node and skips nodes that are directly connected to the starting node.
-   *
-   * @param node - The starting node from which the search begins.
-   * @param state - The desired state of the target node.
-   * @returns The nearest node with the specified state that is not directly connected to the starting node, or null if no such node exists.
-   */
-  private findNearest(node: GUMNode, state: NodeState): GUMNode | null {
-    const visited = new Set<GUMNode>();
-    const queue: { node: GUMNode, distance: number }[] = [{ node, distance: 0 }];
-    const edges = this.graph.getEdges();
-
-    while (queue.length > 0) {
-        const { node: currentNode, distance } = queue.shift()!;
-
-        if (currentNode.state === state && currentNode !== node && distance > 1) {
-            return currentNode;
-        }
-
-        visited.add(currentNode);
-
-        // Iterate over edges in reverse order
-        for (let i = edges.length - 1; i >= 0; i--) {
-            const edge = edges[i];
-            // Check if the current edge is connected to the current node
-            if (edge.source === currentNode || edge.target === currentNode) {
-                const neighbor = edge.source === currentNode ? edge.target : edge.source;
-
-                if (!visited.has(neighbor)) {
-                    // Note that we're not adding the neighbor to visited here to allow revisiting through different paths
-                    queue.push({ node: neighbor, distance: distance + 1 });
-                }
-            }
-        }
-    }
-
-    return null;
-  }
-
-// public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
-//     const nearestNode = this.findNearest(node, state);
-//     // if (nearestNode && !this.graph.areNodesConnected(node, nearestNode)) {
-//     if (nearestNode) {
-//         this.graph.addEdge(node, nearestNode);
-//     }
-// }
-
-  private die(node: GUMNode) {
-      node.markedAsDeleted = true;
-  }
-
   private tryToConnectWith(node: GUMNode, state: NodeState) {
-      const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-      if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
-          this.graph.addEdge(node, targetNode);
+    const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
+    if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
+      this.graph.addEdge(node, targetNode);
+    }
+  }
+
+  runOneStep(): boolean {
+    this.snapshotAllNodes();
+    this.ruleTable.items.forEach(it => { it.isActive = false; it.isActiveInNodes = []; });
+
+    let didAnything = false;
+    const nodesNow = this.graph.getNodes().slice();
+
+    for (const node of nodesNow) {
+      if (node.markedAsDeleted) continue;
+      const item = this.findMatchingRule(node);
+      if (item && item.isEnabled) {
+        this.performOperation(node, item.operation);
+        item.isActive = true;
+        item.lastActivationInterationIndex++;
+        item.isActiveInNodes.push(node.id);
+        didAnything = true;
+        if (this.cfg.transcription === 'continuable') {
+          node.ruleIndex = (this.ruleTable.items.indexOf(item) + 1) % Math.max(1, this.ruleTable.items.length);
+        }
       }
+      node.updatePriorState();
+    }
+
+    this.iterations++;
+    this.graph.removeMarkedNodes();
+    this.enforceSingleComponentIfEnabled();
+    return didAnything;
   }
 
-  private giveBirth(node: GUMNode, state: NodeState) {
-      const newNode = new GUMNode(this.graph.getNodes().length + 1, state);
-      newNode.parentsCount = node.parentsCount + 1;
-      this.graph.addNode(newNode);
-  }
-
-  getIterations() {
-      return this.iterations;
-  }
-
-  resetIterations() {
-      this.iterations = 0;
+  runUntilStop() {
+    let empty = 0;
+    for (let i = 0; this.cfg.max_steps < 0 || i < this.cfg.max_steps; i++) {
+      const changed = this.runOneStep();
+      empty = changed ? 0 : empty + 1;
+      if (empty >= 2) break;
+      if (this.cfg.max_vertices > 0 && this.graph.getNodes().length > this.cfg.max_vertices) break;
+    }
   }
 }

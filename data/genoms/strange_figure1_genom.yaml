@@ -1,0 +1,137 @@
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 300
+  max_steps: -1
+
+  nearest_search:
+    max_depth: 3          # int >= 1 (default: 2)
+    tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
+    connect_all: false    # false = choose 1; true = connect to all at minimal distance
+  rng_seed: 42            # optional; if missing, engine will pick a default
+
+init_graph:
+  nodes:
+    - {state: A }
+
+rules:
+- condition:
+    current: A
+    prior: Unknown
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: A
+    prior: A
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: B
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TryToConnectWithNearest
+    operand: B
+- condition:
+    current: B
+    prior: B
+    conn_ge: 2
+    conn_le: 2
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: C
+- condition:
+    current: B
+    prior: B
+    conn_ge: 3
+    conn_le: 3
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: D
+- condition:
+    current: C
+    prior: C
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TryToConnectWithNearest
+    operand: D
+- condition:
+    current: D
+    prior: Unknown
+    conn_ge: 1
+    conn_le: 2
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TryToConnectWithNearest
+    operand: D
+- condition:
+    current: C
+    prior: C
+    conn_ge: 2
+    conn_le: 2
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: D
+    prior: D
+    conn_ge: 3
+    conn_le: 10
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: E
+- condition:
+    current: E
+    prior: D
+    conn_ge: 3
+    conn_le: 3
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: D
+- condition:
+    current: E
+    prior: E
+    conn_ge: 4
+    conn_le: 4
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: D
+expected:
+  steps: 120
+  nodes: 2000
+  edges: 3967
+  states_count:
+    A: 1
+    B: 26
+    D: 461
+    E: 1512

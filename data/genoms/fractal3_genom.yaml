@@ -1,0 +1,66 @@
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 200
+  max_steps: -1
+
+  nearest_search:
+    max_depth: 2          # int >= 1 (default: 2)
+    tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
+    connect_all: false    # false = choose 1; true = connect to all at minimal distance
+  rng_seed: 42            # optional; if missing, engine will pick a default
+
+init_graph:
+  nodes:
+    - {state: A }
+    
+rules:
+- condition:
+    current: A
+    prior: Unknown
+    conn_ge: -1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: Unknown
+    conn_ge: -1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: 3
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: B
+    conn_ge: -1
+    conn_le: 3
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: C
+- condition:
+    current: C
+    prior: C
+    conn_ge: -1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: 3
+  op:
+    kind: GiveBirthConnected
+    operand: B
+expected:
+  steps: 120
+  nodes: 596
+  edges: 595
+  states_count:
+    A: 1
+    B: 170
+    C: 425

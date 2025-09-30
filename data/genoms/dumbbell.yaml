@@ -1,0 +1,90 @@
+# If init_graph.nodes exists and is non‑empty → ignore start_state.
+# If init_graph.nodes is missing or empty → create one node with start_state (default "A").
+# If a node in init_graph.nodes omits its state, fallback to start_state for that node.
+
+machine:
+  start_state: A
+  transcription: resettable #continuable
+  count_compare: range
+  max_vertices: 2000
+  max_steps: 121
+
+  nearest_search:
+    max_depth: 2          # int >= 1 (default: 2)
+    tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
+    connect_all: false    # false = choose 1; true = connect to all at minimal distance
+  rng_seed: 42            # optional; if missing, engine will pick a default
+
+init_graph:
+  nodes:
+    - {state: A }
+
+rules:
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 0
+    parents_ge: -1
+    parents_le: 0
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: Unknown
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: 2
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: B
+    prior: B
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: A
+    prior: A
+    conn_ge: -1
+    conn_le: -1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: C
+    prior: any
+    conn_ge: 1
+    conn_le: 1
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: G
+    prior: G
+    conn_ge: -1
+    conn_le: 5
+    parents_ge: -1
+    parents_le: -1
+  op:
+    kind: GiveBirthConnected
+    operand: H
+expected:
+  steps: 120
+  nodes: 14
+  edges: 13
+  states_count:
+    C: 2
+    G: 2
+    H: 10

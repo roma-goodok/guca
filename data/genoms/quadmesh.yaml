@@ -1,0 +1,339 @@
+# quadmesh exp010.21_tregen50K
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 100
+  max_steps: -1
+  nearest_search:
+    max_depth: 5
+    tie_breaker: stable
+    connect_all: true
+init_graph:
+  nodes:
+  - state: A
+rules:
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 13
+    parents_ge: 0
+    parents_le: 11
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    prior: A
+    conn_ge: 1
+    conn_le: 14
+    parents_ge: 1
+    parents_le: 13
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: F
+    prior: B
+    conn_ge: 0
+    conn_le: 7
+    parents_ge: 1
+    parents_le: 9
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: F
+    conn_ge: 0
+    conn_le: 13
+    parents_ge: 11
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: F
+    conn_ge: 0
+    conn_le: 2
+    parents_ge: 2
+    parents_le: 11
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 0
+    conn_le: 10
+    parents_ge: 5
+    parents_le: 10
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: F
+    prior: B
+    conn_ge: 1
+    conn_le: 6
+    parents_ge: 7
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 0
+    conn_le: 5
+    parents_ge: 0
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: A
+meta:
+  graph_summary:
+    edges: 117
+    nodes: 67
+    states_count:
+      B: 2
+      F: 64
+      A: 1
+    edge_list:
+    - - 0
+      - 1
+    - - 0
+      - 2
+    - - 0
+      - 3
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 0
+      - 7
+    - - 1
+      - 6
+    - - 2
+      - 8
+    - - 3
+      - 9
+    - - 4
+      - 10
+    - - 5
+      - 11
+    - - 6
+      - 10
+    - - 6
+      - 11
+    - - 6
+      - 12
+    - - 7
+      - 13
+    - - 8
+      - 11
+    - - 8
+      - 13
+    - - 8
+      - 14
+    - - 9
+      - 13
+    - - 9
+      - 15
+    - - 10
+      - 16
+    - - 11
+      - 17
+    - - 12
+      - 16
+    - - 12
+      - 17
+    - - 12
+      - 18
+    - - 13
+      - 19
+    - - 14
+      - 17
+    - - 14
+      - 19
+    - - 14
+      - 20
+    - - 15
+      - 19
+    - - 15
+      - 21
+    - - 16
+      - 22
+    - - 17
+      - 23
+    - - 18
+      - 22
+    - - 18
+      - 23
+    - - 18
+      - 24
+    - - 19
+      - 25
+    - - 20
+      - 23
+    - - 20
+      - 25
+    - - 20
+      - 26
+    - - 21
+      - 25
+    - - 21
+      - 27
+    - - 22
+      - 28
+    - - 23
+      - 29
+    - - 24
+      - 28
+    - - 24
+      - 29
+    - - 24
+      - 30
+    - - 25
+      - 31
+    - - 26
+      - 29
+    - - 26
+      - 31
+    - - 26
+      - 32
+    - - 27
+      - 31
+    - - 27
+      - 33
+    - - 28
+      - 34
+    - - 29
+      - 35
+    - - 30
+      - 34
+    - - 30
+      - 35
+    - - 30
+      - 36
+    - - 31
+      - 37
+    - - 32
+      - 35
+    - - 32
+      - 37
+    - - 32
+      - 38
+    - - 33
+      - 37
+    - - 33
+      - 39
+    - - 34
+      - 40
+    - - 35
+      - 41
+    - - 36
+      - 40
+    - - 36
+      - 41
+    - - 36
+      - 42
+    - - 37
+      - 43
+    - - 38
+      - 41
+    - - 38
+      - 43
+    - - 38
+      - 44
+    - - 39
+      - 43
+    - - 39
+      - 45
+    - - 40
+      - 46
+    - - 41
+      - 47
+    - - 42
+      - 46
+    - - 42
+      - 47
+    - - 42
+      - 48
+    - - 43
+      - 49
+    - - 44
+      - 47
+    - - 44
+      - 49
+    - - 44
+      - 50
+    - - 45
+      - 49
+    - - 45
+      - 51
+    - - 46
+      - 52
+    - - 47
+      - 53
+    - - 48
+      - 52
+    - - 48
+      - 53
+    - - 48
+      - 54
+    - - 49
+      - 55
+    - - 50
+      - 53
+    - - 50
+      - 55
+    - - 50
+      - 56
+    - - 51
+      - 55
+    - - 51
+      - 57
+    - - 52
+      - 58
+    - - 53
+      - 59
+    - - 54
+      - 58
+    - - 54
+      - 59
+    - - 54
+      - 60
+    - - 55
+      - 61
+    - - 56
+      - 59
+    - - 56
+      - 61
+    - - 56
+      - 62
+    - - 57
+      - 61
+    - - 57
+      - 63
+    - - 58
+      - 64
+    - - 59
+      - 65
+    - - 60
+      - 64
+    - - 60
+      - 65
+    - - 60
+      - 66
+    - - 61
+      - 66
+    - - 62
+      - 65
+    - - 62
+      - 66
+    - - 63
+      - 66
+  #activity_scheme: 7x3x7x15x9x32x14x23x9
