@@ -33,7 +33,52 @@ const config = { debug: false };
 let showAllRules = false;
 let lastLoadedConfig: any = null;
 
+// ---------------------- Small helpers (local, no logic changes) ----------------------
 
+// Color chip for operation kind (distinct from state colors)
+function opKindColor(kind: OperationKindEnum): string {
+  switch (kind) {
+    case OperationKindEnum.TurnToState:            return '#fde68a'; // amber-200
+    case OperationKindEnum.GiveBirthConnected:     return '#bbf7d0'; // green-200
+    case OperationKindEnum.GiveBirth:              return '#dcfce7'; // green-100
+    case OperationKindEnum.TryToConnectWithNearest:return '#bfdbfe'; // blue-200
+    case OperationKindEnum.TryToConnectWith:       return '#dbeafe'; // blue-100
+    case OperationKindEnum.DisconectFrom:          return '#fecaca'; // red-200
+    case OperationKindEnum.Die:                    return '#e5e7eb'; // gray-200
+    default:                                       return '#e5e7eb';
+  }
+}
+function nodeStateLetter(s: NodeState): string {
+  if (s === NodeState.Unknown) return "Unknown";
+  if (s === NodeState.Ignored) return "any";
+  if (s >= NodeState.A && s <= NodeState.Z) return String.fromCharCode(64 + s);
+  return String(s);
+}
+// Human-readable tooltip for a rule tile (self-contained to avoid extra deps)
+function describeRuleHuman(item: RuleItem): string {
+  const c = item.condition, o = item.operation;
+  const cur = nodeStateLetter(c.currentState);
+  const prior = nodeStateLetter(c.priorState);
+  const bits: string[] = [];
+  if (c.allConnectionsCount_GE >= 0) bits.push(`c≥${c.allConnectionsCount_GE}`);
+  if (c.allConnectionsCount_LE >= 0) bits.push(`c≤${c.allConnectionsCount_LE}`);
+  if (c.parentsCount_GE >= 0)        bits.push(`p≥${c.parentsCount_GE}`);
+  if (c.parentsCount_LE >= 0)        bits.push(`p≤${c.parentsCount_LE}`);
+  const cond = `if current=${cur}${c.priorState!==NodeState.Ignored?` & prior=${prior}`:''}${bits.length?` & ${bits.join(' & ')}`:''}`;
+  const opS = nodeStateLetter(o.operandNodeState);
+  let act = '';
+  switch (o.kind) {
+    case OperationKindEnum.TurnToState:            act = `turn to ${opS}`; break;
+    case OperationKindEnum.GiveBirthConnected:     act = `give birth to ${opS} (connected)`; break;
+    case OperationKindEnum.GiveBirth:              act = `give birth to ${opS}`; break;
+    case OperationKindEnum.TryToConnectWithNearest:act = `connect to nearest ${opS}`; break;
+    case OperationKindEnum.TryToConnectWith:       act = `connect to all ${opS}`; break;
+    case OperationKindEnum.DisconectFrom:          act = `disconnect from ${opS}`; break;
+    case OperationKindEnum.Die:                    act = `die`; break;
+    default:                                       act = `do operation`;
+  }
+  return `${act} ${cond}`;
+}
 
 // ---------------------- SVG / D3 setup ----------------------
 const width = 960;
@@ -57,6 +102,7 @@ const graphGroup = svg.append("g");
 type Tool = 'move' | 'scissors';
 let currentTool: Tool = 'scissors';   // default ✂️
 
+// NOTE: we no longer scale line widths in JS; we rely on vector-effect or constant width.
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   .scaleExtent([0.01, 10])
   .filter((event: any) => {
@@ -73,12 +119,9 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   })
   .on("zoom", (event) => {
     graphGroup.attr("transform", event.transform);
-    graphGroup.selectAll<SVGLineElement, Link>(".link")
-      .attr("stroke-width", 2 / event.transform.k);
   });
 
-
-// Start with zoom enabled? We’ll toggle via the tool switcher below.
+// Start with zoom enabled; toggle behavior via tool switcher.
 (svg as any).call(zoomBehavior as any);
 
 // ---------------------- Simulation ----------------------
@@ -98,10 +141,16 @@ let links: Link[] = [];
 const gumGraph = new GUMGraph();
 let gumMachine = new GraphUnfoldingMachine(gumGraph, DEFAULT_MACHINE_CFG);
 
-
 // Simulation control
 let isSimulationRunning = false;
 let simulationInterval: any;
+
+// Simple speed model: fast (slider) vs slow mode (toggle)
+let slowMode = false;
+let fastMs = 100;
+const FAST_MS_DEFAULT = 100;
+const SLOW_MS = 700;
+const currentIntervalMs = () => (slowMode ? SLOW_MS : fastMs || FAST_MS_DEFAULT);
 
 // UI controls we already have
 const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
@@ -115,6 +164,7 @@ let lastCutPt: { x: number; y: number } | null = null;
 const btnMove = document.getElementById('tool-move-button') as HTMLButtonElement | null;
 const btnScissors = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
 const maintainChk = document.getElementById('maintain-single-component') as HTMLInputElement | null;
+const slowBtn = document.getElementById('slowdown-button') as HTMLButtonElement | null;
 
 function setTool(tool: Tool) {
   currentTool = tool;
@@ -142,6 +192,17 @@ maintainChk?.addEventListener('change', () => {
   if (on && typeof enforce === 'function') {
     enforce.call(gumMachine);
     update();
+  }
+});
+
+// Slow mode toggle (optional button)
+slowBtn?.addEventListener('click', () => {
+  slowMode = !slowMode;
+  slowBtn.classList.toggle('active', slowMode);
+  slowBtn.textContent = slowMode ? '🐢 Slow down (ON)' : '🐢 Slow down';
+  if (isSimulationRunning) {
+    clearInterval(simulationInterval);
+    simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
   }
 });
 
@@ -214,7 +275,6 @@ if (uploadInput) {
   });
 }
 
-
 function toNodeState(s: any): NodeState {
   // supports numbers or strings
   if (typeof s === 'number') return s as NodeState;
@@ -240,22 +300,19 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   resetZoom();
 
   // (optional) Replace the select’s current option label to reflect a custom upload
-  if (labelForSelect) {
-    const sel = document.getElementById('gene-select') as HTMLSelectElement;
-    if (sel) {
-      let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
-      if (!opt) {
-        opt = document.createElement('option');
-        opt.setAttribute('data-custom', '1');
-        sel.insertBefore(opt, sel.firstChild);
-      }
-      opt.value = '__custom__';
-      opt.text = `Custom: ${labelForSelect}`;
-      sel.selectedIndex = 0;
+  const sel = document.getElementById('gene-select') as HTMLSelectElement;
+  if (labelForSelect && sel) {
+    let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
+    if (!opt) {
+      opt = document.createElement('option');
+      opt.setAttribute('data-custom', '1');
+      sel.insertBefore(opt, sel.firstChild);
     }
+    opt.value = '__custom__';
+    opt.text = `Custom: ${labelForSelect}`;
+    sel.selectedIndex = 0;
   }
 }
-
 
 // Reset zoom transform to identity
 function resetZoom() {
@@ -412,21 +469,20 @@ function update() {
     return { source: sourceNode, target: targetNode };
   });
 
-  // LINKS
+  // LINKS (constant on-screen width via vector-effect)
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
   const linkEnter = link.enter().append("line")
     .attr("class", "link")
-    .attr("stroke-width", 2)
-    .attr("stroke", 'lightBlue');
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr("stroke", 'white');
 
   linkEnter.merge(link)
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
     .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
     .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-    .attr("stroke", 'white');
+    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2);
 
   link.exit().remove();
 
@@ -504,7 +560,6 @@ function update() {
 
 // ---------------------- Debug / status UI ----------------------
 function updateDebugInfo() {
-  const ruleTableElement = document.getElementById('rule-table');
   const statusInfoElement = document.getElementById('status-info');
 
   if (!config.debug) {
@@ -521,20 +576,56 @@ function updateDebugInfo() {
       `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
   }
 
-  if (ruleTableElement) {
-    const changeRuleItems = gumMachine.getRuleItems();
-    const shortForm = convertToShortForm(changeRuleItems);
-  
-    const lines = shortForm.split('\n');
-    const maxLines = 10;
-    const body = (!showAllRules && lines.length > maxLines)
-      ? lines.slice(0, maxLines).join('\n') + `\n… (${lines.length - maxLines} more hidden)`
-      : shortForm;
-  
-    ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${body}</pre>`;
-    if (toggleRulesBtn) toggleRulesBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
+  // Prefer tile board if present; otherwise keep legacy short-form in #rule-table
+  const board = document.getElementById('rule-board');
+  const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
+
+  if (board) {
+    const items = gumMachine.getRuleItems();
+    const MAX = 60;
+    const shown = showAllRules ? items : items.slice(0, MAX);
+    const html = shown.map((it) => {
+      const c = it.condition, o = it.operation;
+      const curColor = getVertexRenderColor(c.currentState);
+      const priorColor = getVertexRenderColor(c.priorState);
+      const opColor = opKindColor(o.kind);
+      const argColor = getVertexRenderColor(o.operandNodeState);
+      const title = describeRuleHuman(it).replace(/"/g, '&quot;');
+      return `
+        <div class="gene-tile ${it.isActive ? 'active' : ''}" title="${title}">
+          <span title="${title}" style="background:${curColor}"></span>
+          <span title="${title}" style="background:${priorColor}"></span>
+          <span title="${title}" style="background:${opColor}"></span>
+          <span title="${title}" style="background:${argColor}"></span>
+        </div>`;
+    }).join('');
+    board.innerHTML = html;
+
+    if (toggleBtn) {
+      if (items.length > MAX) {
+        toggleBtn.style.display = 'inline-block';
+        toggleBtn.textContent = showAllRules ? 'Show less' : `Show more (${items.length - MAX})`;
+      } else {
+        toggleBtn.style.display = 'none';
+      }
+    }
+  } else {
+    // Legacy short-form text fallback
+    const ruleTableElement = document.getElementById('rule-table');
+    if (ruleTableElement) {
+      const changeRuleItems = gumMachine.getRuleItems();
+      const shortForm = convertToShortForm(changeRuleItems);
+    
+      const lines = shortForm.split('\n');
+      const maxLines = 10;
+      const body = (!showAllRules && lines.length > maxLines)
+        ? lines.slice(0, maxLines).join('\n') + `\n… (${lines.length - maxLines} more hidden)`
+        : shortForm;
+    
+      ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${body}</pre>`;
+      if (toggleBtn) toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
+    }
   }
-  
 
   if (config.debug) {
     const nodeCountElement = document.getElementById('node-count');
@@ -566,7 +657,6 @@ toggleRulesBtn?.addEventListener('click', () => {
   updateDebugInfo();
 });
 
-
 // ---------------------- Unfolding / control wiring ----------------------
 function unfoldGraph() {
   if (!isSimulationRunning) return;
@@ -584,8 +674,7 @@ function unfoldGraph() {
 
   simulation.tick();
   gumMachine.runOneStep();
-  // If gum.ts already enforces single component inside runOneStep, this is redundant.
-  // Keep optional extra guard (no-op if method doesn't exist).
+  // Optional extra guard (no-op if method doesn't exist).
   const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
   if (typeof enforce === 'function') enforce.call(gumMachine);
 
@@ -606,20 +695,26 @@ function resetGraph() {
 }
 
 // Display options
-document.getElementById('display-options')!.addEventListener('change', function () {
+document.getElementById('display-options')?.addEventListener('change', function () {
   const displayOption = (this as HTMLSelectElement).value;
   updateDisplay(displayOption);
 });
 
-// Simulation interval slider
-const simulationIntervalSlider = document.getElementById('simulation-interval') as HTMLInputElement;
-simulationIntervalSlider.value = '100';
-document.getElementById('simulation-interval-value')!.textContent = '100';
-simulationIntervalSlider.addEventListener('input', function () {
-  const interval = (this as HTMLInputElement).value;
-  simulationInterval = parseInt(interval, 10);
-  document.getElementById('simulation-interval-value')!.textContent = interval;
-});
+// Simulation interval slider (Advanced): adjusts fast mode only
+const simulationIntervalSlider = document.getElementById('simulation-interval') as HTMLInputElement | null;
+if (simulationIntervalSlider) {
+  simulationIntervalSlider.value = String(FAST_MS_DEFAULT);
+  const label = document.getElementById('simulation-interval-value');
+  if (label) label.textContent = String(FAST_MS_DEFAULT);
+  simulationIntervalSlider.addEventListener('input', function () {
+    fastMs = parseInt((this as HTMLInputElement).value, 10) || FAST_MS_DEFAULT;
+    if (label) label.textContent = String(fastMs);
+    if (isSimulationRunning && !slowMode) {
+      clearInterval(simulationInterval);
+      simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
+    }
+  });
+}
 
 function updateDisplay(option: string) {
   const displayEdges = option === 'edges' || option === 'both';
@@ -632,10 +727,7 @@ updateDisplay('edges');
 pauseResumeButton.addEventListener('click', () => {
   isSimulationRunning = !isSimulationRunning;
   if (isSimulationRunning) {
-    simulationInterval = setInterval(
-      unfoldGraph,
-      parseInt((document.getElementById('simulation-interval') as HTMLInputElement).value, 10)
-    );
+    simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
     pauseResumeButton.textContent = 'Pause';
     setControlsEnabled(false);
   } else {
@@ -653,10 +745,10 @@ document.getElementById('next-step-button')!.addEventListener('click', () => {
   }
 });
 
-// Manual connect / add / remove / change / disconnect / connect-nearest
-document.getElementById('connect-button')!.addEventListener('click', () => {
-  const sourceId = (document.getElementById('source-node') as HTMLSelectElement).value;
-  const targetId = (document.getElementById('target-node') as HTMLSelectElement).value;
+// Manual connect / add / remove / change / disconnect / connect-nearest (Advanced)
+document.getElementById('connect-button')?.addEventListener('click', () => {
+  const sourceId = (document.getElementById('source-node') as HTMLSelectElement)?.value;
+  const targetId = (document.getElementById('target-node') as HTMLSelectElement)?.value;
   if (sourceId && targetId) {
     const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
     const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
@@ -669,9 +761,10 @@ document.getElementById('connect-button')!.addEventListener('click', () => {
   }
 });
 
-
-document.getElementById('add-node-button')!.addEventListener('click', () => {
-  const state = (document.getElementById('node-state') as HTMLSelectElement).value as keyof typeof NodeState;
+document.getElementById('add-node-button')?.addEventListener('click', () => {
+  const stateSel = document.getElementById('node-state') as HTMLSelectElement | null;
+  if (!stateSel) return;
+  const state = stateSel.value as keyof typeof NodeState;
   const newId = gumGraph.allocateNodeId();
   const newNode = new GUMNode(newId, NodeState[state]);
   gumGraph.addNode(newNode);
@@ -681,8 +774,8 @@ document.getElementById('add-node-button')!.addEventListener('click', () => {
   update();
 });
 
-document.getElementById('remove-node-button')!.addEventListener('click', () => {
-  const nodeId = (document.getElementById('remove-node-id') as HTMLSelectElement).value;
+document.getElementById('remove-node-button')?.addEventListener('click', () => {
+  const nodeId = (document.getElementById('remove-node-id') as HTMLSelectElement)?.value;
   if (nodeId) {
     const nodeToRemove = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
     if (nodeToRemove) {
@@ -696,9 +789,11 @@ document.getElementById('remove-node-button')!.addEventListener('click', () => {
   }
 });
 
-document.getElementById('change-node-state-button')!.addEventListener('click', () => {
-  const nodeId = (document.getElementById('change-node-id') as HTMLSelectElement).value;
-  const state = (document.getElementById('change-node-state') as HTMLSelectElement).value as keyof typeof NodeState;
+document.getElementById('change-node-state-button')?.addEventListener('click', () => {
+  const nodeId = (document.getElementById('change-node-id') as HTMLSelectElement)?.value;
+  const stateSel = document.getElementById('change-node-state') as HTMLSelectElement | null;
+  if (!nodeId || !stateSel) return;
+  const state = stateSel.value as keyof typeof NodeState;
   const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
   if (node) {
     node.priorState = node.state;
@@ -709,9 +804,9 @@ document.getElementById('change-node-state-button')!.addEventListener('click', (
   }
 });
 
-document.getElementById('disconnect-button')!.addEventListener('click', () => {
-  const sourceId = (document.getElementById('disconnect-source-node') as HTMLSelectElement).value;
-  const targetId = (document.getElementById('disconnect-target-node') as HTMLSelectElement).value;
+document.getElementById('disconnect-button')?.addEventListener('click', () => {
+  const sourceId = (document.getElementById('disconnect-source-node') as HTMLSelectElement)?.value;
+  const targetId = (document.getElementById('disconnect-target-node') as HTMLSelectElement)?.value;
   if (sourceId && targetId) {
     const sourceNode = gumGraph.getNodes().find(node => node.id === parseInt(sourceId, 10));
     const targetNode = gumGraph.getNodes().find(node => node.id === parseInt(targetId, 10));
@@ -724,9 +819,11 @@ document.getElementById('disconnect-button')!.addEventListener('click', () => {
   }
 });
 
-document.getElementById('connect-nearest-button')!.addEventListener('click', () => {
-  const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectElement).value;
-  const state = (document.getElementById('connect-nearest-state') as HTMLSelectElement).value as keyof typeof NodeState;
+document.getElementById('connect-nearest-button')?.addEventListener('click', () => {
+  const nodeId = (document.getElementById('connect-nearest-node') as HTMLSelectElement)?.value;
+  const stateSel = document.getElementById('connect-nearest-state') as HTMLSelectElement | null;
+  if (!nodeId || !stateSel) return;
+  const state = stateSel.value as keyof typeof NodeState;
   const node = gumGraph.getNodes().find(node => node.id === parseInt(nodeId, 10));
   if (node) {
     gumMachine.tryToConnectWithNearest(node, NodeState[state]);
@@ -738,7 +835,7 @@ document.getElementById('connect-nearest-button')!.addEventListener('click', () 
 
 // Populate state lists A..Z
 function populateStateComboBox(comboBoxId: string) {
-  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
   if (!comboBox) return;
   comboBox.innerHTML = '';
   for (let i = NodeState.A; i <= NodeState.Z; i++) {
@@ -751,7 +848,7 @@ function populateStateComboBox(comboBoxId: string) {
 }
 
 function populateComboBox(comboBoxId: string, items: number[]) {
-  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement;
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
   if (!comboBox) return;
   comboBox.innerHTML = '';
   items.forEach(item => {
@@ -810,7 +907,6 @@ downloadBtn?.addEventListener('click', () => {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 });
 
-
 const maxStepsInput = document.getElementById('max-steps-input') as HTMLInputElement | null;
 function refreshMaxStepsInput() {
   if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
@@ -820,8 +916,6 @@ maxStepsInput?.addEventListener('change', () => {
   gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
   // No need to restart; the stop condition will use the new value
 });
-
-
 
 // ---------------------- Boot ----------------------
 loadGenesLibrary().then(() => {
@@ -834,4 +928,3 @@ loadGenesLibrary().then(() => {
 populateStateComboBox('node-state');
 populateStateComboBox('change-node-state');
 populateStateComboBox('connect-nearest-state');
-
