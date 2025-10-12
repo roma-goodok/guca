@@ -525,6 +525,17 @@ function update() {
   // Respect current tool's pointer interactivity for nodes
   mergedNodes.style('pointer-events', currentTool === 'scissors' ? 'none' : 'auto');
 
+  mergedNodes
+    .on('mouseover.inspect', (_event, d) => {
+      if (currentTool !== 'move') return;
+      const gn = gumGraph.getNodeById(d.id);
+      if (gn) renderNodeInspector(gn);
+    })
+    .on('mouseout.inspect', () => {
+      if (currentTool !== 'move') return;
+      renderNodeInspector(undefined);
+    });
+
   simulation.nodes(nodes).on("tick", () => {
     mergedNodes.select("circle")
       .attr("r", d => config.debug ? 20 : 12.5)
@@ -584,6 +595,8 @@ function updateDebugInfo() {
     const items = gumMachine.getRuleItems();
     const MAX = 60;
     const shown = showAllRules ? items : items.slice(0, MAX);
+  
+    // Build tiles HTML with class flags + absolute index for toggling
     const html = shown.map((it) => {
       const c = it.condition, o = it.operation;
       const curColor = getVertexRenderColor(c.currentState);
@@ -591,16 +604,20 @@ function updateDebugInfo() {
       const opColor = opKindColor(o.kind);
       const argColor = getVertexRenderColor(o.operandNodeState);
       const title = describeRuleHuman(it).replace(/"/g, '&quot;');
+      const absIdx = gumMachine.getRuleItems().indexOf(it); // absolute index
+      const classes = `gene-tile ${it.isActive ? 'active' : ''} ${it.isEnabled ? '' : 'disabled'}`;
       return `
-        <div class="gene-tile ${it.isActive ? 'active' : ''}" title="${title}">
-          <span title="${title}" style="background:${curColor}"></span>
-          <span title="${title}" style="background:${priorColor}"></span>
-          <span title="${title}" style="background:${opColor}"></span>
-          <span title="${title}" style="background:${argColor}"></span>
+        <div class="${classes}" data-idx="${absIdx}" title="${title}">
+          <span style="background:${curColor}"></span>
+          <span style="background:${priorColor}"></span>
+          <span style="background:${opColor}"></span>
+          <span style="background:${argColor}"></span>
         </div>`;
     }).join('');
+  
     board.innerHTML = html;
-
+  
+    // Show more/less button visibility stays the same
     if (toggleBtn) {
       if (items.length > MAX) {
         toggleBtn.style.display = 'inline-block';
@@ -609,6 +626,31 @@ function updateDebugInfo() {
         toggleBtn.style.display = 'none';
       }
     }
+  
+    // NEW: wire hover & click for Gene Inspector and enable/disable
+    const geneInspectorBody = document.getElementById('gene-inspector-body') as HTMLDivElement | null;
+    const defaultGI = 'Hover a rule tile to see its description. Click a tile to enable/disable that rule.';
+    if (geneInspectorBody && !geneInspectorBody.textContent) geneInspectorBody.textContent = defaultGI;
+  
+    board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+      const idx = Number(el.dataset.idx ?? '-1');
+      if (Number.isNaN(idx) || idx < 0) return;
+  
+      el.addEventListener('mouseenter', () => {
+        const it = items.find(i => gumMachine.getRuleItems().indexOf(i) === idx) ?? gumMachine.getRuleItems()[idx];
+        if (!it || !geneInspectorBody) return;
+        geneInspectorBody.textContent = `${describeRuleHuman(it)} — Click to ${it.isEnabled ? 'disable' : 'enable'}.`;
+      });
+      el.addEventListener('mouseleave', () => {
+        if (geneInspectorBody) geneInspectorBody.textContent = defaultGI;
+      });
+      el.addEventListener('click', () => {
+        const all = gumMachine.getRuleItems();
+        if (!all[idx]) return;
+        all[idx].isEnabled = !all[idx].isEnabled;     // toggle
+        updateDebugInfo();                             // re-render tiles to reflect state
+      });
+    });
   } else {
     // Legacy short-form text fallback
     const ruleTableElement = document.getElementById('rule-table');
@@ -649,6 +691,37 @@ function updateDebugInfo() {
     }
   }
 }
+
+function nodeStateName(n: number): string {
+  // @ts-ignore enum reverse mapping present
+  return (NodeState as any)[n] ?? String(n);
+}
+
+function renderNodeInspector(n?: GUMNode) {
+  const body = document.getElementById('node-inspector-body') as HTMLDivElement | null;
+  if (!body) return;
+  if (!n) {
+    body.textContent = 'Select the 🖐️ Move tool, then hover a node to see details.';
+    return;
+  }
+  const liveState = nodeStateName(n.state);
+  const prior     = nodeStateName(n.priorState);
+  const saved     = nodeStateName(n.getSavedCurrentState?.() ?? n.state);
+  const liveDeg   = n.connectionsCount;
+  const savedDeg  = (n as any).savedDegree ?? liveDeg;
+  const livePar   = n.parentsCount;
+  const savedPar  = (n as any).savedParents ?? livePar;
+
+  body.innerHTML = `
+    <div><b>ID:</b> ${n.id}</div>
+    <div><b>State:</b> ${liveState}</div>
+    <div><b>Prior:</b> ${prior}</div>
+    <div><b>Saved (for matching):</b> ${saved}</div>
+    <div><b>Degree (live/saved):</b> ${liveDeg} / ${savedDeg}</div>
+    <div><b>Parents (live/saved):</b> ${livePar} / ${savedPar}</div>
+  `;
+}
+
 
 const toggleRulesBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
 toggleRulesBtn?.addEventListener('click', () => {
