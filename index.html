@@ -66,14 +66,36 @@
       background:#fff; border:1px solid var(--border); padding:8px; border-radius:8px;
     }
     .gene-tile{
-      width:44px; height:28px; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+      width:44px; height:28px;
+      display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
       border-radius:6px; box-shadow:var(--tile-shadow); position:relative;
+      border:2px solid transparent;
+      cursor:pointer;
     }
-    .gene-tile span{
+    /* .gene-tile span{
       display:block; width:100%; height:100%;
       pointer-events: none;
+    } */
+    .gene-tile.active{
+      /* existing glow kept */
+      box-shadow:0 0 10px rgba(34,197,94,.75), var(--tile-shadow);
+      border-color:#22c55e;
+      border-width:3px;
     }
-    .gene-tile.active{box-shadow:0 0 10px rgba(34,197,94,.75), var(--tile-shadow)}
+    .gene-tile.disabled{
+      filter:grayscale(100%) brightness(.85);
+      opacity:.8;
+      border-color:#9ca3af;
+      border-style:dashed;
+    }
+    .gene-tile.disabled span{
+      filter:grayscale(100%) brightness(.85);
+    }
+    .gene-tile:hover{
+      outline:2px solid var(--accent);
+      outline-offset:2px;
+    }
+
     .legend{font-size:.85rem; color:#374151; display:flex; gap:8px; flex-wrap:wrap}
 
     /* Footer status bar */
@@ -100,7 +122,7 @@
   </style>
 </head>
 <body>
-  <header>    
+  <header>
     <div class="about-row">
       <details class="about" open>
         <summary>ℹ️ About this demo</summary>
@@ -113,7 +135,7 @@
         GitHub: roma-goodok/guca
       </a>
     </div>
-    
+
   </header>
 
   <div id="main">
@@ -158,6 +180,18 @@
         <div class="board" id="rule-board"></div>
         <div style="margin-top:6px">
           <button id="toggle-rules-btn" class="toggle-btn" style="display:none">Show more</button>
+        </div>
+        <div id="gene-inspector" class="control-group" style="margin-top:6px">
+          <h4>Gene Inspector</h4>
+          <div id="gene-inspector-body" style="font-size:.9rem; color:#374151">
+            Hover a rule tile to see its description. Click a tile to enable/disable that rule.
+          </div>
+        </div>
+      </div>
+      <div id="node-inspector" class="control-group">
+        <h4>Node Inspector</h4>
+        <div id="node-inspector-body" style="font-size:.9rem; color:#374151">
+          Select the 🖐️ Move tool, then hover a node to see details.
         </div>
       </div>
 

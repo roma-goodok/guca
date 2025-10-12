@@ -351,6 +351,7 @@ export class GraphUnfoldingMachine {
     const scan = (lo: number, hi: number) => {
       for (let i = lo; i < hi; i++) {
         const it = items[i];
+        if (!it.isEnabled) continue;
         const c = it.condition;        
         const currentOk = c.currentState === node.getSavedCurrentState() || c.currentState === NodeState.Ignored;
         const priorOk = c.priorState === NodeState.Ignored || c.priorState === node.priorState;
