@@ -107,7 +107,7 @@
     footer .left, footer .right{display:flex; align-items:center; gap:10px}
 
     /* Links & edges */
-    .link{vector-effect: non-scaling-stroke; stroke:#fff; stroke-width:2; stroke-linecap:round}
+    .link{vector-effect: non-scaling-stroke; stroke-width:2; stroke-linecap:round}
 
     /* Advanced collapsers */
     details.block summary{
@@ -124,7 +124,7 @@
 <body>
   <header>
     <div class="about-row">
-      <details class="about" open>
+      <details class="about">
         <summary>ℹ️ About this demo</summary>
         <div class="about-body">
           <p>“Genes” are change-tables for a Graph Unfolding Machine (GUM). Each step snapshots node states and applies the first matching rule. The demo lets you load YAML genomes, watch growth, and use a ✂️ <b>Scissors</b> tool to cut edges.</p>
@@ -160,8 +160,8 @@
       <div class="control-group">
         <h4>Tools</h4>
         <div class="toggle-group">
-          <button id="tool-move-button" class="toggle-btn" title="Move / pan / drag nodes">🖐️ Move</button>
-          <button id="tool-scissors-button" class="toggle-btn active" title="Cut edges while dragging">✂️ Scissors</button>
+          <button id="tool-move-button" class="toggle-btn active" title="Move / pan / drag nodes">🖐️ Move</button>
+          <button id="tool-scissors-button" class="toggle-btn" title="Cut edges while dragging">✂️ Scissors</button>
           <button id="slowdown-button" class="toggle-btn" title="Toggle slow mode">🐢 Slow down</button>
         </div>
       </div>
@@ -264,6 +264,7 @@
         <div class="row">
           <button id="pause-resume-button">Start</button>
           <button id="next-step-button">Next step</button>
+          <button id="reset-button">Reset</button>
         </div>
       </div>
     </aside>

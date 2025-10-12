@@ -7,7 +7,7 @@ import {
 import {
   mapOperationKind, mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
-  Node, Link
+  Node, Link, edgeColorByStates
 } from './utils';
 import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
@@ -100,7 +100,8 @@ const zoomOverlay = svg.append("rect")
 const graphGroup = svg.append("g");
 
 type Tool = 'move' | 'scissors';
-let currentTool: Tool = 'scissors';   // default ✂️
+let currentTool: Tool = 'move';       // default 🖐️
+
 
 // NOTE: we no longer scale line widths in JS; we rely on vector-effect or constant width.
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -181,7 +182,7 @@ function setTool(tool: Tool) {
 
 btnMove?.addEventListener('click', () => setTool('move'));
 btnScissors?.addEventListener('click', () => setTool('scissors'));
-setTool('scissors'); // default
+setTool('move');
 
 // Maintain single component toggle
 maintainChk?.addEventListener('change', () => {
@@ -219,7 +220,7 @@ const YAML_CATALOG = [
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },
 //  { name: 'Gun (replicator)', path: 'gun.yaml' },  
-  { name: 'Primitive Fractal', path: ' data/genoms/primitive_fractal_genom.yaml' },
+  { name: 'Primitive Fractal', path: 'data/genoms/primitive_fractal_genom.yaml' },
   // { name: 'Hex Mesh (legacy debug, continuable)', path: 'data/genoms/HexMesh_64.13_short_continuable.yaml' },
   // { name: 'Hex Mesh (legacy debug, resettable)', path: 'data/genoms/HexMesh_64.13_short_resettable.yaml' },
 ];
@@ -291,13 +292,14 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {}; // keep a clone for export base  
   // Build machine + graph from config
   (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
-
+  gumMachine.setMaxSteps(-1);
   // Reset UI run state, zoom & redraw
   resetGraph();                      // keep your visual state reset flow
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   resetZoom();
+  refreshMaxStepsInput();
 
   // (optional) Replace the select’s current option label to reflect a custom upload
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
@@ -476,13 +478,14 @@ function update() {
   const linkEnter = link.enter().append("line")
     .attr("class", "link")
     .attr("vector-effect", "non-scaling-stroke")
-    .attr("stroke", 'white');
+    .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
 
   linkEnter.merge(link)
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
     .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
     .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2);
+    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
+    .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
 
   link.exit().remove();
 
@@ -552,10 +555,7 @@ function update() {
       .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
       .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
       .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-      .attr("stroke", d => {
-        const maxState = Math.max((d.source as Node).state, (d.target as Node).state);
-        return getVertexRenderColor(maxState);
-      });
+      .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
@@ -757,15 +757,36 @@ function unfoldGraph() {
   update();
 }
 
+function currentStartState(): NodeState {
+  const s = lastLoadedConfig?.machine?.start_state;
+  return (typeof s === 'number') ? (s as NodeState) : mapNodeState(String(s ?? 'A'));
+  }
+
 function resetGraph() {
-  nodes = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
+      
+  const st = currentStartState();
+  nodes = [{ id: 1, x: width / 2, y: height / 2, state: st }];
   links = [];
   gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
   gumGraph.removeMarkedNodes();
   const newId = gumGraph.allocateNodeId();
-  gumGraph.addNode(new GUMNode(newId, NodeState.A));
+  gumGraph.addNode(new GUMNode(newId, st));
   update();
-}
+  }
+
+const resetBtn = document.getElementById('reset-button') as HTMLButtonElement | null;
+resetBtn?.addEventListener('click', () => {
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+  pauseResumeButton.textContent = 'Start';
+  pauseResumeButton.style.backgroundColor = 'lightgreen';
+  setControlsEnabled(true);
+  resetGraph();                 // reseed using current genome start_state
+  gumMachine.resetIterations?.();
+  resetZoom();
+});
+  
+    
 
 // Display options
 document.getElementById('display-options')?.addEventListener('change', function () {

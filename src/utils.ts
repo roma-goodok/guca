@@ -142,6 +142,13 @@ export function mapOperationKindToString(kind: OperationKindEnum): string {
     }
 }
 
+export function edgeColorByStates(a: NodeState, b: NodeState): string {
+    // Lower enum = higher priority (A preferred)
+    const winner = Math.min(a, b);
+    return getVertexRenderColor(winner as NodeState);
+  }
+  
+
 /**
  * Maps a GUMNode object to a Node object used for visualization.
  * @param gumNode - The GUMNode object.
