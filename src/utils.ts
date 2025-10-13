@@ -57,7 +57,7 @@ export function getVertexRenderColor(state: NodeState): string {
         case 4:
             return 'orange';
         case 5:
-            return 'lightYellow';
+            return 'violet';
         case 6:
             return 'yellow';
         case 7:
@@ -77,7 +77,7 @@ export function getVertexRenderColor(state: NodeState): string {
         case 14:
             return 'lightCyan';
         case 15:
-            return 'white';
+            return 'violet';
         case 0:
             return 'lightGray';
         default:
