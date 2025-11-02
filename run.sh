@@ -1,3 +1,3 @@
 npx jest --silent
-webpack --config webpack.config.js
-http-server -c-1
+npx webpack --config webpack.config.js
+npx http-server -c-1 

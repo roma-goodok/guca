@@ -15,8 +15,8 @@ This guide helps you set up a fresh development environment on **macOS** (Intel 
 > exec $SHELL
 > nvm install --lts
 > nvm use --lts
-> git clone https://github.com/roma-goodok/vogue.git
-> cd vogue
+> git clone https://github.com/roma-goodok/guca.git
+> cd guca
 > npm ci || npm install
 > npx jest --silent
 > npx webpack --config webpack.config.js
@@ -82,13 +82,17 @@ npm -v
 ## 3) Clone the project
 
 ```bash
-git clone https://github.com/roma-goodok/vogue.git
+git clone https://github.com/roma-goodok/guca.git
 cd vogue
 ```
 
 If you use SSH:
 ```bash
-git clone git@github.com:roma-goodok/vogue.git
+git clone git@github.com:roma-goodok/guca.git
+```
+
+```
+cd guca
 ```
 
 ---
