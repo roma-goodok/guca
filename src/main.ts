@@ -167,6 +167,7 @@ const btnMove = document.getElementById('tool-move-button') as HTMLButtonElement
 const btnScissors = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
 const maintainChk = document.getElementById('maintain-single-component') as HTMLInputElement | null;
 const slowBtn = document.getElementById('slowdown-button') as HTMLButtonElement | null;
+const orphanCleanupChk = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
 
 function setTool(tool: Tool) {
   currentTool = tool;
@@ -184,6 +185,8 @@ function setTool(tool: Tool) {
 btnMove?.addEventListener('click', () => setTool('move'));
 btnScissors?.addEventListener('click', () => setTool('scissors'));
 setTool('move');
+
+
 
 // Maintain single component toggle
 maintainChk?.addEventListener('change', () => {
@@ -290,10 +293,38 @@ async function loadGenomFromYaml(path: string) {
 }
 
 async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
-  lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {}; // keep a clone for export base  
+  lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {};
+
   // Build machine + graph from config
   (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
   gumMachine.setMaxSteps(-1);
+
+  // --- NEW: enable orphan cleanup ONLY if config didn't enable it:
+  const ocFromCfg = cfg?.machine?.orphan_cleanup;
+  if (!(ocFromCfg && ocFromCfg.enabled)) {
+    (gumMachine as any).setOrphanCleanup?.({
+      enabled: true,
+      thresholds: { size1: 5, size2: 7, others: 10 },
+      fadeStarts: { size1: 3, size2: 5, others: 8 },
+    });
+    // reflect into lastLoadedConfig so export matches runtime
+    lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+    lastLoadedConfig.machine.orphan_cleanup = {
+      enabled: true,
+      thresholds: { size1: 10, size2: 14, others: 20 },
+      fadeStarts: { size1: 3, size2: 5, others: 8 },
+    };
+  }
+
+  // Sync the checkbox with current machine state
+  const ocActive = (gumMachine as any).getOrphanCleanup?.()?.enabled ?? false;
+  if (orphanCleanupChk) orphanCleanupChk.checked = ocActive;
+
+  const mscNow = (gumMachine as any).getMaintainSingleComponent?.();
+  if (maintainChk && typeof mscNow === 'boolean') {
+    maintainChk.checked = mscNow;     // reflect YAML-loaded value in the UI
+  }
+
   // Reset UI run state, zoom & redraw
   resetGraph();                      // keep your visual state reset flow
   gumMachine.resetIterations();
@@ -476,17 +507,30 @@ function update() {
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
+  
   const linkEnter = link.enter().append("line")
-    .attr("class", "link")
-    .attr("vector-effect", "non-scaling-stroke")
-    .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
+  .attr("class", "link")
+  .attr("vector-effect", "non-scaling-stroke")
+  .attr("stroke", d => {
+    const s = gumGraph.getNodeById((d.source as Node).id);
+    const t = gumGraph.getNodeById((d.target as Node).id);
+    const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+    const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+    return mixWithBlack(base, f);
+  });
 
   linkEnter.merge(link)
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
     .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
     .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
     .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-    .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
+    .attr("stroke", d => {
+    const s = gumGraph.getNodeById((d.source as Node).id);
+    const t = gumGraph.getNodeById((d.target as Node).id);
+    const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+    const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+    return mixWithBlack(base, f);
+  });
 
   link.exit().remove();
 
@@ -513,9 +557,15 @@ function update() {
       })
     );
 
+
   nodeEnter.append("circle")
     .attr("r", d => config.debug ? 20 : 12.5)
-    .attr("fill", d => getVertexRenderColor(d.state));
+    .attr("fill", d => {
+      const gn = gumGraph.getNodeById(d.id);
+      const base = getVertexRenderColor(d.state);
+      const f = gn?.fade ?? 0;
+      return mixWithBlack(base, f);
+    });
 
   nodeEnter.append("text")
     .attr("dy", 3)
@@ -545,7 +595,12 @@ function update() {
       .attr("r", d => config.debug ? 20 : 12.5)
       .attr("cx", d => d.x!)
       .attr("cy", d => d.y!)
-      .attr("fill", d => getVertexRenderColor(d.state));
+      .attr("fill", d => {
+        const gn = gumGraph.getNodeById(d.id);
+        const base = getVertexRenderColor(d.state);
+        const f = gn?.fade ?? 0;
+        return mixWithBlack(base, f);
+      });
     mergedNodes.select("text")
       .attr("x", d => d.x!)
       .attr("y", d => d.y!)
@@ -556,7 +611,13 @@ function update() {
       .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
       .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
       .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-      .attr("stroke", d => edgeColorByStates((d.source as Node).state, (d.target as Node).state));
+      .attr("stroke", d => {
+        const s = gumGraph.getNodeById((d.source as Node).id);
+        const t = gumGraph.getNodeById((d.target as Node).id);
+        const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+        const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+        return mixWithBlack(base, f);
+      });
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
@@ -569,6 +630,19 @@ function update() {
   // Ensure positions are flushed
   simulation.tick();
 }
+
+function mixWithBlack(cssColor: string, t: number): string {
+  const c = d3.color(cssColor);
+  if (!c) return cssColor;
+  // @ts-ignore d3.color returns RGB-like object
+  const r = Math.round((c.r ?? 0) * (1 - t));
+  // @ts-ignore
+  const g = Math.round((c.g ?? 0) * (1 - t));
+  // @ts-ignore
+  const b = Math.round((c.b ?? 0) * (1 - t));
+  return `rgb(${r},${g},${b})`;
+}
+
 
 // ---------------------- Debug / status UI ----------------------
 function updateDebugInfo() {
@@ -1049,6 +1123,22 @@ maxStepsInput?.addEventListener('change', () => {
   gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
   // No need to restart; the stop condition will use the new value
 });
+
+orphanCleanupChk?.addEventListener('change', () => {
+  // Keep current thresholds/fadeStarts if present; otherwise reuse defaults
+  const current = (gumMachine as any).getOrphanCleanup?.() ?? {};
+  const next = {
+    enabled: !!orphanCleanupChk.checked,
+    thresholds: current.thresholds ?? { size1: 5, size2: 7, others: 10 },
+    fadeStarts: current.fadeStarts ?? { size1: 3, size2: 5, others: 8 },
+  };
+  (gumMachine as any).setOrphanCleanup?.(next);
+
+  // persist into lastLoadedConfig so Download YAML matches runtime
+  lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+  lastLoadedConfig.machine.orphan_cleanup = next;
+});
+
 
 // ---------------------- Boot ----------------------
 loadGenesLibrary().then(() => {

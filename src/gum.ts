@@ -14,6 +14,13 @@ export interface NearestSearchCfg {
   connect_all: boolean;
 }
 
+// NEW near other types:
+export interface OrphanCleanupCfg {
+  enabled: boolean;
+  thresholds?: { size1?: number; size2?: number; others?: number };
+  fadeStarts?: { size1?: number; size2?: number; others?: number };
+}
+
 export interface MachineCfg {
   start_state: NodeState;
   transcription: TranscriptionWay;
@@ -23,6 +30,7 @@ export interface MachineCfg {
   rng_seed?: number;
   nearest_search: NearestSearchCfg;
   maintain_single_component?: boolean;
+  orphan_cleanup?: OrphanCleanupCfg;
 }
 
 // ----------------- RNG -----------------
@@ -116,6 +124,8 @@ export class GUMNode {
   public markedAsDeleted = false;
   public markedNew = true;
   public priorState = NodeState.Unknown;
+  public orphanAge = 0;
+  public fade = 0;
 
   // step snapshots
   public savedDegree = 0;
@@ -300,6 +310,19 @@ export class GraphUnfoldingMachine {
     return this.cfg.max_vertices > 0 && this.graph.getNodes().length >= this.cfg.max_vertices;
   }
 
+  public getOrphanCleanup(): OrphanCleanupCfg | undefined {
+    return (this as any).cfg?.orphan_cleanup;
+  }
+  
+  public setOrphanCleanup(cfg: OrphanCleanupCfg) {
+    (this.cfg as any).orphan_cleanup = cfg;
+  }
+
+
+  public getMaintainSingleComponent(): boolean {
+    return !!this.cfg.maintain_single_component;
+  }
+
 
   clearRuleTable() {
     this.ruleTable.clear();
@@ -477,6 +500,72 @@ export class GraphUnfoldingMachine {
     }
   }
 
+
+  // Inside cleanupOrphansIfEnabled(), replace the fade block:
+
+ 
+  private cleanupOrphansIfEnabled(): void {
+    const oc = this.cfg.orphan_cleanup;
+    if (!oc?.enabled) return;
+    if (this.cfg.maintain_single_component) return;
+
+    const comps = this.graph.getConnectedComponents();
+    if (comps.length <= 1) {
+      // back to single component; reset all
+      for (const n of this.graph.getNodes()) { n.orphanAge = 0; n.fade = 0; }
+      return;
+    }
+
+    // pick primary the same way as enforceSingleComponentIfEnabled()
+    const score = (comp: GUMNode[]) => ({
+      minParents: Math.min(...comp.map(n => n.parentsCount)),
+      minId: Math.min(...comp.map(n => n.id)),
+    });
+    let keep = 0, best = score(comps[0]);
+    for (let i = 1; i < comps.length; i++) {
+      const s = score(comps[i]);
+      if (s.minParents < best.minParents || (s.minParents === best.minParents && s.minId < best.minId)) {
+        best = s; keep = i;
+      }
+    }
+
+    const T = {
+      size1: oc.thresholds?.size1 ?? 5,
+      size2: oc.thresholds?.size2 ?? 7,
+      others: oc.thresholds?.others ?? 10,
+    };
+    const F = {
+      size1: oc.fadeStarts?.size1 ?? (T.size1 - 2),   // 3
+      size2: oc.fadeStarts?.size2 ?? (T.size2 - 2),   // 5
+      others: oc.fadeStarts?.others ?? (T.others - 2) // 8
+    };
+
+    comps.forEach((comp, idx) => {
+      const isPrimary = idx === keep;
+      const size = comp.length;
+      const th = size === 1 ? T.size1 : size === 2 ? T.size2 : T.others;
+      const fs = size === 1 ? F.size1 : size === 2 ? F.size2 : F.others;
+
+      for (const n of comp) {
+        if (isPrimary) { n.orphanAge = 0; n.fade = 0; continue; }
+
+        n.orphanAge = (n.orphanAge ?? 0) + 1;
+
+        if (n.orphanAge >= th) {
+          n.markedAsDeleted = true;
+          continue;
+        }
+        if (n.orphanAge >= fs) {
+          const denom = Math.max(1, th - fs);
+          const k = (n.orphanAge - fs + 1);
+          n.fade = Math.min(1, k / denom);
+        } else {
+          n.fade = 0;
+        }        
+      }
+    });
+  }
+
   runOneStep(): boolean {
     this.snapshotAllNodes();
     this.ruleTable.items.forEach(it => { it.isActive = false; it.isActiveInNodes = []; });
@@ -501,6 +590,7 @@ export class GraphUnfoldingMachine {
     }
 
     this.iterations++;
+    this.cleanupOrphansIfEnabled();
     this.graph.removeMarkedNodes();
     this.enforceSingleComponentIfEnabled();
     return didAnything;

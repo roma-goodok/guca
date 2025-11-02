@@ -50,6 +50,10 @@ import {
     } else {
       gumGraph.addNode(new GUMNode(1, startState));
     }
+
+    const mscFromCfg = machineBlock?.maintain_single_component;
+    const maintainSingle = (typeof mscFromCfg === 'boolean') ? mscFromCfg : Boolean(maintainSingleComponent);
+
   
     // 3) build MachineCfg
     const mc: MachineCfg = {
@@ -64,7 +68,8 @@ import {
         tie_breaker: (machineBlock?.nearest_search?.tie_breaker ?? 'stable'),
         connect_all: Boolean(machineBlock?.nearest_search?.connect_all ?? false),
       },
-      maintain_single_component: Boolean(maintainSingleComponent),
+      maintain_single_component: maintainSingle,
+      orphan_cleanup: machineBlock?.orphan_cleanup ?? { enabled: false },
     };
   
     // 4) construct machine
@@ -106,4 +111,3 @@ import {
     (machine as any).setMaintainSingleComponent?.(mc.maintain_single_component ?? true);
     return machine;
   }
-  
