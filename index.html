@@ -95,6 +95,19 @@
       outline:2px solid var(--accent);
       outline-offset:2px;
     }
+    /* Palette grid (debug) */
+    .palette-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:8px;
+    }
+    .palette-chip{
+      height:32px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      box-shadow:var(--tile-shadow);
+    }
+
 
     .legend{font-size:.85rem; color:#374151; display:flex; gap:8px; flex-wrap:wrap}
 
@@ -191,6 +204,14 @@
         </div>
       </div>
 
+      <div class="control-group">
+        <div class="row">
+          <button id="pause-resume-button">Start</button>
+          <button id="next-step-button">Next step</button>
+          <button id="reset-button">Reset</button>
+        </div>
+      </div>
+
       <details class="block" id="settings-block">
         <summary>⚙️ Machine settings</summary>
         <div class="row" style="margin-top:6px">
@@ -256,13 +277,11 @@
         </div>
       </details>
 
-      <div class="control-group">
-        <div class="row">
-          <button id="pause-resume-button">Start</button>
-          <button id="next-step-button">Next step</button>
-          <button id="reset-button">Reset</button>
-        </div>
-      </div>
+      <details class="block" id="palette-block">  <!-- no 'open' attribute = collapsed default -->
+        <summary role="button" tabindex="0">🎨 Color palette (debug)</summary>
+        <div id="palette-grid" class="palette-grid"
+            title="Hover a swatch to see its index and color name"></div>
+      </details>
     </aside>
   </div>
 

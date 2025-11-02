@@ -7,8 +7,9 @@ import {
 import {
   mapOperationKind, mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
-  Node, Link, edgeColorByStates
+  Node, Link, edgeColorByStates, PALETTE16
 } from './utils';
+
 import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
 
@@ -219,7 +220,7 @@ const YAML_CATALOG = [
   { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml' },
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },
-//  { name: 'Gun (replicator)', path: 'gun.yaml' },  
+  { name: 'Gun (replicator)', path: 'data/genoms/gun.yaml' },  
   { name: 'Primitive Fractal', path: 'data/genoms/primitive_fractal_genom.yaml' },
   // { name: 'Hex Mesh (legacy debug, continuable)', path: 'data/genoms/HexMesh_64.13_short_continuable.yaml' },
   // { name: 'Hex Mesh (legacy debug, resettable)', path: 'data/genoms/HexMesh_64.13_short_resettable.yaml' },
@@ -960,6 +961,44 @@ function setControlsEnabled(enabled: boolean) {
   });
 }
 
+function renderPaletteGrid() {
+  const grid = document.getElementById('palette-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  PALETTE16.forEach((name, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'palette-chip';
+    cell.style.background = name;
+    cell.title = `#${idx} — ${name}`;
+    grid.appendChild(cell);
+  });
+}
+
+function wireDetailsToggle(detailsId: string) {
+  const det = document.getElementById(detailsId) as HTMLDetailsElement | null;
+  if (!det) return;
+  const summary = det.querySelector('summary');
+  if (!summary) return;
+
+  // Click: toggle open unless the click originated from an interactive child
+  summary.addEventListener('click', (e) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('a,button,input,select,textarea,label')) return; // let native behavior
+    e.preventDefault();
+    det.open = !det.open;
+  });
+
+  // Keyboard: Enter / Space toggles as well
+  summary.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      det.open = !det.open;
+    }
+  });
+}
+
+
+
 const downloadBtn = document.getElementById('download-yaml-button') as HTMLButtonElement | null;
 downloadBtn?.addEventListener('click', () => {
   const items = gumMachine.getRuleItems();
@@ -1013,12 +1052,17 @@ maxStepsInput?.addEventListener('change', () => {
 
 // ---------------------- Boot ----------------------
 loadGenesLibrary().then(() => {
-  // Initially disabled until user starts
   setControlsEnabled(false);
   refreshMaxStepsInput();
-});
+  renderPaletteGrid();
+  wireDetailsToggle('palette-block');
 
-// Populate state combos
-populateStateComboBox('node-state');
-populateStateComboBox('change-node-state');
-populateStateComboBox('connect-nearest-state');
+  // Ensure collapsed by default
+  const det = document.getElementById('palette-block') as HTMLDetailsElement | null;
+  if (det) det.open = true;
+
+  // Populate state combos
+  populateStateComboBox('node-state');
+  populateStateComboBox('change-node-state');
+  populateStateComboBox('connect-nearest-state');
+});

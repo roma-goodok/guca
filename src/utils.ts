@@ -1,6 +1,25 @@
 // utils.ts
 import { NodeState, OperationKindEnum, GUMNode, RuleItem } from './gum';
 
+export const PALETTE16: string[] = [
+  'lightGray',   // 0
+  'pink',        // 1
+  'red',         // 2
+  'orangeRed',   // 3
+  'orange',      // 4
+  'violet',      // 5
+  'yellow',      // 6
+  'lightGreen',  // 7
+  'green',       // 8
+  'lightSeaGreen', // 9
+  'seaGreen',    // 10
+  'lightBlue',   // 11
+  'blue',        // 12
+  'violet',      // 13
+  'lightCyan',   // 14
+  'violet',      // 15
+];
+
 // Define the Node interface to represent a graph node with properties for position, velocity, force, and state.
 export interface Node {
     id: number;
@@ -41,50 +60,10 @@ export function mapOperationKind(kind: string): OperationKindEnum {
   }
   
 
-/**
- * Gets the color used to render a vertex based on its state.
- * @param state - The state of the node.
- * @returns The color corresponding to the node state.
- */
 export function getVertexRenderColor(state: NodeState): string {
-    switch (state % 16) {
-        case 1:
-            return 'pink';
-        case 2:
-            return 'red';
-        case 3:
-            return 'orangeRed';
-        case 4:
-            return 'orange';
-        case 5:
-            return 'violet';
-        case 6:
-            return 'yellow';
-        case 7:
-            return 'lightGreen';
-        case 8:
-            return 'green';
-        case 9:
-            return 'lightSeaGreen';
-        case 10:
-            return 'seaGreen';
-        case 11:
-            return 'lightBlue';
-        case 12:
-            return 'blue';
-        case 13:
-            return 'violet';
-        case 14:
-            return 'lightCyan';
-        case 15:
-            return 'violet';
-        case 0:
-            return 'lightGray';
-        default:
-            return 'gray';
-    }
+  const idx = ((state as number) % 16 + 16) % 16; // robust modulo
+  return PALETTE16[idx] ?? 'gray';
 }
-
 /**
  * Gets the text color used to render a vertex based on its state.
  * @param state - The state of the node.
