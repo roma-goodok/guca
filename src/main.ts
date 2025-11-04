@@ -1,3 +1,14 @@
+/**
+ * main.ts — GUCA interactive demo
+ * Purpose: wire up DOM/controls, D3 force graph, camera/viewport helpers,
+ * genome loading/export, scissors tool, and the Graph Unfolding Machine (GUM).
+ *
+ * This file intentionally performs a light, non-functional refactor:
+ *  - clear sectioning and order of declarations
+ *  - minimal, onboarding-oriented comments
+ *  - no behavior changes
+ */
+
 import * as d3 from 'd3';
 import {
   GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState,
@@ -14,8 +25,10 @@ import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
 import { computeKToSatisfyMaxFill } from './viewport';
 
+/* =========================================================================
+   1) CONSTANTS / GLOBAL CONFIG
+   ========================================================================= */
 
-// ---------------------- Machine defaults ----------------------
 const DEFAULT_MACHINE_CFG: MachineCfg = {
   start_state: NodeState.A,
   transcription: 'resettable' as TranscriptionWay,
@@ -28,102 +41,86 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
     tie_breaker: 'stable',
     connect_all: false,
   },
-  maintain_single_component: true, // NEW default
+  maintain_single_component: true,
 };
 
-// Global configuration (debug UI verbosity)
-const config = { debug: false };
+const config = { debug: false };              // simple UI verbosity flag
+const FAST_MS_DEFAULT = 100;                  // default fast tick ms
+const SLOW_MS = 700;                          // slow mode tick ms
+const AUTO_MAX_FILL = 0.5;                    // auto camera max fill
+const CAMERA_MA_WINDOW = 25;                  // smooth camera EMA window
+const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1);
+
+/* =========================================================================
+   2) STATE (runtime, UI toggles, misc)
+   ========================================================================= */
+
+type Tool = 'move' | 'scissors';
+
 let showAllRules = false;
 let lastLoadedConfig: any = null;
 
-// ---------------------- Small helpers (local, no logic changes) ----------------------
+let isSimulationRunning = false;
+let simulationInterval: any;
 
-// Color chip for operation kind (distinct from state colors)
-function opKindColor(kind: OperationKindEnum): string {
-  switch (kind) {
-    case OperationKindEnum.TurnToState:            return '#fde68a'; // amber-200
-    case OperationKindEnum.GiveBirthConnected:     return '#bbf7d0'; // green-200
-    case OperationKindEnum.GiveBirth:              return '#dcfce7'; // green-100
-    case OperationKindEnum.TryToConnectWithNearest:return '#bfdbfe'; // blue-200
-    case OperationKindEnum.TryToConnectWith:       return '#dbeafe'; // blue-100
-    case OperationKindEnum.DisconectFrom:          return '#fecaca'; // red-200
-    case OperationKindEnum.Die:                    return '#e5e7eb'; // gray-200
-    default:                                       return '#e5e7eb';
-  }
-}
-function nodeStateLetter(s: NodeState): string {
-  if (s === NodeState.Unknown) return "Unknown";
-  if (s === NodeState.Ignored) return "any";
-  if (s >= NodeState.A && s <= NodeState.Z) return String.fromCharCode(64 + s);
-  return String(s);
-}
-// Human-readable tooltip for a rule tile (self-contained to avoid extra deps)
-function describeRuleHuman(item: RuleItem): string {
-  const c = item.condition, o = item.operation;
-  const cur = nodeStateLetter(c.currentState);
-  const prior = nodeStateLetter(c.priorState);
-  const bits: string[] = [];
-  if (c.allConnectionsCount_GE >= 0) bits.push(`c≥${c.allConnectionsCount_GE}`);
-  if (c.allConnectionsCount_LE >= 0) bits.push(`c≤${c.allConnectionsCount_LE}`);
-  if (c.parentsCount_GE >= 0)        bits.push(`p≥${c.parentsCount_GE}`);
-  if (c.parentsCount_LE >= 0)        bits.push(`p≤${c.parentsCount_LE}`);
-  const cond = `if current=${cur}${c.priorState!==NodeState.Ignored?` & prior=${prior}`:''}${bits.length?` & ${bits.join(' & ')}`:''}`;
-  const opS = nodeStateLetter(o.operandNodeState);
-  let act = '';
-  switch (o.kind) {
-    case OperationKindEnum.TurnToState:            act = `turn to ${opS}`; break;
-    case OperationKindEnum.GiveBirthConnected:     act = `give birth to ${opS} (connected)`; break;
-    case OperationKindEnum.GiveBirth:              act = `give birth to ${opS}`; break;
-    case OperationKindEnum.TryToConnectWithNearest:act = `connect to nearest ${opS}`; break;
-    case OperationKindEnum.TryToConnectWith:       act = `connect to all ${opS}`; break;
-    case OperationKindEnum.DisconectFrom:          act = `disconnect from ${opS}`; break;
-    case OperationKindEnum.Die:                    act = `die`; break;
-    default:                                       act = `do operation`;
-  }
-  return `${act} ${cond}`;
-}
+let slowMode = false;
+let fastMs = FAST_MS_DEFAULT;
 
-// ----------------------  Camera / autosmooth config ----------------------
-const AUTO_MAX_FILL = 0.5;       // 50% of viewport
-const CAMERA_MA_WINDOW = 25;     // ~EMA window
-const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1); // ≈0.039
+let currentTool: Tool = 'move';
+let isCutting = false;
+let lastCutPt: { x: number; y: number } | null = null;
 
 type CameraState = { k: number; x: number; y: number };
 let camCurrent: CameraState = { k: 1, x: 0, y: 0 };
 let camTarget:  CameraState = { k: 1, x: 0, y: 0 };
 let lastUserGestureAt = 0;
 
+/* =========================================================================
+   3) DOM REFERENCES (queried once)
+   ========================================================================= */
+
+const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
+const resetBtn          = document.getElementById('reset-button') as HTMLButtonElement | null;
+
+const btnMove      = document.getElementById('tool-move-button') as HTMLButtonElement | null;
+const btnScissors  = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
+const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonElement | null;
+
+const maintainChk       = document.getElementById('maintain-single-component') as HTMLInputElement | null;
+const orphanCleanupChk  = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
+
 const autoCenterChk = document.getElementById('auto-center-checkbox') as HTMLInputElement | null;
 const autoScaleChk  = document.getElementById('auto-scale-checkbox')  as HTMLInputElement | null;
+
+const downloadBtn  = document.getElementById('download-yaml-button') as HTMLButtonElement | null;
+const maxStepsInput = document.getElementById('max-steps-input') as HTMLInputElement | null;
+
+const uploadInput  = document.getElementById('gene-upload') as HTMLInputElement | null;
+const simulationIntervalSlider = document.getElementById('simulation-interval') as HTMLInputElement | null;
+const simulationIntervalLabel  = document.getElementById('simulation-interval-value');
+
 let autoCenterEnabled = !!autoCenterChk?.checked;
 let autoScaleEnabled  = !!autoScaleChk?.checked;
 
-autoCenterChk?.addEventListener('change', () => { autoCenterEnabled = !!autoCenterChk.checked; });
-autoScaleChk?.addEventListener('change',  () => { autoScaleEnabled  = !!autoScaleChk.checked; });
+/* =========================================================================
+   4) SVG / D3 SETUP
+   ========================================================================= */
 
-
-// ---------------------- SVG / D3 setup ----------------------
 const width = 960;
 const height = 800;
 
-// Create the SVG container inside #canvas-container
 const svg = d3.select("#canvas-container svg")
   .attr("width", "100%")
   .attr("height", height);
 
-// Full-canvas overlay to capture interactions (zoom/cut)
+const graphGroup = svg.append("g");
+
+// Overlay to capture zoom/pan interactions
 const zoomOverlay = svg.append("rect")
   .attr("width", "100%")
   .attr("height", height)
   .attr("fill", "transparent")
   .attr("pointer-events", "all");
-
-// Group that holds the graph elements
-const graphGroup = svg.append("g");
-
-type Tool = 'move' | 'scissors';
-let currentTool: Tool = 'move';       // default 🖐️
-
 
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   .scaleExtent([0.01, 10])
@@ -141,6 +138,13 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   });
 
 (svg as any).call(zoomBehavior as any);
+
+/* =========================================================================
+   5) CAMERA & VIEWPORT HELPERS
+   ========================================================================= */
+
+autoCenterChk?.addEventListener('change', () => { autoCenterEnabled = !!autoCenterChk.checked; });
+autoScaleChk?.addEventListener('change',  () => { autoScaleEnabled  = !!autoScaleChk.checked; });
 
 function primaryComponentNodeIds(): Set<number> {
   const comps = gumGraph.getConnectedComponents();
@@ -175,9 +179,11 @@ function computeBBoxForNodes(filter?: Set<number>) {
   return { w, h, cx, cy };
 }
 
-// NEW
+function resetZoom() {
+  svg.call((zoomBehavior as any).transform, d3.zoomIdentity as any);
+}
+
 function maybeAutoViewport() {
-  // Don’t fight the user within ~0.8s after a gesture
   if (Date.now() - lastUserGestureAt < 800) return;
 
   const ids = primaryComponentNodeIds();
@@ -187,15 +193,12 @@ function maybeAutoViewport() {
   const rect = (svg.node() as SVGSVGElement).getBoundingClientRect();
   const vw = rect.width, vh = rect.height;
 
-  // Target scale (zoom‑out only)
   let targetK = camCurrent.k;
   if (autoScaleEnabled) {
     const kFit = computeKToSatisfyMaxFill(bb.w, bb.h, vw, vh, AUTO_MAX_FILL);
-    // Only zoom OUT automatically. Never zoom in (leave that to the user).
-    targetK = Math.min(camCurrent.k, kFit);
+    targetK = Math.min(camCurrent.k, kFit); // only zoom out automatically
   }
 
-  // Target pan to keep the primary center in the viewport center at targetK
   let targetX = camCurrent.x, targetY = camCurrent.y;
   if (autoCenterEnabled) {
     const cxScreen = vw / 2, cyScreen = vh / 2;
@@ -205,14 +208,12 @@ function maybeAutoViewport() {
 
   camTarget = { k: targetK, x: targetX, y: targetY };
 
-  // Smooth approach with EMA
   const next: CameraState = {
     k: camCurrent.k + (camTarget.k - camCurrent.k) * CAMERA_ALPHA,
     x: camCurrent.x + (camTarget.x - camCurrent.x) * CAMERA_ALPHA,
     y: camCurrent.y + (camTarget.y - camCurrent.y) * CAMERA_ALPHA,
   };
 
-  // Apply if any meaningful change; will trigger the zoom handler
   if (Math.abs(next.k - camCurrent.k) > 1e-4 ||
       Math.abs(next.x - camCurrent.x) > 0.3 ||
       Math.abs(next.y - camCurrent.y) > 0.3) {
@@ -221,7 +222,76 @@ function maybeAutoViewport() {
   }
 }
 
-// ---------------------- Simulation ----------------------
+window.addEventListener('resize', () => {
+  lastUserGestureAt = 0;         // nudge computation
+  maybeAutoViewport();
+});
+
+/* =========================================================================
+   6) SMALL PURE HELPERS (colors, labels)
+   ========================================================================= */
+
+function opKindColor(kind: OperationKindEnum): string {
+  switch (kind) {
+    case OperationKindEnum.TurnToState:            return '#fde68a';
+    case OperationKindEnum.GiveBirthConnected:     return '#bbf7d0';
+    case OperationKindEnum.GiveBirth:              return '#dcfce7';
+    case OperationKindEnum.TryToConnectWithNearest:return '#bfdbfe';
+    case OperationKindEnum.TryToConnectWith:       return '#dbeafe';
+    case OperationKindEnum.DisconectFrom:          return '#fecaca';
+    case OperationKindEnum.Die:                    return '#e5e7eb';
+    default:                                       return '#e5e7eb';
+  }
+}
+
+function nodeStateLetter(s: NodeState): string {
+  if (s === NodeState.Unknown) return "Unknown";
+  if (s === NodeState.Ignored) return "any";
+  if (s >= NodeState.A && s <= NodeState.Z) return String.fromCharCode(64 + s);
+  return String(s);
+}
+
+function describeRuleHuman(item: RuleItem): string {
+  const c = item.condition, o = item.operation;
+  const cur = nodeStateLetter(c.currentState);
+  const prior = nodeStateLetter(c.priorState);
+  const bits: string[] = [];
+  if (c.allConnectionsCount_GE >= 0) bits.push(`c≥${c.allConnectionsCount_GE}`);
+  if (c.allConnectionsCount_LE >= 0) bits.push(`c≤${c.allConnectionsCount_LE}`);
+  if (c.parentsCount_GE >= 0)        bits.push(`p≥${c.parentsCount_GE}`);
+  if (c.parentsCount_LE >= 0)        bits.push(`p≤${c.parentsCount_LE}`);
+  const cond = `if current=${cur}${c.priorState!==NodeState.Ignored?` & prior=${prior}`:''}${bits.length?` & ${bits.join(' & ')}`:''}`;
+  const opS = nodeStateLetter(o.operandNodeState);
+  let act = '';
+  switch (o.kind) {
+    case OperationKindEnum.TurnToState:            act = `turn to ${opS}`; break;
+    case OperationKindEnum.GiveBirthConnected:     act = `give birth to ${opS} (connected)`; break;
+    case OperationKindEnum.GiveBirth:              act = `give birth to ${opS}`; break;
+    case OperationKindEnum.TryToConnectWithNearest:act = `connect to nearest ${opS}`; break;
+    case OperationKindEnum.TryToConnectWith:       act = `connect to all ${opS}`; break;
+    case OperationKindEnum.DisconectFrom:          act = `disconnect from ${opS}`; break;
+    case OperationKindEnum.Die:                    act = `die`; break;
+    default:                                       act = `do operation`;
+  }
+  return `${act} ${cond}`;
+}
+
+function mixWithBlack(cssColor: string, t: number): string {
+  const c = d3.color(cssColor);
+  if (!c) return cssColor;
+  // @ts-ignore d3.color returns RGB-like object
+  const r = Math.round((c.r ?? 0) * (1 - t));
+  // @ts-ignore
+  const g = Math.round((c.g ?? 0) * (1 - t));
+  // @ts-ignore
+  const b = Math.round((c.b ?? 0) * (1 - t));
+  return `rgb(${r},${g},${b})`;
+}
+
+/* =========================================================================
+   7) D3 SIMULATION (force layout) + MIRRORED ARRAYS
+   ========================================================================= */
+
 const simulation = d3.forceSimulation<Node, Link>()
   .force("link", d3.forceLink<Node, Link>()
     .id((d: Node) => d.id.toString())
@@ -230,85 +300,25 @@ const simulation = d3.forceSimulation<Node, Link>()
   .force("center", d3.forceCenter(width / 2, height / 2))
   .velocityDecay(0.2);
 
-// Graph state mirrored for D3
 let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
 let links: Link[] = [];
 
-// ---------------------- GUM init ----------------------
+/* =========================================================================
+   8) GUM GRAPH + MACHINE (core engine)
+   ========================================================================= */
+
 const gumGraph = new GUMGraph();
 let gumMachine = new GraphUnfoldingMachine(gumGraph, DEFAULT_MACHINE_CFG);
 
-// Simulation control
-let isSimulationRunning = false;
-let simulationInterval: any;
-
-// Simple speed model: fast (slider) vs slow mode (toggle)
-let slowMode = false;
-let fastMs = 100;
-const FAST_MS_DEFAULT = 100;
-const SLOW_MS = 700;
-const currentIntervalMs = () => (slowMode ? SLOW_MS : fastMs || FAST_MS_DEFAULT);
-
-// UI controls we already have
-const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
-pauseResumeButton.textContent = 'Start';
-pauseResumeButton.style.backgroundColor = 'lightgreen';
-
-// ---------------------- New UI: tools & single-component ----------------------
-let isCutting = false;
-let lastCutPt: { x: number; y: number } | null = null;
-
-const btnMove = document.getElementById('tool-move-button') as HTMLButtonElement | null;
-const btnScissors = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
-const maintainChk = document.getElementById('maintain-single-component') as HTMLInputElement | null;
-const slowBtn = document.getElementById('slowdown-button') as HTMLButtonElement | null;
-const orphanCleanupChk = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
-
-function setTool(tool: Tool) {
-  currentTool = tool;
-  btnMove?.classList.toggle('active', tool === 'move');
-  btnScissors?.classList.toggle('active', tool === 'scissors');
-
-  // Cursor hint
-  svg.style('cursor', tool === 'scissors' ? 'crosshair' : 'default');
-
-  // Make nodes non-interactive in Scissors mode so drags don't steal events
-  graphGroup.selectAll<SVGGElement, Node>('.node')
-    .style('pointer-events', tool === 'scissors' ? 'none' : 'auto');
+function currentStartState(): NodeState {
+  const s = lastLoadedConfig?.machine?.start_state;
+  return (typeof s === 'number') ? (s as NodeState) : mapNodeState(String(s ?? 'A'));
 }
 
-btnMove?.addEventListener('click', () => setTool('move'));
-btnScissors?.addEventListener('click', () => setTool('scissors'));
-setTool('move');
+/* =========================================================================
+   9) GENOME CATALOG / LOADING / EXPORT
+   ========================================================================= */
 
-
-
-// Maintain single component toggle
-maintainChk?.addEventListener('change', () => {
-  const on = !!maintainChk.checked;
-  const fn = (gumMachine as any)?.setMaintainSingleComponent;
-  if (typeof fn === 'function') fn.call(gumMachine, on);
-  const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
-  if (on && typeof enforce === 'function') {
-    enforce.call(gumMachine);
-    update();
-  }
-});
-
-// Slow mode toggle (optional button)
-slowBtn?.addEventListener('click', () => {
-  slowMode = !slowMode;
-  slowBtn.classList.toggle('active', slowMode);
-  slowBtn.textContent = slowMode ? '🐢 Slow down (ON)' : '🐢 Slow down';
-  if (isSimulationRunning) {
-    clearInterval(simulationInterval);
-    simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
-  }
-});
-
-// ---------------------- Genome catalog ----------------------
-
-// Hardcode a small catalog or generate it server-side
 const YAML_CATALOG = [
   { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
   { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml' },  
@@ -320,8 +330,6 @@ const YAML_CATALOG = [
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },
   { name: 'Gun (replicator)', path: 'data/genoms/gun.yaml' },  
   { name: 'Primitive Fractal', path: 'data/genoms/primitive_fractal_genom.yaml' },
-  // { name: 'Hex Mesh (legacy debug, continuable)', path: 'data/genoms/HexMesh_64.13_short_continuable.yaml' },
-  // { name: 'Hex Mesh (legacy debug, resettable)', path: 'data/genoms/HexMesh_64.13_short_resettable.yaml' },
 ];
 
 async function fetchYaml(path: string): Promise<any> {
@@ -339,7 +347,6 @@ async function loadGenesLibrary() {
     opt.value = path; opt.text = name; geneSelect.add(opt);
   });
 
-  // load initial
   await loadGenomFromYaml(geneSelect.value);
 
   geneSelect.addEventListener('change', async (ev) => {
@@ -350,51 +357,18 @@ async function loadGenesLibrary() {
   updateDebugInfo();
 }
 
-const uploadInput = document.getElementById('gene-upload') as HTMLInputElement | null;
-if (uploadInput) {
-  uploadInput.addEventListener('change', async () => {
-    const f = uploadInput.files?.[0];
-    if (!f) return;
-    const text = await f.text();
-    let cfg: any = null;
-    try {
-      // try YAML first; if it fails, try JSON
-      cfg = yaml.load(text);
-      if (!cfg || typeof cfg !== 'object') throw new Error('Empty YAML');
-    } catch {
-      try {
-        cfg = JSON.parse(text);
-      } catch (e) {
-        alert('Unable to parse file. Please upload a valid YAML or JSON genome.');
-        return;
-      }
-    }
-    await applyGenomConfig(cfg, f.name);
-    refreshMaxStepsInput();
-    updateDebugInfo();
-  });
-}
-
-function toNodeState(s: any): NodeState {
-  // supports numbers or strings
-  if (typeof s === 'number') return s as NodeState;
-  return mapNodeState(String(s));
-}
-
 async function loadGenomFromYaml(path: string) {
   const cfg = await fetchYaml(path);
-  await applyGenomConfig(cfg, /*labelForSelect*/ null);
+  await applyGenomConfig(cfg, null);
   refreshMaxStepsInput();
 }
 
 async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {};
 
-  // Build machine + graph from config
   (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
   gumMachine.setMaxSteps(-1);
 
-  // --- NEW: enable orphan cleanup ONLY if config didn't enable it:
   const ocFromCfg = cfg?.machine?.orphan_cleanup;
   if (!(ocFromCfg && ocFromCfg.enabled)) {
     (gumMachine as any).setOrphanCleanup?.({
@@ -411,24 +385,21 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
     };
   }
 
-  // Sync the checkbox with current machine state
   const ocActive = (gumMachine as any).getOrphanCleanup?.()?.enabled ?? false;
   if (orphanCleanupChk) orphanCleanupChk.checked = ocActive;
 
   const mscNow = (gumMachine as any).getMaintainSingleComponent?.();
   if (maintainChk && typeof mscNow === 'boolean') {
-    maintainChk.checked = mscNow;     // reflect YAML-loaded value in the UI
+    maintainChk.checked = mscNow;
   }
 
-  // Reset UI run state, zoom & redraw
-  resetGraph();                      // keep your visual state reset flow
+  resetGraph();
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   resetZoom();
   refreshMaxStepsInput();
 
-  // (optional) Replace the select’s current option label to reflect a custom upload
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
   if (labelForSelect && sel) {
     let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
@@ -443,43 +414,105 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   }
 }
 
-// Reset zoom transform to identity
-function resetZoom() {
-  svg.call((zoomBehavior as any).transform, d3.zoomIdentity as any);
+downloadBtn?.addEventListener('click', () => {
+  const items = gumMachine.getRuleItems();
+  const toName = (s:number)=> (typeof s==='number' ? (NodeState as any)[s] ?? s : s);
+  const toRule = (it:any)=>({
+    condition: {
+      current: toName(it.condition.currentState),
+      prior:   toName(it.condition.priorState === undefined ? 'any' : it.condition.priorState),
+      conn_ge: it.condition.allConnectionsCount_GE,
+      conn_le: it.condition.allConnectionsCount_LE,
+      parents_ge: it.condition.parentsCount_GE,
+      parents_le: it.condition.parentsCount_LE,
+    },
+    op: {
+      kind: (it.operation.kind !== undefined) ? mapOperationKindToString(it.operation.kind) : String(it.operation.kind),
+      operand: toName(it.operation.operandNodeState),
+    }
+  });
+
+  const machineBlock: any = {
+    ...(lastLoadedConfig?.machine ?? {}),
+    max_steps: gumMachine.getMaxSteps(),
+  };
+
+  const out = {
+    machine: machineBlock,
+    init_graph: lastLoadedConfig?.init_graph ?? { nodes: [{ state: toName((machineBlock.start_state ?? NodeState.A)) }] },
+    rules: items.map(toRule),
+  };
+
+  const text = yaml.dump(out, { lineWidth: 120 });
+  const blob = new Blob([text], { type: 'application/x-yaml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'genome_export.yaml';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+});
+
+if (uploadInput) {
+  uploadInput.addEventListener('change', async () => {
+    const f = uploadInput.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    let cfg: any = null;
+    try {
+      cfg = yaml.load(text);
+      if (!cfg || typeof cfg !== 'object') throw new Error('Empty YAML');
+    } catch {
+      try { cfg = JSON.parse(text); }
+      catch { alert('Unable to parse file. Please upload a valid YAML or JSON genome.'); return; }
+    }
+    await applyGenomConfig(cfg, f.name);
+    refreshMaxStepsInput();
+    updateDebugInfo();
+  });
 }
 
-// ------------- Geometry helpers for scissors -------------
+/* =========================================================================
+   10) SCISSORS TOOL (edge cutting)
+   ========================================================================= */
+
+function setTool(tool: Tool) {
+  currentTool = tool;
+  btnMove?.classList.toggle('active', tool === 'move');
+  btnScissors?.classList.toggle('active', tool === 'scissors');
+  svg.style('cursor', tool === 'scissors' ? 'crosshair' : 'default');
+  graphGroup.selectAll<SVGGElement, Node>('.node')
+    .style('pointer-events', tool === 'scissors' ? 'none' : 'auto');
+}
+btnMove?.addEventListener('click', () => setTool('move'));
+btnScissors?.addEventListener('click', () => setTool('scissors'));
+setTool('move');
+
 function toGraphCoords(evt: any) {
   const [mx, my] = d3.pointer(evt, svg.node() as any);
   const t = d3.zoomTransform(svg.node() as any);
   return { x: (mx - t.x) / t.k, y: (my - t.y) / t.k };
 }
-
 function orientation(ax:number, ay:number, bx:number, by:number, cx:number, cy:number) {
   const v = (by - ay) * (cx - bx) - (bx - ax) * (cy - by);
   if (Math.abs(v) < 1e-9) return 0;
   return v > 0 ? 1 : -1;
 }
-
 function onSegment(ax:number, ay:number, bx:number, by:number, px:number, py:number) {
   return Math.min(ax, bx) - 1e-9 <= px && px <= Math.max(ax, bx) + 1e-9 &&
          Math.min(ay, by) - 1e-9 <= py && py <= Math.max(ay, by) + 1e-9;
 }
-
 function segmentsIntersect(a1:{x:number;y:number}, a2:{x:number;y:number}, b1:{x:number;y:number}, b2:{x:number;y:number}) {
   const o1 = orientation(a1.x, a1.y, a2.x, a2.y, b1.x, b1.y);
   const o2 = orientation(a1.x, a1.y, a2.x, a2.y, b2.x, b2.y);
   const o3 = orientation(b1.x, b1.y, b2.x, b2.y, a1.x, a1.y);
   const o4 = orientation(b1.x, b1.y, b2.x, b2.y, a2.x, a2.y);
-  if (o1 !== o2 && o3 !== o4) return true; // general case
-  // Colinear special cases
+  if (o1 !== o2 && o3 !== o4) return true;
   if (o1 === 0 && onSegment(a1.x, a1.y, a2.x, a2.y, b1.x, b1.y)) return true;
   if (o2 === 0 && onSegment(a1.x, a1.y, a2.x, a2.y, b2.x, b2.y)) return true;
   if (o3 === 0 && onSegment(b1.x, b1.y, b2.x, b2.y, a1.x, a1.y)) return true;
   if (o4 === 0 && onSegment(b1.x, b1.y, b2.x, b2.y, a2.x, a2.y)) return true;
   return false;
 }
-
 function distPointToSegment(px:number, py:number, x1:number, y1:number, x2:number, y2:number) {
   const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
   const len2 = C*C + D*D;
@@ -489,7 +522,6 @@ function distPointToSegment(px:number, py:number, x1:number, y1:number, x2:numbe
   const dx = px - xx, dy = py - yy;
   return Math.sqrt(dx*dx + dy*dy);
 }
-
 function cutEdgesBetween(p0:{x:number;y:number}, p1:{x:number;y:number}) {
   const t = d3.zoomTransform(svg.node() as any);
   const tol = 6 / Math.max(1e-6, t.k); // ~6px screen tolerance in graph coords
@@ -499,7 +531,6 @@ function cutEdgesBetween(p0:{x:number;y:number}, p1:{x:number;y:number}) {
     const s = (l.source as Node), tt = (l.target as Node);
     if (!s || !tt || s.x == null || s.y == null || tt.x == null || tt.y == null) continue;
 
-    // If cursor path segment intersects the edge segment OR gets within tol
     const segIntersects = segmentsIntersect(p0, p1, { x: s.x!, y: s.y! }, { x: tt.x!, y: tt.y! });
     const near =
       Math.min(
@@ -520,33 +551,32 @@ function cutEdgesBetween(p0:{x:number;y:number}, p1:{x:number;y:number}) {
     if (g1 && g2) gumGraph.removeEdge(g1, g2);
   }
 
-  // Enforce single component if enabled (guarded)
   const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
   if (typeof enforce === 'function') enforce.call(gumMachine);
 
   update();
 }
 
-// Attach scissors handlers to the SVG surface
 svg.on('mousedown.cut', (event: any) => {
   if (currentTool !== 'scissors') return;
   isCutting = true;
   lastCutPt = toGraphCoords(event);
 });
-
 svg.on('mousemove.cut', (event: any) => {
   if (!isCutting || currentTool !== 'scissors' || !lastCutPt) return;
   const p = toGraphCoords(event);
   cutEdgesBetween(lastCutPt, p);
   lastCutPt = p;
 });
-
 svg.on('mouseup.cut mouseleave.cut', () => {
   isCutting = false;
   lastCutPt = null;
 });
 
-// ---------------------- Graph rendering ----------------------
+/* =========================================================================
+   11) RENDERING & UPDATE LOOP
+   ========================================================================= */
+
 function adjustForRadius(source: Node, target: Node) {
   const radius = 12.5;
   const dx = target.x! - source.x!;
@@ -562,6 +592,29 @@ function adjustForRadius(source: Node, target: Node) {
   };
 }
 
+function populateComboBox(comboBoxId: string, items: number[]) {
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
+  if (!comboBox) return;
+  comboBox.innerHTML = '';
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.toString();
+    option.text = item.toString();
+    comboBox.add(option);
+  });
+}
+function populateStateComboBox(comboBoxId: string) {
+  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
+  if (!comboBox) return;
+  comboBox.innerHTML = '';
+  for (let i = NodeState.A; i <= NodeState.Z; i++) {
+    const option = document.createElement('option');
+    // @ts-ignore - enum reverse mapping
+    option.value = NodeState[i];
+    option.text = String.fromCharCode(64 + i);
+    comboBox.add(option);
+  }
+}
 function populateComboBoxes() {
   const nodeIds = gumGraph.getNodes().map(node => node.id);
   populateComboBox('source-node', nodeIds);
@@ -571,6 +624,35 @@ function populateComboBoxes() {
   populateComboBox('disconnect-source-node', nodeIds);
   populateComboBox('disconnect-target-node', nodeIds);
   populateComboBox('connect-nearest-node', nodeIds);
+}
+
+function renderNodeInspector(n?: GUMNode) {
+  const body = document.getElementById('node-inspector-body') as HTMLDivElement | null;
+  if (!body) return;
+  if (!n) {
+    body.textContent = 'Select the 🖐️ Move tool, then hover a node to see details.';
+    return;
+  }
+  const liveState = nodeStateName(n.state);
+  const prior     = nodeStateName(n.priorState);
+  const saved     = nodeStateName(n.getSavedCurrentState?.() ?? n.state);
+  const liveDeg   = n.connectionsCount;
+  const savedDeg  = (n as any).savedDegree ?? liveDeg;
+  const livePar   = n.parentsCount;
+  const savedPar  = (n as any).savedParents ?? livePar;
+
+  body.innerHTML = `
+    <div><b>ID:</b> ${n.id}</div>
+    <div><b>State:</b> ${liveState}</div>
+    <div><b>Prior:</b> ${prior}</div>
+    <div><b>Saved (for matching):</b> ${saved}</div>
+    <div><b>Degree (live/saved):</b> ${liveDeg} / ${savedDeg}</div>
+    <div><b>Parents (live/saved):</b> ${livePar} / ${savedPar}</div>
+  `;
+}
+function nodeStateName(n: number): string {
+  // @ts-ignore enum reverse mapping present
+  return (NodeState as any)[n] ?? String(n);
 }
 
 function update() {
@@ -598,21 +680,19 @@ function update() {
     return { source: sourceNode, target: targetNode };
   });
 
-  // LINKS (constant on-screen width via vector-effect)
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
-  
   const linkEnter = link.enter().append("line")
-  .attr("class", "link")
-  .attr("vector-effect", "non-scaling-stroke")
-  .attr("stroke", d => {
-    const s = gumGraph.getNodeById((d.source as Node).id);
-    const t = gumGraph.getNodeById((d.target as Node).id);
-    const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
-    const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
-    return mixWithBlack(base, f);
-  });
+    .attr("class", "link")
+    .attr("vector-effect", "non-scaling-stroke")
+    .attr("stroke", d => {
+      const s = gumGraph.getNodeById((d.source as Node).id);
+      const t = gumGraph.getNodeById((d.target as Node).id);
+      const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+      const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+      return mixWithBlack(base, f);
+    });
 
   linkEnter.merge(link)
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
@@ -620,16 +700,15 @@ function update() {
     .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
     .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
     .attr("stroke", d => {
-    const s = gumGraph.getNodeById((d.source as Node).id);
-    const t = gumGraph.getNodeById((d.target as Node).id);
-    const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
-    const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
-    return mixWithBlack(base, f);
-  });
+      const s = gumGraph.getNodeById((d.source as Node).id);
+      const t = gumGraph.getNodeById((d.target as Node).id);
+      const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+      const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+      return mixWithBlack(base, f);
+    });
 
   link.exit().remove();
 
-  // NODES
   const nodeSel = graphGroup.selectAll<SVGGElement, Node>(".node")
     .data(nodes, d => d.id.toString());
 
@@ -637,7 +716,7 @@ function update() {
     .attr("class", "node")
     .call(d3.drag<SVGGElement, Node>()
       .on("start", (event, d) => {
-        if (currentTool === 'scissors') return; // disable dragging in scissors mode
+        if (currentTool === 'scissors') return;
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x; d.fy = d.y;
       })
@@ -651,7 +730,6 @@ function update() {
         d.fx = null; d.fy = null;
       })
     );
-
 
   nodeEnter.append("circle")
     .attr("r", d => config.debug ? 20 : 12.5)
@@ -671,7 +749,6 @@ function update() {
   const mergedNodes = nodeEnter.merge(nodeSel);
   nodeSel.exit().remove();
 
-  // Respect current tool's pointer interactivity for nodes
   mergedNodes.style('pointer-events', currentTool === 'scissors' ? 'none' : 'auto');
 
   mergedNodes
@@ -717,34 +794,60 @@ function update() {
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
+
   updateDebugInfo();
-
-  // Refresh combo boxes
   populateComboBoxes();
-
-  // Ensure positions are flushed
-  simulation.tick();
-
-  maybeAutoViewport();
+  simulation.tick();       // ensure positions flushed
+  maybeAutoViewport();     // auto camera
 }
 
-function mixWithBlack(cssColor: string, t: number): string {
-  const c = d3.color(cssColor);
-  if (!c) return cssColor;
-  // @ts-ignore d3.color returns RGB-like object
-  const r = Math.round((c.r ?? 0) * (1 - t));
-  // @ts-ignore
-  const g = Math.round((c.g ?? 0) * (1 - t));
-  // @ts-ignore
-  const b = Math.round((c.b ?? 0) * (1 - t));
-  return `rgb(${r},${g},${b})`;
+/* =========================================================================
+   12) STATUS / DEBUG / SIDE PANELS
+   ========================================================================= */
+
+function updateDisplay(option: string) {
+  const displayEdges = option === 'edges' || option === 'both';
+  const displayNodes = option === 'nodes' || option === 'both';
+  d3.selectAll('.link').style('display', displayEdges ? 'block' : 'none');
+  d3.selectAll('.node').style('display', displayNodes ? 'block' : 'none');
 }
 
+function renderPaletteGrid() {
+  const grid = document.getElementById('palette-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  PALETTE16.forEach((name, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'palette-chip';
+    cell.style.background = name;
+    cell.title = `#${idx} — ${name}`;
+    grid.appendChild(cell);
+  });
+}
 
-// ---------------------- Debug / status UI ----------------------
+function wireDetailsToggle(detailsId: string) {
+  const det = document.getElementById(detailsId) as HTMLDetailsElement | null;
+  if (!det) return;
+  const summary = det.querySelector('summary');
+  if (!summary) return;
+
+  summary.addEventListener('click', (e) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('a,button,input,select,textarea,label')) return;
+    e.preventDefault();
+    det.open = !det.open;
+  });
+
+  summary.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      det.open = !det.open;
+    }
+  });
+}
+
 function updateDebugInfo() {
   const statusInfoElement = document.getElementById('status-info');
-
   if (!config.debug) {
     const nodeCountElement = document.getElementById('node-count');
     const nodeDetailsElement = document.getElementById('node-details');
@@ -759,7 +862,6 @@ function updateDebugInfo() {
       `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
   }
 
-  // Prefer tile board if present; otherwise keep legacy short-form in #rule-table
   const board = document.getElementById('rule-board');
   const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
 
@@ -767,8 +869,7 @@ function updateDebugInfo() {
     const items = gumMachine.getRuleItems();
     const MAX = 60;
     const shown = showAllRules ? items : items.slice(0, MAX);
-  
-    // Build tiles HTML with class flags + absolute index for toggling
+
     const html = shown.map((it) => {
       const c = it.condition, o = it.operation;
       const curColor = getVertexRenderColor(c.currentState);
@@ -776,7 +877,7 @@ function updateDebugInfo() {
       const opColor = opKindColor(o.kind);
       const argColor = getVertexRenderColor(o.operandNodeState);
       const title = describeRuleHuman(it).replace(/"/g, '&quot;');
-      const absIdx = gumMachine.getRuleItems().indexOf(it); // absolute index
+      const absIdx = gumMachine.getRuleItems().indexOf(it);
       const classes = `gene-tile ${it.isActive ? 'active' : ''} ${it.isEnabled ? '' : 'disabled'}`;
       return `
         <div class="${classes}" data-idx="${absIdx}" title="${title}">
@@ -786,10 +887,9 @@ function updateDebugInfo() {
           <span style="background:${argColor}"></span>
         </div>`;
     }).join('');
-  
+
     board.innerHTML = html;
-  
-    // Show more/less button visibility stays the same
+
     if (toggleBtn) {
       if (items.length > MAX) {
         toggleBtn.style.display = 'inline-block';
@@ -798,16 +898,15 @@ function updateDebugInfo() {
         toggleBtn.style.display = 'none';
       }
     }
-  
-    // NEW: wire hover & click for Gene Inspector and enable/disable
+
     const geneInspectorBody = document.getElementById('gene-inspector-body') as HTMLDivElement | null;
     const defaultGI = 'Hover a rule tile to see its description. Click a tile to enable/disable that rule.';
     if (geneInspectorBody && !geneInspectorBody.textContent) geneInspectorBody.textContent = defaultGI;
-  
+
     board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
       const idx = Number(el.dataset.idx ?? '-1');
       if (Number.isNaN(idx) || idx < 0) return;
-  
+
       el.addEventListener('mouseenter', () => {
         const it = items.find(i => gumMachine.getRuleItems().indexOf(i) === idx) ?? gumMachine.getRuleItems()[idx];
         if (!it || !geneInspectorBody) return;
@@ -819,162 +918,52 @@ function updateDebugInfo() {
       el.addEventListener('click', () => {
         const all = gumMachine.getRuleItems();
         if (!all[idx]) return;
-        all[idx].isEnabled = !all[idx].isEnabled;     // toggle
-        updateDebugInfo();                             // re-render tiles to reflect state
+        all[idx].isEnabled = !all[idx].isEnabled;
+        updateDebugInfo();
       });
     });
   } else {
-    // Legacy short-form text fallback
     const ruleTableElement = document.getElementById('rule-table');
     if (ruleTableElement) {
       const changeRuleItems = gumMachine.getRuleItems();
       const shortForm = convertToShortForm(changeRuleItems);
-    
+
       const lines = shortForm.split('\n');
       const maxLines = 10;
       const body = (!showAllRules && lines.length > maxLines)
         ? lines.slice(0, maxLines).join('\n') + `\n… (${lines.length - maxLines} more hidden)`
         : shortForm;
-    
+
       ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${body}</pre>`;
+      const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
       if (toggleBtn) toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
     }
   }
-
-  if (config.debug) {
-    const nodeCountElement = document.getElementById('node-count');
-    const nodeDetailsElement = document.getElementById('node-details');
-    const edgeDetailsElement = document.getElementById('edge-details');
-
-    if (nodeCountElement) nodeCountElement.textContent = `Nodes: ${nodes.length}`;
-
-    if (nodeDetailsElement) {
-      const nodeDetails = gumGraph.getNodes().map(node =>
-        `ID: ${node.id} | State: ${NodeState[node.state]} | Prior: ${NodeState[node.priorState]} | p: ${node.parentsCount} | c: ${node.connectionsCount}`
-      ).join('\n');
-      nodeDetailsElement.innerHTML = `<pre>${nodeDetails}</pre>`;
-    }
-
-    if (edgeDetailsElement) {
-      const edgeDetails = gumGraph.getEdges().map(edge =>
-        `Edge (${NodeState[edge.source.state]}/${edge.source.id}, ${NodeState[edge.target.state]}/${edge.target.id})`
-      ).join('\n');
-      edgeDetailsElement.innerHTML = `<pre>${edgeDetails}</pre>`;
-    }
-  }
 }
 
-function nodeStateName(n: number): string {
-  // @ts-ignore enum reverse mapping present
-  return (NodeState as any)[n] ?? String(n);
+/* =========================================================================
+   13) CONTROL WIRING (buttons, sliders, toggles)
+   ========================================================================= */
+
+function setControlsEnabled(enabled: boolean) {
+  const controls = document.querySelectorAll('#display-options, #simulation-interval');
+  controls.forEach(control => {
+    (control as HTMLInputElement).disabled = !enabled;
+  });
 }
 
-function renderNodeInspector(n?: GUMNode) {
-  const body = document.getElementById('node-inspector-body') as HTMLDivElement | null;
-  if (!body) return;
-  if (!n) {
-    body.textContent = 'Select the 🖐️ Move tool, then hover a node to see details.';
-    return;
-  }
-  const liveState = nodeStateName(n.state);
-  const prior     = nodeStateName(n.priorState);
-  const saved     = nodeStateName(n.getSavedCurrentState?.() ?? n.state);
-  const liveDeg   = n.connectionsCount;
-  const savedDeg  = (n as any).savedDegree ?? liveDeg;
-  const livePar   = n.parentsCount;
-  const savedPar  = (n as any).savedParents ?? livePar;
-
-  body.innerHTML = `
-    <div><b>ID:</b> ${n.id}</div>
-    <div><b>State:</b> ${liveState}</div>
-    <div><b>Prior:</b> ${prior}</div>
-    <div><b>Saved (for matching):</b> ${saved}</div>
-    <div><b>Degree (live/saved):</b> ${liveDeg} / ${savedDeg}</div>
-    <div><b>Parents (live/saved):</b> ${livePar} / ${savedPar}</div>
-  `;
-}
-
-
-const toggleRulesBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
-toggleRulesBtn?.addEventListener('click', () => {
-  showAllRules = !showAllRules;
-  toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';
-  updateDebugInfo();
-});
-
-// ---------------------- Unfolding / control wiring ----------------------
-function unfoldGraph() {
-  if (!isSimulationRunning) return;
-
-  // Stop when max_steps reached
-  if (gumMachine.reachedMaxSteps()) {
-    clearInterval(simulationInterval);
-    isSimulationRunning = false;
-    pauseResumeButton.textContent = 'Start';
-    pauseResumeButton.style.backgroundColor = 'lightgreen';
-    setControlsEnabled(true);
-    updateDebugInfo();
-    return;
-  }
-
-  simulation.tick();
-  gumMachine.runOneStep();
-  // Optional extra guard (no-op if method doesn't exist).
-  const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
-  if (typeof enforce === 'function') enforce.call(gumMachine);
-
-  simulation.tick();
-  update();
-  simulation.tick();
-  update();
-}
-
-function currentStartState(): NodeState {
-  const s = lastLoadedConfig?.machine?.start_state;
-  return (typeof s === 'number') ? (s as NodeState) : mapNodeState(String(s ?? 'A'));
-  }
-
-function resetGraph() {
-      
-  const st = currentStartState();
-  nodes = [{ id: 1, x: width / 2, y: height / 2, state: st }];
-  links = [];
-  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
-  gumGraph.removeMarkedNodes();
-  const newId = gumGraph.allocateNodeId();
-  gumGraph.addNode(new GUMNode(newId, st));
-  update();
-  }
-
-const resetBtn = document.getElementById('reset-button') as HTMLButtonElement | null;
-resetBtn?.addEventListener('click', () => {
-  clearInterval(simulationInterval);
-  isSimulationRunning = false;
-  pauseResumeButton.textContent = 'Start';
-  pauseResumeButton.style.backgroundColor = 'lightgreen';
-  setControlsEnabled(true);
-  resetGraph();                 // reseed using current genome start_state
-  gumMachine.resetIterations?.();
-  resetZoom();
-});
-  
-    
-
-// Display options
 document.getElementById('display-options')?.addEventListener('change', function () {
   const displayOption = (this as HTMLSelectElement).value;
   updateDisplay(displayOption);
 });
+updateDisplay('edges');
 
-// Simulation interval slider (Advanced): adjusts fast mode only
-const simulationIntervalSlider = document.getElementById('simulation-interval') as HTMLInputElement | null;
 if (simulationIntervalSlider) {
   simulationIntervalSlider.value = String(FAST_MS_DEFAULT);
-  const label = document.getElementById('simulation-interval-value');
-  if (label) label.textContent = String(FAST_MS_DEFAULT);
+  if (simulationIntervalLabel) simulationIntervalLabel.textContent = String(FAST_MS_DEFAULT);
   simulationIntervalSlider.addEventListener('input', function () {
     fastMs = parseInt((this as HTMLInputElement).value, 10) || FAST_MS_DEFAULT;
-    if (label) label.textContent = String(fastMs);
+    if (simulationIntervalLabel) simulationIntervalLabel.textContent = String(fastMs);
     if (isSimulationRunning && !slowMode) {
       clearInterval(simulationInterval);
       simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
@@ -982,13 +971,12 @@ if (simulationIntervalSlider) {
   });
 }
 
-function updateDisplay(option: string) {
-  const displayEdges = option === 'edges' || option === 'both';
-  const displayNodes = option === 'nodes' || option === 'both';
-  d3.selectAll('.link').style('display', displayEdges ? 'block' : 'none');
-  d3.selectAll('.node').style('display', displayNodes ? 'block' : 'none');
+function currentIntervalMs() {
+  return slowMode ? SLOW_MS : (fastMs || FAST_MS_DEFAULT);
 }
-updateDisplay('edges');
+
+pauseResumeButton.textContent = 'Start';
+pauseResumeButton.style.backgroundColor = 'lightgreen';
 
 pauseResumeButton.addEventListener('click', () => {
   isSimulationRunning = !isSimulationRunning;
@@ -1011,7 +999,49 @@ document.getElementById('next-step-button')!.addEventListener('click', () => {
   }
 });
 
-// Manual connect / add / remove / change / disconnect / connect-nearest (Advanced)
+slowBtn?.addEventListener('click', () => {
+  slowMode = !slowMode;
+  slowBtn.classList.toggle('active', slowMode);
+  slowBtn.textContent = slowMode ? '🐢 Slow down (ON)' : '🐢 Slow down';
+  if (isSimulationRunning) {
+    clearInterval(simulationInterval);
+    simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
+  }
+});
+
+maintainChk?.addEventListener('change', () => {
+  const on = !!maintainChk.checked;
+  const fn = (gumMachine as any)?.setMaintainSingleComponent;
+  if (typeof fn === 'function') fn.call(gumMachine, on);
+  const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
+  if (on && typeof enforce === 'function') {
+    enforce.call(gumMachine);
+    update();
+  }
+});
+
+orphanCleanupChk?.addEventListener('change', () => {
+  const current = (gumMachine as any).getOrphanCleanup?.() ?? {};
+  const next = {
+    enabled: !!orphanCleanupChk.checked,
+    thresholds: current.thresholds ?? { size1: 5, size2: 7, others: 10 },
+    fadeStarts: current.fadeStarts ?? { size1: 3, size2: 5, others: 8 },
+  };
+  (gumMachine as any).setOrphanCleanup?.(next);
+
+  lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+  lastLoadedConfig.machine.orphan_cleanup = next;
+});
+
+maxStepsInput?.addEventListener('change', () => {
+  const v = parseInt(maxStepsInput.value, 10);
+  gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
+});
+function refreshMaxStepsInput() {
+  if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
+}
+
+/* Advanced manual operations */
 document.getElementById('connect-button')?.addEventListener('click', () => {
   const sourceId = (document.getElementById('source-node') as HTMLSelectElement)?.value;
   const targetId = (document.getElementById('target-node') as HTMLSelectElement)?.value;
@@ -1099,164 +1129,72 @@ document.getElementById('connect-nearest-button')?.addEventListener('click', () 
   }
 });
 
-// Populate state lists A..Z
-function populateStateComboBox(comboBoxId: string) {
-  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
-  if (!comboBox) return;
-  comboBox.innerHTML = '';
-  for (let i = NodeState.A; i <= NodeState.Z; i++) {
-    const option = document.createElement('option');
-    // @ts-ignore - enum reverse mapping
-    option.value = NodeState[i];
-    option.text = String.fromCharCode(64 + i);
-    comboBox.add(option);
+const toggleRulesBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
+toggleRulesBtn?.addEventListener('click', () => {
+  showAllRules = !showAllRules;
+  toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';
+  updateDebugInfo();
+});
+
+/* =========================================================================
+   14) UNFOLD LOOP & GRAPH RESET
+   ========================================================================= */
+
+function unfoldGraph() {
+  if (!isSimulationRunning) return;
+
+  if (gumMachine.reachedMaxSteps()) {
+    clearInterval(simulationInterval);
+    isSimulationRunning = false;
+    pauseResumeButton.textContent = 'Start';
+    pauseResumeButton.style.backgroundColor = 'lightgreen';
+    setControlsEnabled(true);
+    updateDebugInfo();
+    return;
   }
+
+  simulation.tick();
+  gumMachine.runOneStep();
+  const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
+  if (typeof enforce === 'function') enforce.call(gumMachine);
+
+  simulation.tick();
+  update();
+  simulation.tick();
+  update();
 }
 
-function populateComboBox(comboBoxId: string, items: number[]) {
-  const comboBox = document.getElementById(comboBoxId) as HTMLSelectElement | null;
-  if (!comboBox) return;
-  comboBox.innerHTML = '';
-  items.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.toString();
-    option.text = item.toString();
-    comboBox.add(option);
-  });
+function resetGraph() {
+  const st = currentStartState();
+  nodes = [{ id: 1, x: width / 2, y: height / 2, state: st }];
+  links = [];
+  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
+  gumGraph.removeMarkedNodes();
+  const newId = gumGraph.allocateNodeId();
+  gumGraph.addNode(new GUMNode(newId, st));
+  update();
 }
 
-function setControlsEnabled(enabled: boolean) {
-  const controls = document.querySelectorAll('#display-options, #simulation-interval');
-  controls.forEach(control => {
-    (control as HTMLInputElement).disabled = !enabled;
-  });
-}
+/* =========================================================================
+   15) PALETTE / DETAILS INIT + BOOT
+   ========================================================================= */
 
-function renderPaletteGrid() {
-  const grid = document.getElementById('palette-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  PALETTE16.forEach((name, idx) => {
-    const cell = document.createElement('div');
-    cell.className = 'palette-chip';
-    cell.style.background = name;
-    cell.title = `#${idx} — ${name}`;
-    grid.appendChild(cell);
-  });
-}
-
-function wireDetailsToggle(detailsId: string) {
-  const det = document.getElementById(detailsId) as HTMLDetailsElement | null;
-  if (!det) return;
-  const summary = det.querySelector('summary');
-  if (!summary) return;
-
-  // Click: toggle open unless the click originated from an interactive child
-  summary.addEventListener('click', (e) => {
-    const el = e.target as HTMLElement;
-    if (el.closest('a,button,input,select,textarea,label')) return; // let native behavior
-    e.preventDefault();
-    det.open = !det.open;
-  });
-
-  // Keyboard: Enter / Space toggles as well
-  summary.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      det.open = !det.open;
-    }
-  });
-}
-
-
-
-const downloadBtn = document.getElementById('download-yaml-button') as HTMLButtonElement | null;
-downloadBtn?.addEventListener('click', () => {
-  const items = gumMachine.getRuleItems();
-  // Rebuild a clean JSON structure
-  const toName = (s:number)=> (typeof s==='number' ? (NodeState as any)[s] ?? s : s);
-  const toRule = (it:any)=>({
-    condition: {
-      current: toName(it.condition.currentState),
-      prior:   toName(it.condition.priorState === undefined ? 'any' : it.condition.priorState),
-      conn_ge: it.condition.allConnectionsCount_GE,
-      conn_le: it.condition.allConnectionsCount_LE,
-      parents_ge: it.condition.parentsCount_GE,
-      parents_le: it.condition.parentsCount_LE,
-    },
-    op: {
-      kind: (it.operation.kind !== undefined) ? mapOperationKindToString(it.operation.kind) : String(it.operation.kind),
-      operand: toName(it.operation.operandNodeState),
-    }
-  });
-
-  // Compose machine block (keep current max_steps)
-  const machineBlock: any = {
-    ...(lastLoadedConfig?.machine ?? {}),
-    max_steps: gumMachine.getMaxSteps(), // ensure current GUI-ed value
-  };
-
-  const out = {
-    machine: machineBlock,
-    init_graph: lastLoadedConfig?.init_graph ?? { nodes: [{ state: toName((machineBlock.start_state ?? NodeState.A)) }] },
-    rules: items.map(toRule),
-  };
-
-  const text = yaml.dump(out, { lineWidth: 120 });
-  const blob = new Blob([text], { type: 'application/x-yaml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'genome_export.yaml';
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-});
-
-const maxStepsInput = document.getElementById('max-steps-input') as HTMLInputElement | null;
-function refreshMaxStepsInput() {
-  if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
-}
-maxStepsInput?.addEventListener('change', () => {
-  const v = parseInt(maxStepsInput.value, 10);
-  gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
-  // No need to restart; the stop condition will use the new value
-});
-
-orphanCleanupChk?.addEventListener('change', () => {
-  // Keep current thresholds/fadeStarts if present; otherwise reuse defaults
-  const current = (gumMachine as any).getOrphanCleanup?.() ?? {};
-  const next = {
-    enabled: !!orphanCleanupChk.checked,
-    thresholds: current.thresholds ?? { size1: 5, size2: 7, others: 10 },
-    fadeStarts: current.fadeStarts ?? { size1: 3, size2: 5, others: 8 },
-  };
-  (gumMachine as any).setOrphanCleanup?.(next);
-
-  // persist into lastLoadedConfig so Download YAML matches runtime
-  lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-  lastLoadedConfig.machine.orphan_cleanup = next;
-});
-
-window.addEventListener('resize', () => {
-  // nudge the camera computation on next update
-  lastUserGestureAt = 0;
-  maybeAutoViewport();
-});
-
-
-
-// ---------------------- Boot ----------------------
-loadGenesLibrary().then(() => {
-  setControlsEnabled(false);
-  refreshMaxStepsInput();
+function renderPaletteOpenCollapsed() {
   renderPaletteGrid();
   wireDetailsToggle('palette-block');
-
-  // Ensure collapsed by default
   const det = document.getElementById('palette-block') as HTMLDetailsElement | null;
-  if (det) det.open = true;
+  if (det) det.open = true; // keep existing behavior
+}
 
-  // Populate state combos
+function initStateCombos() {
   populateStateComboBox('node-state');
   populateStateComboBox('change-node-state');
   populateStateComboBox('connect-nearest-state');
+}
+
+loadGenesLibrary().then(() => {
+  setControlsEnabled(false);
+  refreshMaxStepsInput();
+  renderPaletteOpenCollapsed();
+  initStateCombos();
 });
