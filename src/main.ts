@@ -12,6 +12,8 @@ import {
 
 import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
+import { computeKToSatisfyMaxFill } from './viewport';
+
 
 // ---------------------- Machine defaults ----------------------
 const DEFAULT_MACHINE_CFG: MachineCfg = {
@@ -81,6 +83,25 @@ function describeRuleHuman(item: RuleItem): string {
   return `${act} ${cond}`;
 }
 
+// ----------------------  Camera / autosmooth config ----------------------
+const AUTO_MAX_FILL = 0.5;       // 50% of viewport
+const CAMERA_MA_WINDOW = 25;     // ~EMA window
+const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1); // ≈0.039
+
+type CameraState = { k: number; x: number; y: number };
+let camCurrent: CameraState = { k: 1, x: 0, y: 0 };
+let camTarget:  CameraState = { k: 1, x: 0, y: 0 };
+let lastUserGestureAt = 0;
+
+const autoCenterChk = document.getElementById('auto-center-checkbox') as HTMLInputElement | null;
+const autoScaleChk  = document.getElementById('auto-scale-checkbox')  as HTMLInputElement | null;
+let autoCenterEnabled = !!autoCenterChk?.checked;
+let autoScaleEnabled  = !!autoScaleChk?.checked;
+
+autoCenterChk?.addEventListener('change', () => { autoCenterEnabled = !!autoCenterChk.checked; });
+autoScaleChk?.addEventListener('change',  () => { autoScaleEnabled  = !!autoScaleChk.checked; });
+
+
 // ---------------------- SVG / D3 setup ----------------------
 const width = 960;
 const height = 800;
@@ -104,27 +125,101 @@ type Tool = 'move' | 'scissors';
 let currentTool: Tool = 'move';       // default 🖐️
 
 
-// NOTE: we no longer scale line widths in JS; we rely on vector-effect or constant width.
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   .scaleExtent([0.01, 10])
   .filter((event: any) => {
-    // Always allow wheel zoom (both tools)
     if (event.type === 'wheel') return true;
-
-    // In Move (hand) mode: allow default drag/pan (no right-click; ignore ctrl+wheel)
     if (currentTool === 'move') {
       return (!event.ctrlKey || event.type === 'wheel') && !event.button;
     }
-
-    // In Scissors mode: disallow non-wheel (so scissors drag works unimpeded)
     return false;
   })
   .on("zoom", (event) => {
     graphGroup.attr("transform", event.transform);
+    camCurrent = { k: event.transform.k, x: event.transform.x, y: event.transform.y };
+    if (event.sourceEvent) lastUserGestureAt = Date.now();
   });
 
-// Start with zoom enabled; toggle behavior via tool switcher.
 (svg as any).call(zoomBehavior as any);
+
+function primaryComponentNodeIds(): Set<number> {
+  const comps = gumGraph.getConnectedComponents();
+  if (comps.length === 0) return new Set<number>();
+  const score = (comp: GUMNode[]) => ({
+    minParents: Math.min(...comp.map(n => n.parentsCount)),
+    minId:      Math.min(...comp.map(n => n.id)),
+  });
+  let keep = 0, best = score(comps[0]);
+  for (let i = 1; i < comps.length; i++) {
+    const s = score(comps[i]);
+    if (s.minParents < best.minParents || (s.minParents === best.minParents && s.minId < best.minId)) {
+      best = s; keep = i;
+    }
+  }
+  return new Set(comps[keep].map(n => n.id));
+}
+
+function computeBBoxForNodes(filter?: Set<number>) {
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity, cnt=0;
+  for (const n of nodes) {
+    if (filter && !filter.has(n.id)) continue;
+    if (n.x == null || n.y == null) continue;
+    if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+    cnt++;
+  }
+  if (!cnt || !isFinite(minX)) return null;
+  const pad = 25; // ≈ 2*node radius
+  const w = (maxX - minX) + 2*pad, h = (maxY - minY) + 2*pad;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  return { w, h, cx, cy };
+}
+
+// NEW
+function maybeAutoViewport() {
+  // Don’t fight the user within ~0.8s after a gesture
+  if (Date.now() - lastUserGestureAt < 800) return;
+
+  const ids = primaryComponentNodeIds();
+  const bb = computeBBoxForNodes(ids.size ? ids : undefined);
+  if (!bb) return;
+
+  const rect = (svg.node() as SVGSVGElement).getBoundingClientRect();
+  const vw = rect.width, vh = rect.height;
+
+  // Target scale (zoom‑out only)
+  let targetK = camCurrent.k;
+  if (autoScaleEnabled) {
+    const kFit = computeKToSatisfyMaxFill(bb.w, bb.h, vw, vh, AUTO_MAX_FILL);
+    // Only zoom OUT automatically. Never zoom in (leave that to the user).
+    targetK = Math.min(camCurrent.k, kFit);
+  }
+
+  // Target pan to keep the primary center in the viewport center at targetK
+  let targetX = camCurrent.x, targetY = camCurrent.y;
+  if (autoCenterEnabled) {
+    const cxScreen = vw / 2, cyScreen = vh / 2;
+    targetX = cxScreen - targetK * bb.cx;
+    targetY = cyScreen - targetK * bb.cy;
+  }
+
+  camTarget = { k: targetK, x: targetX, y: targetY };
+
+  // Smooth approach with EMA
+  const next: CameraState = {
+    k: camCurrent.k + (camTarget.k - camCurrent.k) * CAMERA_ALPHA,
+    x: camCurrent.x + (camTarget.x - camCurrent.x) * CAMERA_ALPHA,
+    y: camCurrent.y + (camTarget.y - camCurrent.y) * CAMERA_ALPHA,
+  };
+
+  // Apply if any meaningful change; will trigger the zoom handler
+  if (Math.abs(next.k - camCurrent.k) > 1e-4 ||
+      Math.abs(next.x - camCurrent.x) > 0.3 ||
+      Math.abs(next.y - camCurrent.y) > 0.3) {
+    const t = (d3 as any).zoomIdentity.translate(next.x, next.y).scale(next.k);
+    (svg as any).call((zoomBehavior as any).transform, t);
+  }
+}
 
 // ---------------------- Simulation ----------------------
 const simulation = d3.forceSimulation<Node, Link>()
@@ -629,6 +724,8 @@ function update() {
 
   // Ensure positions are flushed
   simulation.tick();
+
+  maybeAutoViewport();
 }
 
 function mixWithBlack(cssColor: string, t: number): string {
@@ -1138,6 +1235,13 @@ orphanCleanupChk?.addEventListener('change', () => {
   lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
   lastLoadedConfig.machine.orphan_cleanup = next;
 });
+
+window.addEventListener('resize', () => {
+  // nudge the camera computation on next update
+  lastUserGestureAt = 0;
+  maybeAutoViewport();
+});
+
 
 
 // ---------------------- Boot ----------------------
