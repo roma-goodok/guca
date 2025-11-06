@@ -392,12 +392,23 @@ export class GraphUnfoldingMachine {
     if (u === v) return false;
     if (this.graph.areNodesConnected(u, v)) return false;
     if (v.markedNew) return false;
-    const savedState = (v.getSavedCurrentState() ?? v.state);
-    return savedState === required;
+
+    // Python parity: operand "any" (Ignored) or "Unknown" => no state filter
+    const isWildcard = required === undefined
+                    || required === null as any
+                    || required === NodeState.Ignored
+                    || required === NodeState.Unknown;
+
+    if (isWildcard) return true;
+
+    const saved = (v.getSavedCurrentState?.() ?? v.state);
+    return saved === required;
   }
 
   public tryToConnectWithNearest(node: GUMNode, state: NodeState) {
     const maxD = this.cfg.nearest_search.max_depth;
+    if (!Number.isFinite(maxD) || maxD <= 0) return; // nothing to search
+
     const q: Array<{ n: GUMNode; d: number }> = [{ n: node, d: 0 }];
     const visited = new Set<GUMNode>([node]);
     let foundDepth: number | null = null;
@@ -431,10 +442,11 @@ export class GraphUnfoldingMachine {
     let pick: GUMNode;
     switch (this.cfg.nearest_search.tie_breaker) {
       case 'random': pick = this.rng.choice(found); break;
-      default: pick = found.slice().sort((a, b) => a.id - b.id)[0];
+      default:       pick = found.slice().sort((a, b) => a.id - b.id)[0];
     }
     this.graph.addEdge(node, pick);
   }
+
 
   private performOperation(node: GUMNode, operation: Operation) {
     switch (operation.kind) {

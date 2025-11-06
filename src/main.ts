@@ -81,6 +81,17 @@ let lastUserGestureAt = 0;
 
 const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
 const resetBtn          = document.getElementById('reset-button') as HTMLButtonElement | null;
+// Reset: stop timers, reseed graph, reset camera & UI state
+resetBtn?.addEventListener('click', () => {
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+  pauseResumeButton.textContent = 'Start';
+  pauseResumeButton.style.backgroundColor = 'lightgreen';
+  setControlsEnabled(true);
+  resetGraph();                 // reseed using current genome start_state
+  gumMachine.resetIterations?.();
+  resetZoom();
+});
 
 const btnMove      = document.getElementById('tool-move-button') as HTMLButtonElement | null;
 const btnScissors  = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
@@ -113,14 +124,15 @@ const svg = d3.select("#canvas-container svg")
   .attr("width", "100%")
   .attr("height", height);
 
-const graphGroup = svg.append("g");
-
-// Overlay to capture zoom/pan interactions
+// Overlay MUST be under the graph layer; otherwise it steals drag events.
 const zoomOverlay = svg.append("rect")
   .attr("width", "100%")
   .attr("height", height)
   .attr("fill", "transparent")
   .attr("pointer-events", "all");
+
+// Graph layer drawn above the overlay so nodes are draggable.
+const graphGroup = svg.append("g");
 
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   .scaleExtent([0.01, 10])
