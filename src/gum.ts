@@ -496,21 +496,40 @@ export class GraphUnfoldingMachine {
   }
 
   private disconnectFrom(node: GUMNode, state: NodeState) {
-    const edgesToRemove = this.graph.getEdges().filter(edge =>
-      (edge.source === node && edge.target.state === state) ||
-      (edge.target === node && edge.source.state === state)
-    );
+    // Remove edges from `node` to any neighbor whose *saved* state equals `state`.
+    const edgesToRemove = this.graph.getEdges().filter(edge => {
+      const other =
+        edge.source === node ? edge.target :
+        edge.target === node ? edge.source : null;
+      if (!other) return false;
+      if (other.markedNew) return false; // ignore newborns this step
+
+      const saved = (other.getSavedCurrentState?.() ?? other.state);
+      return saved === state;
+    });
+
     edgesToRemove.forEach(edge => {
       this.graph.removeEdge(edge.source, edge.target);
     });
   }
 
+
   private tryToConnectWith(node: GUMNode, state: NodeState) {
-    const targetNode = this.graph.getNodes().find(n => n.state === state && n.id !== node.id);
-    if (targetNode && !this.graph.areNodesConnected(node, targetNode)) {
-      this.graph.addEdge(node, targetNode);
+    const isWildcard =
+      state === NodeState.Ignored || state === NodeState.Unknown;
+
+    for (const other of this.graph.getNodes()) {
+      if (other.id === node.id) continue;
+      if (this.graph.areNodesConnected(node, other)) continue;
+      if (other.markedNew) continue;
+
+      const saved = (other.getSavedCurrentState?.() ?? other.state);
+      if (isWildcard || saved === state) {
+        this.graph.addEdge(node, other);
+      }
     }
   }
+
 
 
   // Inside cleanupOrphansIfEnabled(), replace the fade block:
@@ -583,7 +602,8 @@ export class GraphUnfoldingMachine {
     this.ruleTable.items.forEach(it => { it.isActive = false; it.isActiveInNodes = []; });
 
     let didAnything = false;
-    const nodesNow = this.graph.getNodes().slice();
+    const nodesNow = this.graph.getNodes().slice().sort((a, b) => a.id - b.id);
+
 
     for (const node of nodesNow) {
       if (node.markedAsDeleted) continue;
