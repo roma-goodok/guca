@@ -24,6 +24,8 @@ import {
 import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
 import { computeKToSatisfyMaxFill } from './viewport';
+import { shouldUseMobileBasic } from './responsive';
+
 
 /* =========================================================================
    1) CONSTANTS / GLOBAL CONFIG
@@ -75,6 +77,15 @@ let camCurrent: CameraState = { k: 1, x: 0, y: 0 };
 let camTarget:  CameraState = { k: 1, x: 0, y: 0 };
 let lastUserGestureAt = 0;
 
+// Initial-fit tuning
+const FIT_PARAMS = {
+  minNodesToFitOnReset: 1,   // for 1–2 nodes, stick to identity zoom
+  minContentPx: 240,         // treat content as at least this big when fitting
+  maxInitialK: 1.4,          // cap “instant fit” zoom-in
+  defaultK: 1,
+};
+
+
 /* =========================================================================
    3) DOM REFERENCES (queried once)
    ========================================================================= */
@@ -88,10 +99,11 @@ resetBtn?.addEventListener('click', () => {
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   setControlsEnabled(true);
-  resetGraph();                 // reseed using current genome start_state
+  resetGraph();                 // now self-centers
   gumMachine.resetIterations?.();
-  resetZoom();
+  syncMobilePlayIcon?.();       // keep ▶︎/⏸ in sync (if you added this earlier)
 });
+
 
 const btnMove      = document.getElementById('tool-move-button') as HTMLButtonElement | null;
 const btnScissors  = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
@@ -239,6 +251,31 @@ window.addEventListener('resize', () => {
   maybeAutoViewport();
 });
 
+
+function applyResponsiveMode() {
+  const rect = (svg.node() as SVGSVGElement).getBoundingClientRect?.() || { width: 0, height: 0 };
+  const vw = window.innerWidth  || rect.width;
+  const vh = window.innerHeight || rect.height;
+  const coarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+
+  const useMobile = shouldUseMobileBasic(vw, vh, coarse);
+  document.body.classList.toggle('mobile-basic', useMobile);
+
+  const mt = document.getElementById('mobile-toolbar') as HTMLElement | null;
+  const ro = document.getElementById('rules-overlay')  as HTMLElement | null;
+
+  // Hidden attribute is the hard gate; CSS only opens them in mobile mode.
+  mt?.toggleAttribute('hidden', !useMobile);
+  ro?.toggleAttribute('hidden', !useMobile);
+}
+window.addEventListener('resize', applyResponsiveMode);
+window.addEventListener('orientationchange', applyResponsiveMode);
+// also run once after layout settles
+requestAnimationFrame(applyResponsiveMode);
+
+
+
+
 /* =========================================================================
    6) SMALL PURE HELPERS (colors, labels)
    ========================================================================= */
@@ -299,6 +336,84 @@ function mixWithBlack(cssColor: string, t: number): string {
   const b = Math.round((c.b ?? 0) * (1 - t));
   return `rgb(${r},${g},${b})`;
 }
+
+function buildRuleTilesHTML(items: RuleItem[], cap: number): string {
+  const shown = items.slice(0, cap);
+  return shown.map((it) => {
+    const c = it.condition, o = it.operation;
+    const curColor = getVertexRenderColor(c.currentState);
+    const priorColor = getVertexRenderColor(c.priorState);
+    const opColor = opKindColor(o.kind);
+    const argColor = getVertexRenderColor(o.operandNodeState);
+    const title = describeRuleHuman(it).replace(/"/g, '&quot;');
+    const absIdx = gumMachine.getRuleItems().indexOf(it);
+    const classes = `gene-tile ${it.isActive ? 'active' : ''} ${it.isEnabled ? '' : 'disabled'}`;
+    return `
+      <div class="${classes}" data-idx="${absIdx}" title="${title}">
+        <span style="background:${curColor}"></span>
+        <span style="background:${priorColor}"></span>
+        <span style="background:${opColor}"></span>
+        <span style="background:${argColor}"></span>
+      </div>`;
+  }).join('');
+}
+
+function syncMobilePlayIcon() {
+  const mp = document.getElementById('mobile-play') as HTMLButtonElement | null;
+  if (!mp) return;
+  if (isSimulationRunning) {
+    mp.textContent = '⏸';
+    mp.style.color = '';
+    mp.setAttribute('aria-label', 'Pause');
+    mp.title = 'Pause';
+  } else {
+    mp.textContent = '▶︎';
+    mp.style.color = '#16a34a';
+    mp.setAttribute('aria-label', 'Start');
+    mp.title = 'Start';
+  }
+}
+
+// REPLACE the previous fitGraphInstant with this version
+function fitGraphInstant(maxFill = AUTO_MAX_FILL) {
+  const ids = primaryComponentNodeIds();
+  const bb = computeBBoxForNodes(ids.size ? ids : undefined);
+  const rect = (svg.node() as SVGSVGElement).getBoundingClientRect();
+  if (!bb || !rect.width || !rect.height) { resetZoom(); return; }
+
+  // Inflate tiny content so k doesn’t explode
+  const effW = Math.max(bb.w, FIT_PARAMS.minContentPx);
+  const effH = Math.max(bb.h, FIT_PARAMS.minContentPx);
+
+  let kFit = computeKToSatisfyMaxFill(effW, effH, rect.width, rect.height, maxFill);
+  kFit = Math.min(kFit, FIT_PARAMS.maxInitialK); // cap zoom-in
+
+  const cxScreen = rect.width / 2, cyScreen = rect.height / 2;
+  const x = cxScreen - kFit * bb.cx;
+  const y = cyScreen - kFit * bb.cy;
+
+  const t = (d3 as any).zoomIdentity.translate(x, y).scale(kFit);
+  (svg as any).call((zoomBehavior as any).transform, t);
+  camCurrent = { k: kFit, x, y };
+  camTarget  = { k: kFit, x, y };
+  lastUserGestureAt = 0;
+}
+
+function fitInitialOnReset() {
+  const nodeCount = gumGraph.getNodes().length;
+  if (nodeCount < FIT_PARAMS.minNodesToFitOnReset) {
+    // identity (default zoom), already centered because we seed at SVG center
+    const t = (d3 as any).zoomIdentity;
+    (svg as any).call((zoomBehavior as any).transform, t);
+    camCurrent = { k: FIT_PARAMS.defaultK, x: 0, y: 0 };
+    camTarget  = { ...camCurrent };
+    lastUserGestureAt = 0;
+    return;
+  }
+  fitGraphInstant(0.5);
+}
+
+
 
 /* =========================================================================
    7) D3 SIMULATION (force layout) + MIRRORED ARRAYS
@@ -366,6 +481,25 @@ async function loadGenesLibrary() {
     await loadGenomFromYaml(path);
   });
 
+  const mobileSelect = document.getElementById('gene-select-mobile') as HTMLSelectElement | null;
+  if (mobileSelect) {
+    mobileSelect.innerHTML = '';
+    YAML_CATALOG.forEach(({ name, path }) => {
+      const opt = document.createElement('option');
+      opt.value = path; opt.text = name; mobileSelect.add(opt);
+    });
+    mobileSelect.value = (document.getElementById('gene-select') as HTMLSelectElement)?.value ?? YAML_CATALOG[0].path;
+    mobileSelect.onchange = async (ev) => {
+      await loadGenomFromYaml((ev.target as HTMLSelectElement).value);
+    };
+  }
+
+  // Mobile toolbar buttons proxy desktop logic (no code duplication)
+  document.getElementById('mobile-play')?.addEventListener('click', () => pauseResumeButton.click());
+  document.getElementById('mobile-reset')?.addEventListener('click', () => resetBtn?.click());
+  document.getElementById('mobile-slow')?.addEventListener('click', () => slowBtn?.click());
+
+
   updateDebugInfo();
 }
 
@@ -405,11 +539,10 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
     maintainChk.checked = mscNow;
   }
 
-  resetGraph();
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
-  resetZoom();
+  resetGraph();                // handles zoom+fit
   refreshMaxStepsInput();
 
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
@@ -880,26 +1013,7 @@ function updateDebugInfo() {
   if (board) {
     const items = gumMachine.getRuleItems();
     const MAX = 60;
-    const shown = showAllRules ? items : items.slice(0, MAX);
-
-    const html = shown.map((it) => {
-      const c = it.condition, o = it.operation;
-      const curColor = getVertexRenderColor(c.currentState);
-      const priorColor = getVertexRenderColor(c.priorState);
-      const opColor = opKindColor(o.kind);
-      const argColor = getVertexRenderColor(o.operandNodeState);
-      const title = describeRuleHuman(it).replace(/"/g, '&quot;');
-      const absIdx = gumMachine.getRuleItems().indexOf(it);
-      const classes = `gene-tile ${it.isActive ? 'active' : ''} ${it.isEnabled ? '' : 'disabled'}`;
-      return `
-        <div class="${classes}" data-idx="${absIdx}" title="${title}">
-          <span style="background:${curColor}"></span>
-          <span style="background:${priorColor}"></span>
-          <span style="background:${opColor}"></span>
-          <span style="background:${argColor}"></span>
-        </div>`;
-    }).join('');
-
+    const html = buildRuleTilesHTML(items, showAllRules ? items.length : MAX);
     board.innerHTML = html;
 
     if (toggleBtn) {
@@ -951,7 +1065,31 @@ function updateDebugInfo() {
       if (toggleBtn) toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
     }
   }
+
+  renderRulesOverlay();
 }
+
+function renderRulesOverlay() {
+  const container = document.getElementById('rules-overlay') as HTMLDivElement | null;
+  if (!container || !document.body.classList.contains('mobile-basic')) return;
+
+  const items = gumMachine.getRuleItems();
+  container.innerHTML = buildRuleTilesHTML(items, 48); // cap tiles for tiny screens
+
+  // Click handlers (enable/disable rule)
+  container.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+    const idx = Number(el.dataset.idx ?? '-1');
+    if (Number.isNaN(idx) || idx < 0) return;
+    el.onclick = () => {
+      const all = gumMachine.getRuleItems();
+      if (!all[idx]) return;
+      all[idx].isEnabled = !all[idx].isEnabled;
+      updateDebugInfo();        // keep both places in sync
+      renderRulesOverlay();
+    };
+  });
+}
+
 
 /* =========================================================================
    13) CONTROL WIRING (buttons, sliders, toggles)
@@ -1001,6 +1139,7 @@ pauseResumeButton.addEventListener('click', () => {
     pauseResumeButton.textContent = 'Resume';
     setControlsEnabled(true);
   }
+  syncMobilePlayIcon();
 });
 
 document.getElementById('next-step-button')!.addEventListener('click', () => {
@@ -1162,6 +1301,7 @@ function unfoldGraph() {
     pauseResumeButton.style.backgroundColor = 'lightgreen';
     setControlsEnabled(true);
     updateDebugInfo();
+    syncMobilePlayIcon();
     return;
   }
 
@@ -1176,16 +1316,33 @@ function unfoldGraph() {
   update();
 }
 
+// Replace the whole resetGraph() body with:
 function resetGraph() {
   const st = currentStartState();
-  nodes = [{ id: 1, x: width / 2, y: height / 2, state: st }];
-  links = [];
-  gumGraph.getNodes().forEach(node => node.markedAsDeleted = true);
+
+  // 1) reset zoom first (avoid drawing off-screen with previous transform)
+  resetZoom();
+
+  // 2) wipe graph model
+  gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
   gumGraph.removeMarkedNodes();
+
+  // 3) seed D3 layer at real SVG center
+  const rect = (svg.node() as SVGSVGElement).getBoundingClientRect();
+  const cx = rect.width  / 2;
+  const cy = rect.height / 2;
+  nodes = [{ id: 1, x: cx, y: cy, state: st }];
+  links = [];
+
+  // 4) seed GUM
   const newId = gumGraph.allocateNodeId();
   gumGraph.addNode(new GUMNode(newId, st));
-  update();
+
+  // 5) paint once, then snap-fit (no smoothing, instant)
+  update();  
+  fitInitialOnReset();
 }
+
 
 /* =========================================================================
    15) PALETTE / DETAILS INIT + BOOT
@@ -1209,4 +1366,7 @@ loadGenesLibrary().then(() => {
   refreshMaxStepsInput();
   renderPaletteOpenCollapsed();
   initStateCombos();
+  applyResponsiveMode();  
+  syncMobilePlayIcon();
+
 });

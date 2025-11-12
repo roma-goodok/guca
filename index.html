@@ -22,6 +22,9 @@
       color:#0b0c0e; background:#fff;
     }
 
+    /* Always respect the hidden attribute (prevents accidental overrides) */
+    [hidden] { display: none !important; }
+
     /* Header (collapsible About) */
     header{border-bottom:1px solid var(--border); background:#fff}
     header .wrap{max-width:1400px; margin:0 auto; padding:8px 12px}
@@ -132,6 +135,85 @@
     /* Form bits */
     select, input[type="number"]{padding:6px 8px; border:1px solid #cfd5dd; border-radius:6px; background:#fff}
     label{color:#111827}
+
+    /* --- Responsive toggles -------------------------------------------------- */
+    body.mobile-basic header,
+    body.mobile-basic #ui-panel,
+    body.mobile-basic #advanced-block,
+    body.mobile-basic #palette-block,
+    body.mobile-basic #gene-inspector,
+    body.mobile-basic #rules-section .board + div,  /* hide "Show more" button row */
+    body.mobile-basic #download-yaml-button,
+    body.mobile-basic #gene-upload {
+      display: none !important;
+    }
+
+    body.mobile-basic footer {
+      /* Keep status bar or hide if you prefer: */
+      display:none;
+    }
+
+    /* Mobile overlay toolbar (default: hidden) */
+    #mobile-toolbar {
+      position: absolute;
+      top: env(safe-area-inset-top, 8px);
+      left: env(safe-area-inset-left, 8px);
+      right: env(safe-area-inset-right, 8px);
+      display: none;                /* was flex → makes it always visible */
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 8px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      z-index: 10;
+    }
+
+    /* Rules strip on the black canvas (default: hidden) */
+    #rules-overlay {
+      position: absolute;
+      left: env(safe-area-inset-left, 8px);
+      right: env(safe-area-inset-right, 8px);
+      bottom: env(safe-area-inset-bottom, 8px);
+      display: none;                /* was flex → makes it always visible */
+      gap: 6px;
+      align-items: center;
+      padding: 8px;
+      background: rgba(0,0,0,0.42);
+      border-radius: 10px;
+      overflow-x: auto;
+      z-index: 9;
+    }
+
+    /* Only show overlays when body has the mobile flag */
+    body.mobile-basic #mobile-toolbar,
+    body.mobile-basic #rules-overlay {
+      display: flex;                /* was block; keep flex layout */
+    }
+    
+
+    #mobile-toolbar button,
+    #mobile-toolbar select {
+      font-size: 16px;
+      padding: 6px 10px;
+      border: 1px solid #cfd5dd;
+      border-radius: 8px;
+      background: #fff;
+    }    
+
+    /* Shrink tiles slightly in overlay, keep look&feel */
+    /* #rules-overlay .gene-tile {
+      transform: scale(0.95);
+      transform-origin: center;
+      border-width: 2px;
+      cursor: pointer;
+    } */
+
+    #rules-overlay .gene-tile { width: 48px; height: 30px; border-radius: 6px; }
+    #rules-overlay::-webkit-scrollbar { height: 6px; }
+    #rules-overlay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 4px; }
+    
   </style>
 </head>
 <body>
@@ -154,6 +236,13 @@
   <div id="main">
     <div id="canvas-container">
       <svg></svg>
+        <div id="mobile-toolbar" aria-label="Mobile controls" hidden>
+          <button id="mobile-play">▶︎</button>
+          <button id="mobile-reset">⟲</button>
+          <button id="mobile-slow">🐢</button>
+          <select id="gene-select-mobile" title="Genome"></select>
+        </div>
+        <div id="rules-overlay" hidden></div>
     </div>
 
     <aside id="ui-panel">
