@@ -156,12 +156,12 @@
     /* Mobile overlay toolbar (default: hidden) */
     #mobile-toolbar {
       position: absolute;
-      top: env(safe-area-inset-top, 8px);
+      bottom: env(safe-area-inset-bottom, 8px);
       left: env(safe-area-inset-left, 8px);
       right: env(safe-area-inset-right, 8px);
-      display: none;                /* was flex → makes it always visible */
+      display: none;
       gap: 8px;
-      align-items: center;
+      align-items: center;  
       justify-content: flex-start;
       padding: 8px;
       background: rgba(255,255,255,0.88);
@@ -174,17 +174,23 @@
     #rules-overlay {
       position: absolute;
       left: env(safe-area-inset-left, 8px);
-      right: env(safe-area-inset-right, 8px);
-      bottom: env(safe-area-inset-bottom, 8px);
-      display: none;                /* was flex → makes it always visible */
+      right: env(safe-area-inset-right, 8px);  
+      bottom: calc(env(safe-area-inset-bottom, 8px) + 56px); /* sit just above the toolbar */
+      display: none;
       gap: 6px;
       align-items: center;
       padding: 8px;
       background: rgba(0,0,0,0.42);
       border-radius: 10px;
       overflow-x: auto;
+      overflow-y: hidden;
+      flex-wrap: wrap;              /* allow 2+ rows of tiles */
+      justify-content: flex-start;
+      max-width: 540px;             /* ~10 tiles per row at 48px + gaps */
+      max-height: 96px;             /* roughly 2 rows of tiles */
       z-index: 9;
     }
+
 
     /* Only show overlays when body has the mobile flag */
     body.mobile-basic #mobile-toolbar,
@@ -192,7 +198,6 @@
       display: flex;                /* was block; keep flex layout */
     }
     
-
     #mobile-toolbar button,
     #mobile-toolbar select {
       font-size: 16px;
@@ -200,7 +205,14 @@
       border: 1px solid #cfd5dd;
       border-radius: 8px;
       background: #fff;
-    }    
+    }
+    
+    #mobile-toolbar button.toggle-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
 
     /* Shrink tiles slightly in overlay, keep look&feel */
     /* #rules-overlay .gene-tile {
@@ -216,7 +228,7 @@
     
   </style>
 </head>
-<body>
+<body class="mobile-basic">
   <header>
     <div class="about-row">
       <details class="about">

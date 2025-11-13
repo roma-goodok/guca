@@ -100,8 +100,8 @@ resetBtn?.addEventListener('click', () => {
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   setControlsEnabled(true);
   resetGraph();                 // now self-centers
-  gumMachine.resetIterations?.();
-  syncMobilePlayIcon?.();       // keep ▶︎/⏸ in sync (if you added this earlier)
+  gumMachine.resetIterations?.();  
+  syncMobilePlayIcon();
 });
 
 
@@ -374,7 +374,26 @@ function syncMobilePlayIcon() {
   }
 }
 
-// REPLACE the previous fitGraphInstant with this version
+function syncSlowButtonsUI() {
+  // Desktop turtle button
+  if (slowBtn) {
+    slowBtn.classList.toggle('active', slowMode);
+    slowBtn.textContent = slowMode ? '🐢 Slow (ON)' : '🐢 Slow';
+    slowBtn.setAttribute('aria-pressed', slowMode ? 'true' : 'false');
+    slowBtn.title = slowMode ? 'Slow mode enabled' : 'Slow mode disabled';
+  }
+
+  // Mobile toolbar turtle button
+  const mobileSlow = document.getElementById('mobile-slow') as HTMLButtonElement | null;
+  if (mobileSlow) {
+    mobileSlow.classList.toggle('toggle-active', slowMode);
+    mobileSlow.setAttribute('aria-pressed', slowMode ? 'true' : 'false');
+    mobileSlow.title = slowMode ? 'Slow mode enabled' : 'Slow mode disabled';
+  }
+}
+
+
+
 function fitGraphInstant(maxFill = AUTO_MAX_FILL) {
   const ids = primaryComponentNodeIds();
   const bb = computeBBoxForNodes(ids.size ? ids : undefined);
@@ -1152,13 +1171,15 @@ document.getElementById('next-step-button')!.addEventListener('click', () => {
 
 slowBtn?.addEventListener('click', () => {
   slowMode = !slowMode;
-  slowBtn.classList.toggle('active', slowMode);
-  slowBtn.textContent = slowMode ? '🐢 Slow down (ON)' : '🐢 Slow down';
   if (isSimulationRunning) {
     clearInterval(simulationInterval);
     simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
   }
+  syncSlowButtonsUI();
 });
+
+syncSlowButtonsUI();
+
 
 maintainChk?.addEventListener('change', () => {
   const on = !!maintainChk.checked;
@@ -1368,5 +1389,6 @@ loadGenesLibrary().then(() => {
   initStateCombos();
   applyResponsiveMode();  
   syncMobilePlayIcon();
+  syncSlowButtonsUI();
 
 });
