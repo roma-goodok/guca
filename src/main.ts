@@ -15,11 +15,15 @@ import {
   RuleItem, OperationCondition, Operation, OperationKindEnum,
   MachineCfg, TranscriptionWay, CountCompare
 } from './gum';
+
 import {
   mapOperationKind, mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
-  Node, Link, edgeColorByStates, PALETTE16
+  Node, Link, edgeColorByStates, PALETTE16,
+  getAllStateColorOverrides, setStateColorOverride,
+  replaceStateColorOverrides, getStateColorOverride,
 } from './utils';
+
 
 import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
@@ -52,6 +56,83 @@ const SLOW_MS = 700;                          // slow mode tick ms
 const AUTO_MAX_FILL = 0.5;                    // auto camera max fill
 const CAMERA_MA_WINDOW = 25;                  // smooth camera EMA window
 const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1);
+
+// Persist user-selected per-state colors between sessions
+const COLOR_OVERRIDES_STORAGE_KEY = 'guca_state_color_overrides_v1';
+
+function loadColorOverridesFromStorage() {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return;
+  try {
+    const raw = window.localStorage.getItem(COLOR_OVERRIDES_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as { [state: number]: string };
+    if (parsed && typeof parsed === 'object') {
+      replaceStateColorOverrides(parsed);
+    }
+  } catch {
+    // ignore malformed or unavailable storage
+  }
+}
+
+function persistColorOverrides() {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return;
+  try {
+    const map = getAllStateColorOverrides();
+    window.localStorage.setItem(COLOR_OVERRIDES_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore quota / access errors
+  }
+}
+
+// Restore any saved colors as early as possible
+loadColorOverridesFromStorage();
+
+// Map each palette slot (0..15) to the NodeState values that use it.
+// This lets one color tile control all states mapped to that slot.
+const COLOR_SLOT_STATES: NodeState[][] = (() => {
+  const size = PALETTE16.length || 16;
+  const slots: NodeState[][] = Array.from({ length: size }, () => []);
+
+  const candidates: NodeState[] = [
+    NodeState.Ignored,
+    NodeState.Unknown,
+    NodeState.A, NodeState.B, NodeState.C, NodeState.D, NodeState.E,
+    NodeState.F, NodeState.G, NodeState.H, NodeState.I, NodeState.J,
+    NodeState.K, NodeState.L, NodeState.M, NodeState.N, NodeState.O,
+    NodeState.P, NodeState.Q, NodeState.R, NodeState.S, NodeState.T,
+    NodeState.U, NodeState.V, NodeState.W, NodeState.X, NodeState.Y,
+    NodeState.Z,
+  ];
+
+  const len = slots.length;
+  candidates.forEach(s => {
+    const idx = ((Number(s) % len) + len) % len;
+    slots[idx].push(s);
+  });
+
+  return slots;
+})();
+
+function getPaletteSlotColor(idx: number): string {
+  const states = COLOR_SLOT_STATES[idx] || [];
+  // If any state in this slot has an override, use it.
+  for (const s of states) {
+    const ov = getStateColorOverride(s);
+    if (ov) return ov;
+  }
+  // Otherwise fall back to the base palette entry.
+  return PALETTE16[idx] ?? '#cccccc';
+}
+
+function applyPaletteSlotColor(idx: number, cssColor: string) {
+  const states = COLOR_SLOT_STATES[idx] || [];
+  states.forEach(s => setStateColorOverride(s, cssColor));
+  persistColorOverrides();
+  renderPaletteGrid(); // refresh chips
+  update();            // repaint graph with new colors
+}
+
+
 
 /* =========================================================================
    2) STATE (runtime, UI toggles, misc)
@@ -979,15 +1060,46 @@ function updateDisplay(option: string) {
 function renderPaletteGrid() {
   const grid = document.getElementById('palette-grid');
   if (!grid) return;
+
   grid.innerHTML = '';
-  PALETTE16.forEach((name, idx) => {
-    const cell = document.createElement('div');
+  grid.title = 'Click a swatch to change its color';
+
+  const size = PALETTE16.length;
+
+  for (let idx = 0; idx < size; idx++) {
+    // Use a button so it’s fully clickable, but keep the original .palette-chip look.
+    const cell = document.createElement('button');
+    cell.type = 'button';
     cell.className = 'palette-chip';
-    cell.style.background = name;
-    cell.title = `#${idx} — ${name}`;
+    cell.style.background = getPaletteSlotColor(idx);
+    cell.style.cursor = 'pointer';
+    cell.title = `#${idx} — click to change color`;
+
+    // Hidden native color input; we just trigger it from the tile.
+    const picker = document.createElement('input');
+    picker.type = 'color';
+    picker.style.position = 'absolute';
+    picker.style.opacity = '0';
+    picker.style.pointerEvents = 'none';
+    picker.style.width = '0';
+    picker.style.height = '0';
+
+    picker.addEventListener('input', () => {
+      const hex = picker.value;
+      if (!hex) return;
+      applyPaletteSlotColor(idx, hex);
+    });
+
+    cell.addEventListener('click', () => {
+      picker.click();
+    });
+
+    cell.appendChild(picker);
     grid.appendChild(cell);
-  });
+  }
 }
+
+
 
 function wireDetailsToggle(detailsId: string) {
   const det = document.getElementById(detailsId) as HTMLDetailsElement | null;
@@ -1376,19 +1488,23 @@ function renderPaletteOpenCollapsed() {
   if (det) det.open = true; // keep existing behavior
 }
 
+
+
 function initStateCombos() {
   populateStateComboBox('node-state');
   populateStateComboBox('change-node-state');
   populateStateComboBox('connect-nearest-state');
 }
 
+// Restore any saved per-state colors before we build the initial graph
+loadColorOverridesFromStorage();
+
 loadGenesLibrary().then(() => {
   setControlsEnabled(false);
   refreshMaxStepsInput();
   renderPaletteOpenCollapsed();
   initStateCombos();
-  applyResponsiveMode();  
+  applyResponsiveMode();
   syncMobilePlayIcon();
   syncSlowButtonsUI();
-
 });

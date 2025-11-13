@@ -1,24 +1,62 @@
 // utils.ts
 import { NodeState, OperationKindEnum, GUMNode, RuleItem } from './gum';
 
-export const PALETTE16: string[] = [
-  'lightGray',   // 0
-  'pink',        // 1
-  'red',         // 2
-  'orangeRed',   // 3
-  'orange',      // 4
-  'violet',      // 5
-  'yellow',      // 6
-  'lightGreen',  // 7
-  'green',       // 8
+// Default palette for node states (used when no per-state override is defined)
+export const DEFAULT_PALETTE16: string[] = [
+  'lightGray',     // 0
+  'pink',          // 1
+  'red',           // 2
+  'orangeRed',     // 3
+  'orange',        // 4
+  'violet',        // 5
+  'yellow',        // 6
+  'lightGreen',    // 7
+  'green',         // 8
   'lightSeaGreen', // 9
-  'seaGreen',    // 10
-  'lightBlue',   // 11
-  'blue',        // 12
-  'violet',      // 13
-  'lightCyan',   // 14
-  'violet',      // 15
+  'seaGreen',      // 10
+  'lightBlue',     // 11
+  'blue',          // 12
+  'violet',        // 13
+  'lightCyan',     // 14
+  'violet',        // 15
 ];
+
+// Backwards-compatible alias
+export const PALETTE16 = DEFAULT_PALETTE16;
+
+type StateColorMap = { [state: number]: string };
+
+// In-memory per-state overrides: NodeState numeric → CSS color (e.g. "#ff00aa")
+let STATE_COLOR_OVERRIDES: StateColorMap = {};
+
+/** Return a shallow copy of all per-state color overrides. */
+export function getAllStateColorOverrides(): StateColorMap {
+  return { ...STATE_COLOR_OVERRIDES };
+}
+
+/** Replace all overrides at once (used by UI / localStorage restore). */
+export function replaceStateColorOverrides(map: StateColorMap): void {
+  STATE_COLOR_OVERRIDES = { ...map };
+}
+
+/** Set or clear an override for a given NodeState. */
+export function setStateColorOverride(
+  state: NodeState,
+  color: string | null | undefined
+): void {
+  const key = Number(state);
+  if (!color) {
+    delete STATE_COLOR_OVERRIDES[key];
+  } else {
+    STATE_COLOR_OVERRIDES[key] = String(color);
+  }
+}
+
+/** Read an override for a given NodeState, if any. */
+export function getStateColorOverride(state: NodeState): string | undefined {
+  return STATE_COLOR_OVERRIDES[Number(state)];
+}
+
 
 // Define the Node interface to represent a graph node with properties for position, velocity, force, and state.
 export interface Node {
@@ -61,18 +99,26 @@ export function mapOperationKind(kind: string): OperationKindEnum {
   
 
 export function getVertexRenderColor(state: NodeState): string {
-  const idx = ((state as number) % 16 + 16) % 16; // robust modulo
-  return PALETTE16[idx] ?? 'gray';
+  const override = getStateColorOverride(state);
+  if (override) return override;
+
+  const paletteSize = DEFAULT_PALETTE16.length;
+  const idx = ((Number(state) % paletteSize) + paletteSize) % paletteSize; // robust modulo
+  return DEFAULT_PALETTE16[idx] ?? 'gray';
 }
+
 /**
  * Gets the text color used to render a vertex based on its state.
  * @param state - The state of the node.
  * @returns The text color corresponding to the node state.
  */
 export function getVertexRenderTextColor(state: NodeState): string {
-    const darkColors = [2, 3, 5, 7, 0];
-    return darkColors.includes(state % 16) ? 'white' : 'black';
-  }
+  const paletteSize = DEFAULT_PALETTE16.length;
+  const idx = ((Number(state) % paletteSize) + paletteSize) % paletteSize;
+  const darkColors = [2, 3, 5, 7, 0]; // indices in DEFAULT_PALETTE16 that are visually darker
+  return darkColors.includes(idx) ? 'white' : 'black';
+}
+
 
 /**
  * Maps a string representation of a node state to its corresponding enum value.
