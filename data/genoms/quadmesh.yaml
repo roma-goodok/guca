@@ -9,6 +9,7 @@ machine:
     max_depth: 5
     tie_breaker: stable
     connect_all: true
+  maintain_single_component: false
 init_graph:
   nodes:
   - state: A

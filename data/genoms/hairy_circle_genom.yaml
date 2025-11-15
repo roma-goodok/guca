@@ -7,7 +7,8 @@ machine:
   nearest_search:
     max_depth: 5          # int >= 1 (default: 2)
     tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
-    connect_all: false    # false = choose 1; true = connect to all at minimal distance  
+    connect_all: false    # false = choose 1; true = connect to all at minimal distance 
+  maintain_single_component: true
 init_graph:
   nodes:
     - {state: A }

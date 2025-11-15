@@ -617,19 +617,23 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   gumMachine.setMaxSteps(-1);
 
   const ocFromCfg = cfg?.machine?.orphan_cleanup;
-  if (!(ocFromCfg && ocFromCfg.enabled)) {
-    (gumMachine as any).setOrphanCleanup?.({
+
+  if (ocFromCfg) {
+    // YAML explicitly provides orphan_cleanup → respect it (enabled can be true or false)
+    lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+    lastLoadedConfig.machine.orphan_cleanup = JSON.parse(JSON.stringify(ocFromCfg));
+    // No need to call setOrphanCleanup here: buildMachineFromConfig already wired it into the machine.
+  } else {
+    // No orphan_cleanup block in the genome → apply a default runtime config (enabled)
+    const fallbackOc = {
       enabled: true,
       thresholds: { size1: 5, size2: 7, others: 10 },
       fadeStarts: { size1: 3, size2: 5, others: 8 },
-    });
-    // reflect into lastLoadedConfig so export matches runtime
-    lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-    lastLoadedConfig.machine.orphan_cleanup = {
-      enabled: true,
-      thresholds: { size1: 10, size2: 14, others: 20 },
-      fadeStarts: { size1: 3, size2: 5, others: 8 },
     };
+    (gumMachine as any).setOrphanCleanup?.(fallbackOc);
+
+    lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+    lastLoadedConfig.machine.orphan_cleanup = { ...fallbackOc };
   }
 
   const ocActive = (gumMachine as any).getOrphanCleanup?.()?.enabled ?? false;
@@ -643,8 +647,7 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   const reseedActive = (gumMachine as any).getReseedIsolatedA?.() ?? true;
   if (reseedIsolatedACheckbox) reseedIsolatedACheckbox.checked = reseedActive;
   lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-  lastLoadedConfig.machine.reseed_isolated_A = reseedActive;
-
+  lastLoadedConfig.machine.reseed_isolated_A = reseedActive;  
 
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';

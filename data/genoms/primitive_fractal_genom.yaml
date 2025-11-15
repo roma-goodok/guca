@@ -10,6 +10,7 @@ machine:
     tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
     connect_all: false    # false = choose 1; true = connect to all at minimal distance
   rng_seed: 42            # optional; if missing, engine will pick a default
+  maintain_single_component: false
 
 init_graph:
   nodes:
