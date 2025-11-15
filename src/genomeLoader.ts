@@ -70,6 +70,7 @@ import {
       },
       maintain_single_component: maintainSingle,
       orphan_cleanup: machineBlock?.orphan_cleanup ?? { enabled: false },
+      reseed_isolated_A: machineBlock?.reseed_isolated_A ?? true,
     };
   
     // 4) construct machine

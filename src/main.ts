@@ -48,6 +48,7 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
     connect_all: false,
   },
   maintain_single_component: true,
+  reseed_isolated_A: true,
 };
 
 const config = { debug: false };              // simple UI verbosity flag
@@ -192,6 +193,7 @@ const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonEle
 
 const maintainChk       = document.getElementById('maintain-single-component') as HTMLInputElement | null;
 const orphanCleanupChk  = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
+const reseedIsolatedACheckbox = document.getElementById('reseed-isolated-a-checkbox') as HTMLInputElement | null;
 
 const autoCenterChk = document.getElementById('auto-center-checkbox') as HTMLInputElement | null;
 const autoScaleChk  = document.getElementById('auto-scale-checkbox')  as HTMLInputElement | null;
@@ -549,14 +551,13 @@ function currentStartState(): NodeState {
 const YAML_CATALOG = [
   { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
   { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml' },  
-  { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },
-  { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
+  { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },    
   { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml' },
   { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml' },
+  { name: 'Hexagon replicator', path: 'data/genoms/hexagon_replicator.yaml' },  
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
-  { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },
-  { name: 'Gun (replicator)', path: 'data/genoms/gun.yaml' },  
-  { name: 'Primitive Fractal', path: 'data/genoms/primitive_fractal_genom.yaml' },
+  { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
+  { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
 ];
 
 async function fetchYaml(path: string): Promise<any> {
@@ -639,6 +640,12 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
     maintainChk.checked = mscNow;
   }
 
+  const reseedActive = (gumMachine as any).getReseedIsolatedA?.() ?? true;
+  if (reseedIsolatedACheckbox) reseedIsolatedACheckbox.checked = reseedActive;
+  lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+  lastLoadedConfig.machine.reseed_isolated_A = reseedActive;
+
+
   gumMachine.resetIterations();
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
@@ -681,6 +688,8 @@ downloadBtn?.addEventListener('click', () => {
     ...(lastLoadedConfig?.machine ?? {}),
     max_steps: gumMachine.getMaxSteps(),
   };
+
+  machineBlock.reseed_isolated_A = (gumMachine as any).getReseedIsolatedA?.();
 
   const out = {
     machine: machineBlock,
@@ -1315,6 +1324,13 @@ orphanCleanupChk?.addEventListener('change', () => {
 
   lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
   lastLoadedConfig.machine.orphan_cleanup = next;
+});
+
+reseedIsolatedACheckbox?.addEventListener('change', () => {
+  const on = !!reseedIsolatedACheckbox.checked;
+  (gumMachine as any).setReseedIsolatedA?.(on);
+  lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+  lastLoadedConfig.machine.reseed_isolated_A = on;
 });
 
 maxStepsInput?.addEventListener('change', () => {

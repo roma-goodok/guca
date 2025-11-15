@@ -31,6 +31,7 @@ export interface MachineCfg {
   nearest_search: NearestSearchCfg;
   maintain_single_component?: boolean;
   orphan_cleanup?: OrphanCleanupCfg;
+  reseed_isolated_A?: boolean;
 }
 
 // ----------------- RNG -----------------
@@ -264,10 +265,10 @@ export class GraphUnfoldingMachine {
     if (this.cfg.maintain_single_component === undefined) {
       (this.cfg as any).maintain_single_component = true;
     }
-  }
 
-  public setMaintainSingleComponent(on: boolean) {
-    (this.cfg as any).maintain_single_component = on;
+    if ((this.cfg as any).reseed_isolated_A === undefined) {
+      (this.cfg as any).reseed_isolated_A = true;
+    }
   }
 
   public setMaxSteps(n: number) {
@@ -318,9 +319,20 @@ export class GraphUnfoldingMachine {
     (this.cfg as any).orphan_cleanup = cfg;
   }
 
-
   public getMaintainSingleComponent(): boolean {
     return !!this.cfg.maintain_single_component;
+  }
+
+  public setMaintainSingleComponent(on: boolean) {
+    (this.cfg as any).maintain_single_component = on;
+  }
+
+  public getReseedIsolatedA(): boolean {
+    return (this.cfg as any).reseed_isolated_A ?? true;
+  }
+
+  public setReseedIsolatedA(on: boolean) {
+    (this.cfg as any).reseed_isolated_A = !!on;
   }
 
 
@@ -597,6 +609,38 @@ export class GraphUnfoldingMachine {
     });
   }
 
+  private reseedIsolatedANodesIfEnabled(): void {
+    const cfgAny = this.cfg as any;
+    const featureOn: boolean = cfgAny.reseed_isolated_A ?? true;
+    if (!featureOn) return;
+
+    const maintain = !!this.cfg.maintain_single_component;
+    if (maintain) return;
+
+    const oc = this.cfg.orphan_cleanup;
+    if (oc?.enabled) return;  // only active when Auto-dissolve is OFF
+
+    const comps = this.graph.getConnectedComponents();
+    if (!comps.length) return;
+
+    for (const comp of comps) {
+      // "disconnected node" = component of size 1
+      if (comp.length !== 1) continue;
+      const n = comp[0];
+      if (n.state !== NodeState.A) continue;
+
+      // NEW: reseed *once* — only if it previously had parents
+      if (n.parentsCount <= 0) continue;
+
+      n.parentsCount = 0;
+      n.priorState   = NodeState.Unknown;
+      n.orphanAge    = 0;
+      n.fade         = 0;
+    }
+  }
+
+
+
   runOneStep(): boolean {
     this.snapshotAllNodes();
     this.ruleTable.items.forEach(it => { it.isActive = false; it.isActiveInNodes = []; });
@@ -624,6 +668,7 @@ export class GraphUnfoldingMachine {
     this.iterations++;
     this.cleanupOrphansIfEnabled();
     this.graph.removeMarkedNodes();
+    this.reseedIsolatedANodesIfEnabled(); 
     this.enforceSingleComponentIfEnabled();
     return didAnything;
   }
