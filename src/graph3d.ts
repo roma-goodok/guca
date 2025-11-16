@@ -14,22 +14,31 @@ export interface Graph3DController {
   onNodeHover(handler: (node?: GUMNode) => void): void;
 }
 
+type InternalNode = { id: number; state: number };
+type InternalLink = { source: number; target: number };
+
 export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   let fg: ForceGraph3DInstance | null = null;
   let containerEl: HTMLElement | null = null;
   let hoverHandler: ((node?: GUMNode) => void) | null = null;
 
+  // Persistent data object (same reference for incremental updates)
+  const data: { nodes: InternalNode[]; links: InternalLink[] } = {
+    nodes: [],
+    links: [],
+  };
+  const nodeById = new Map<number, InternalNode>();
+
   function ensure(container: HTMLElement) {
     containerEl = container;
 
     if (!fg) {
-      // IMPORTANT: use `new` as recommended by the library README
       fg = new ForceGraph3D(containerEl)
         .backgroundColor('#000000')
         .showNavInfo(true)
-        .linkOpacity(0.6)          // default is 0.2 → quite dark
-        .linkWidth(1)            // > 0 switches to cylinders instead of 1px lines
-        .linkResolution(8)         // smoother cylinders (default is 6)
+        .linkOpacity(0.8)
+        .linkWidth(1)
+        .linkResolution(8)
         .nodeId('id')
         .nodeRelSize(6)
         .nodeLabel((n: any) => {
@@ -63,7 +72,8 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
           hoverHandler(gNode ?? undefined);
         });
 
-      // Let the internal force layout relax a bit.
+      // Initial empty data; positions will be filled once we sync
+      fg.graphData(data);
       fg.cooldownTicks(120);
     }
 
@@ -73,11 +83,47 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   function syncFromGum(triggerZoomFit: boolean) {
     if (!fg || !containerEl) return;
 
-    const data = buildGraphDataFromGum(gumGraph);
+    // --- Incremental node sync ---
+
+    const gumNodes = gumGraph.getNodes();
+    const currentIds = new Set<number>();
+
+    for (const gn of gumNodes) {
+      currentIds.add(gn.id);
+      let node = nodeById.get(gn.id);
+      if (!node) {
+        node = { id: gn.id, state: gn.state };
+        nodeById.set(gn.id, node);
+        data.nodes.push(node);
+      } else {
+        // Update state in place (position x,y,z is kept by 3d-force-graph)
+        node.state = gn.state;
+      }
+    }
+
+    // Remove deleted nodes
+    if (nodeById.size !== currentIds.size) {
+      data.nodes = data.nodes.filter(n => {
+        if (!currentIds.has(n.id)) {
+          nodeById.delete(n.id);
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // --- Links: rebuild list but re-use the same data object ---
+
+    const gumEdges = gumGraph.getEdges();
+    data.links.length = 0;
+    for (const e of gumEdges) {
+      data.links.push({ source: e.source.id, target: e.target.id });
+    }
+
+    // Apply incremental update
     fg.graphData(data);
 
     if (triggerZoomFit) {
-      // Run a few more layout ticks and smart-fit the camera
       fg.cooldownTicks(120);
       fg.zoomToFit(600, 24);
     }

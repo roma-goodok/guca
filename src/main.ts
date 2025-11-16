@@ -198,6 +198,9 @@ const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonEle
 const view2dBtn = document.getElementById('view-2d-button') as HTMLButtonElement | null;
 const view3dBtn = document.getElementById('view-3d-button') as HTMLButtonElement | null;
 
+const mobileView2dBtn = document.getElementById('mobile-view-2d') as HTMLButtonElement | null;
+const mobileView3dBtn = document.getElementById('mobile-view-3d') as HTMLButtonElement | null;
+
 const threeContainer = document.getElementById('three-container') as HTMLDivElement | null;
 
 const maintainChk       = document.getElementById('maintain-single-component') as HTMLInputElement | null;
@@ -774,6 +777,9 @@ function setViewMode(mode: ViewMode) {
   view2dBtn?.classList.toggle('active', mode === '2d');
   view3dBtn?.classList.toggle('active', mode === '3d');
 
+  mobileView2dBtn?.classList.toggle('toggle-active', mode === '2d');
+  mobileView3dBtn?.classList.toggle('toggle-active', mode === '3d');
+
   const svgEl = svg.node() as SVGSVGElement | null;
   if (!svgEl || !threeContainer) return;
 
@@ -803,6 +809,9 @@ function setViewMode(mode: ViewMode) {
 
 view2dBtn?.addEventListener('click', () => setViewMode('2d'));
 view3dBtn?.addEventListener('click', () => setViewMode('3d'));
+
+mobileView2dBtn?.addEventListener('click', () => setViewMode('2d'));
+mobileView3dBtn?.addEventListener('click', () => setViewMode('3d'));
 
 
 function toGraphCoords(evt: any) {
