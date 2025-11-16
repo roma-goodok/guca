@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "3d-force-graph": "^1.79.0",
     "d3": "^7.9.0",
     "graphlib": "^2.1.8",
     "js-yaml": "^4.1.0"

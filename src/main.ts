@@ -29,6 +29,7 @@ import yaml from 'js-yaml';
 import { buildMachineFromConfig } from './genomeLoader';
 import { computeKToSatisfyMaxFill } from './viewport';
 import { shouldUseMobileBasic } from './responsive';
+import { createGraph3DController } from './graph3d';
 
 
 /* =========================================================================
@@ -141,6 +142,9 @@ function applyPaletteSlotColor(idx: number, cssColor: string) {
 
 type Tool = 'move' | 'scissors';
 
+type ViewMode = '2d' | '3d';
+let viewMode: ViewMode = '2d';
+
 let showAllRules = false;
 let lastLoadedConfig: any = null;
 
@@ -190,6 +194,11 @@ resetBtn?.addEventListener('click', () => {
 const btnMove      = document.getElementById('tool-move-button') as HTMLButtonElement | null;
 const btnScissors  = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
 const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonElement | null;
+
+const view2dBtn = document.getElementById('view-2d-button') as HTMLButtonElement | null;
+const view3dBtn = document.getElementById('view-3d-button') as HTMLButtonElement | null;
+
+const threeContainer = document.getElementById('three-container') as HTMLDivElement | null;
 
 const maintainChk       = document.getElementById('maintain-single-component') as HTMLInputElement | null;
 const orphanCleanupChk  = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
@@ -334,7 +343,6 @@ window.addEventListener('resize', () => {
   maybeAutoViewport();
 });
 
-
 function applyResponsiveMode() {
   const rect = (svg.node() as SVGSVGElement).getBoundingClientRect?.() || { width: 0, height: 0 };
   const vw = window.innerWidth  || rect.width;
@@ -347,10 +355,23 @@ function applyResponsiveMode() {
   const mt = document.getElementById('mobile-toolbar') as HTMLElement | null;
   const ro = document.getElementById('rules-overlay')  as HTMLElement | null;
 
-  // Hidden attribute is the hard gate; CSS only opens them in mobile mode.
   mt?.toggleAttribute('hidden', !useMobile);
   ro?.toggleAttribute('hidden', !useMobile);
+  
+  if (viewMode === '3d' && threeContainer) {
+    graph3D.resize();
+  }
 }
+
+window.addEventListener('resize', () => {
+  lastUserGestureAt = 0;         // nudge computation
+  if (viewMode === '2d') {
+    maybeAutoViewport();
+  } else if (viewMode === '3d' && threeContainer) {
+    graph3D.resize();
+  }
+});
+
 window.addEventListener('resize', applyResponsiveMode);
 window.addEventListener('orientationchange', applyResponsiveMode);
 // also run once after layout settles
@@ -538,6 +559,8 @@ let links: Link[] = [];
 
 const gumGraph = new GUMGraph();
 let gumMachine = new GraphUnfoldingMachine(gumGraph, DEFAULT_MACHINE_CFG);
+
+const graph3D = createGraph3DController(gumGraph);
 
 function currentStartState(): NodeState {
   const s = lastLoadedConfig?.machine?.start_state;
@@ -729,7 +752,7 @@ if (uploadInput) {
 }
 
 /* =========================================================================
-   10) SCISSORS TOOL (edge cutting)
+   10) SCISSORS TOOL (edge cutting) and view
    ========================================================================= */
 
 function setTool(tool: Tool) {
@@ -743,6 +766,44 @@ function setTool(tool: Tool) {
 btnMove?.addEventListener('click', () => setTool('move'));
 btnScissors?.addEventListener('click', () => setTool('scissors'));
 setTool('move');
+
+function setViewMode(mode: ViewMode) {
+  if (viewMode === mode) return;
+  viewMode = mode;
+
+  view2dBtn?.classList.toggle('active', mode === '2d');
+  view3dBtn?.classList.toggle('active', mode === '3d');
+
+  const svgEl = svg.node() as SVGSVGElement | null;
+  if (!svgEl || !threeContainer) return;
+
+  if (mode === '2d') {
+    // Hide 3D, show 2D
+    threeContainer.hidden = true;
+    svgEl.removeAttribute('hidden');
+
+    // Let D3 relax a bit after coming back from 3D
+    for (let i = 0; i < 12; i++) {
+      simulation.tick();
+    }
+    update();
+    maybeAutoViewport();
+    graph3D.pause();
+  } else {
+    // Hide 2D, show 3D
+    svgEl.setAttribute('hidden', 'true');
+    threeContainer.hidden = false;
+
+    graph3D.ensure(threeContainer);
+    graph3D.resize();
+    graph3D.syncFromGum(true);  // includes cooldown + zoomToFit
+    graph3D.resume();
+  }
+}
+
+view2dBtn?.addEventListener('click', () => setViewMode('2d'));
+view3dBtn?.addEventListener('click', () => setViewMode('3d'));
+
 
 function toGraphCoords(evt: any) {
   const [mx, my] = d3.pointer(evt, svg.node() as any);
@@ -830,6 +891,8 @@ svg.on('mouseup.cut mouseleave.cut', () => {
   lastCutPt = null;
 });
 
+
+
 /* =========================================================================
    11) RENDERING & UPDATE LOOP
    ========================================================================= */
@@ -907,6 +970,11 @@ function renderNodeInspector(n?: GUMNode) {
     <div><b>Parents (live/saved):</b> ${livePar} / ${savedPar}</div>
   `;
 }
+
+graph3D.onNodeHover((n?: GUMNode) => {
+  renderNodeInspector(n);
+});
+
 function nodeStateName(n: number): string {
   // @ts-ignore enum reverse mapping present
   return (NodeState as any)[n] ?? String(n);
@@ -1055,7 +1123,13 @@ function update() {
   updateDebugInfo({ forceRulesRebuild: false });
   populateComboBoxes();
   simulation.tick();       // ensure positions flushed
-  maybeAutoViewport();     // auto camera
+  
+  if (viewMode === '2d') {
+    maybeAutoViewport();
+  } else if (viewMode === '3d') {
+    // keep 3D graph in sync with the same GUMGraph
+    graph3D.syncFromGum(false);
+  }
 }
 
 /* =========================================================================
@@ -1553,6 +1627,11 @@ function resetGraph() {
   // 5) paint once, then snap-fit (no smoothing, instant)
   update();  
   fitInitialOnReset();
+  
+  if (viewMode === '3d' && threeContainer) {
+    graph3D.ensure(threeContainer);
+    graph3D.syncFromGum(true);
+  }
 }
 
 
