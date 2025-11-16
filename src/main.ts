@@ -601,7 +601,7 @@ async function loadGenesLibrary() {
   document.getElementById('mobile-slow')?.addEventListener('click', () => slowBtn?.click());
 
 
-  updateDebugInfo();
+  updateDebugInfo({ forceRulesRebuild: true });
 }
 
 async function loadGenomFromYaml(path: string) {
@@ -724,7 +724,7 @@ if (uploadInput) {
     }
     await applyGenomConfig(cfg, f.name);
     refreshMaxStepsInput();
-    updateDebugInfo();
+    updateDebugInfo({ forceRulesRebuild: true });
   });
 }
 
@@ -1051,8 +1051,8 @@ function update() {
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
-
-  updateDebugInfo();
+  
+  updateDebugInfo({ forceRulesRebuild: false });
   populateComboBoxes();
   simulation.tick();       // ensure positions flushed
   maybeAutoViewport();     // auto camera
@@ -1134,7 +1134,9 @@ function wireDetailsToggle(detailsId: string) {
   });
 }
 
-function updateDebugInfo() {
+function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
+  const forceRulesRebuild = !!opts?.forceRulesRebuild;
+
   const statusInfoElement = document.getElementById('status-info');
   if (!config.debug) {
     const nodeCountElement = document.getElementById('node-count');
@@ -1152,46 +1154,79 @@ function updateDebugInfo() {
 
   const board = document.getElementById('rule-board');
   const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
+  const items = gumMachine.getRuleItems();
+  const MAX = 60;
 
   if (board) {
-    const items = gumMachine.getRuleItems();
-    const MAX = 60;
-    const html = buildRuleTilesHTML(items, showAllRules ? items.length : MAX);
-    board.innerHTML = html;
-
-    if (toggleBtn) {
-      if (items.length > MAX) {
-        toggleBtn.style.display = 'inline-block';
-        toggleBtn.textContent = showAllRules ? 'Show less' : `Show more (${items.length - MAX})`;
-      } else {
-        toggleBtn.style.display = 'none';
-      }
-    }
-
     const geneInspectorBody = document.getElementById('gene-inspector-body') as HTMLDivElement | null;
     const defaultGI = 'Hover a rule tile to see its description. Click a tile to enable/disable that rule.';
-    if (geneInspectorBody && !geneInspectorBody.textContent) geneInspectorBody.textContent = defaultGI;
+    if (geneInspectorBody && !geneInspectorBody.textContent) {
+      geneInspectorBody.textContent = defaultGI;
+    }
 
-    board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
-      const idx = Number(el.dataset.idx ?? '-1');
-      if (Number.isNaN(idx) || idx < 0) return;
+    // Decide whether to fully rebuild tiles or just refresh their state
+    const needFullRebuild = forceRulesRebuild || board.childElementCount === 0;
 
-      el.addEventListener('mouseenter', () => {
-        const it = items.find(i => gumMachine.getRuleItems().indexOf(i) === idx) ?? gumMachine.getRuleItems()[idx];
-        if (!it || !geneInspectorBody) return;
-        geneInspectorBody.textContent = `${describeRuleHuman(it)} — Click to ${it.isEnabled ? 'disable' : 'enable'}.`;
+    if (needFullRebuild) {
+      const html = buildRuleTilesHTML(items, showAllRules ? items.length : MAX);
+      board.innerHTML = html;
+
+      if (toggleBtn) {
+        if (items.length > MAX) {
+          toggleBtn.style.display = 'inline-block';
+          toggleBtn.textContent = showAllRules ? 'Show less' : `Show more (${items.length - MAX})`;
+        } else {
+          toggleBtn.style.display = 'none';
+        }
+      }
+
+      board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+        const idx = Number(el.dataset.idx ?? '-1');
+        if (Number.isNaN(idx) || idx < 0) return;
+
+        el.addEventListener('mouseenter', () => {
+          const it = items[idx] ?? gumMachine.getRuleItems()[idx];
+          if (!it || !geneInspectorBody) return;
+          geneInspectorBody.textContent =
+            `${describeRuleHuman(it)} — Click to ${it.isEnabled ? 'disable' : 'enable'}.`;
+        });
+
+        el.addEventListener('mouseleave', () => {
+          if (geneInspectorBody) geneInspectorBody.textContent = defaultGI;
+        });
+
+        el.addEventListener('click', () => {
+          const all = gumMachine.getRuleItems();
+          if (!all[idx]) return;
+          all[idx].isEnabled = !all[idx].isEnabled;
+          // Toggle without nuking the whole DOM tree:
+          updateDebugInfo({ forceRulesRebuild: false });
+        });
       });
-      el.addEventListener('mouseleave', () => {
-        if (geneInspectorBody) geneInspectorBody.textContent = defaultGI;
+    } else {
+      // Lightweight update: keep existing elements & listeners, just update classes/tooltips
+      board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+        const idx = Number(el.dataset.idx ?? '-1');
+        if (Number.isNaN(idx) || idx < 0) return;
+        const it = items[idx];
+        if (!it) return;
+
+        el.classList.toggle('disabled', !it.isEnabled);
+        el.classList.toggle('active', !!it.isActive);
+        el.title = describeRuleHuman(it).replace(/"/g, '&quot;');
       });
-      el.addEventListener('click', () => {
-        const all = gumMachine.getRuleItems();
-        if (!all[idx]) return;
-        all[idx].isEnabled = !all[idx].isEnabled;
-        updateDebugInfo();
-      });
-    });
+
+      if (toggleBtn) {
+        if (items.length > MAX) {
+          toggleBtn.style.display = 'inline-block';
+          toggleBtn.textContent = showAllRules ? 'Show less' : `Show more (${items.length - MAX})`;
+        } else {
+          toggleBtn.style.display = 'none';
+        }
+      }
+    }
   } else {
+    // Fallback: short-form text panel for rules
     const ruleTableElement = document.getElementById('rule-table');
     if (ruleTableElement) {
       const changeRuleItems = gumMachine.getRuleItems();
@@ -1205,21 +1240,43 @@ function updateDebugInfo() {
 
       ruleTableElement.innerHTML = `<h4>Rule Table (Short Form)</h4><pre>${body}</pre>`;
       const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
-      if (toggleBtn) toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
+      if (toggleBtn) {
+        toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
+      }
     }
   }
 
-  renderRulesOverlay();
+  // Keep overlay in sync, with same "full vs light" semantics
+  renderRulesOverlay(forceRulesRebuild);
 }
 
-function renderRulesOverlay() {
+
+function renderRulesOverlay(forceRulesRebuild = true) {
   const container = document.getElementById('rules-overlay') as HTMLDivElement | null;
   if (!container || !document.body.classList.contains('mobile-basic')) return;
 
   const items = gumMachine.getRuleItems();
-  container.innerHTML = buildRuleTilesHTML(items, 48); // cap tiles for tiny screens
 
-  // Click handlers (enable/disable rule)
+  const needFullRebuild = forceRulesRebuild || container.childElementCount === 0;
+
+  if (!needFullRebuild) {
+    // Lightweight: just refresh classes and tooltips
+    container.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+      const idx = Number(el.dataset.idx ?? '-1');
+      if (Number.isNaN(idx) || idx < 0) return;
+      const it = items[idx];
+      if (!it) return;
+
+      el.classList.toggle('disabled', !it.isEnabled);
+      el.classList.toggle('active', !!it.isActive);
+      el.title = describeRuleHuman(it).replace(/"/g, '&quot;');
+    });
+    return;
+  }
+
+  // Full rebuild
+  container.innerHTML = buildRuleTilesHTML(items, 48);
+
   container.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
     const idx = Number(el.dataset.idx ?? '-1');
     if (Number.isNaN(idx) || idx < 0) return;
@@ -1227,11 +1284,14 @@ function renderRulesOverlay() {
       const all = gumMachine.getRuleItems();
       if (!all[idx]) return;
       all[idx].isEnabled = !all[idx].isEnabled;
-      updateDebugInfo();        // keep both places in sync
-      renderRulesOverlay();
+      // Re-sync both desktop board and overlay, without rebuilding everything
+      updateDebugInfo({ forceRulesRebuild: false });
+      renderRulesOverlay(false);
     };
   });
 }
+
+
 
 
 /* =========================================================================
@@ -1435,8 +1495,8 @@ document.getElementById('connect-nearest-button')?.addEventListener('click', () 
 const toggleRulesBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
 toggleRulesBtn?.addEventListener('click', () => {
   showAllRules = !showAllRules;
-  toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';
-  updateDebugInfo();
+  toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';  
+  updateDebugInfo({ forceRulesRebuild: true });
 });
 
 /* =========================================================================
