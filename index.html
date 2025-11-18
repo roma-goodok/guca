@@ -17,21 +17,9 @@
     }
     *{box-sizing:border-box}
     body{
-      margin:0;
-      /* Use a flexible height so the layout can adapt to the *visible* viewport */
-      min-height:100vh;
-      display:flex; 
-      flex-direction:column;
+      margin:0; height:100vh; display:flex; flex-direction:column;
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
-      color:#0b0c0e; 
-      background:#fff;
-    }
-
-    /* Modern mobile browsers: use dynamic viewport (excludes browser toolbars) */
-    @supports (height: 100dvh) {
-      body{
-        min-height:100dvh;
-      }
+      color:#0b0c0e; background:#fff;
     }
 
     /* Always respect the hidden attribute (prevents accidental overrides) */
@@ -183,9 +171,10 @@
     /* Mobile overlay toolbar (default: hidden) */
     #mobile-toolbar {
       position: absolute;
-      bottom: env(safe-area-inset-bottom, 8px);
+      top: env(safe-area-inset-top, 8px);
       left: env(safe-area-inset-left, 8px);
       right: env(safe-area-inset-right, 8px);
+      bottom: auto;
       display: none;
       gap: 8px;
       align-items: center;  
@@ -201,8 +190,9 @@
     #rules-overlay {
       position: absolute;
       left: env(safe-area-inset-left, 8px);
-      right: env(safe-area-inset-right, 8px);  
-      bottom: calc(env(safe-area-inset-bottom, 8px) + 56px); /* sit just above the toolbar */
+      right: env(safe-area-inset-right, 8px);
+      top: calc(env(safe-area-inset-top, 8px) + 56px);
+      bottom: auto;
       display: none;
       gap: 6px;
       align-items: center;
