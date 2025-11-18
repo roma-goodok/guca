@@ -17,9 +17,21 @@
     }
     *{box-sizing:border-box}
     body{
-      margin:0; height:100vh; display:flex; flex-direction:column;
+      margin:0;
+      /* Use a flexible height so the layout can adapt to the *visible* viewport */
+      min-height:100vh;
+      display:flex; 
+      flex-direction:column;
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
-      color:#0b0c0e; background:#fff;
+      color:#0b0c0e; 
+      background:#fff;
+    }
+
+    /* Modern mobile browsers: use dynamic viewport (excludes browser toolbars) */
+    @supports (height: 100dvh) {
+      body{
+        min-height:100dvh;
+      }
     }
 
     /* Always respect the hidden attribute (prevents accidental overrides) */
