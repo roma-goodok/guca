@@ -54,8 +54,8 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
 };
 
 const config = { debug: false };              // simple UI verbosity flag
-const FAST_MS_DEFAULT = 100;                  // default fast tick ms
-const SLOW_MS = 700;                          // slow mode tick ms
+const FAST_MS_DEFAULT = 200;                  // default fast tick ms
+const SLOW_MS = 500;                          // slow mode tick ms
 const AUTO_MAX_FILL = 0.5;                    // auto camera max fill
 const CAMERA_MA_WINDOW = 25;                  // smooth camera EMA window
 const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1);
@@ -222,28 +222,6 @@ function createTickingSoundEngine(): TickingSoundEngine {
   function tick(magnitude: number, direction: TickDirection, _reason: TickReason) {
     if (!isEnabled() || !ctx || !masterGain) return;
 
-    // const now = ctx.currentTime;
-    // const osc = ctx.createOscillator();
-    // const gain = ctx.createGain();
-
-    // // Slightly different base frequency for "growth" vs "shrink"
-    // const baseFreq = direction === 'shrink' ? 720 : 920;
-    // const jitter = (Math.random() - 0.5) * 220;
-    // osc.type = 'triangle';
-    // osc.frequency.setValueAtTime(baseFreq + jitter, now);
-
-    // const clampedMag = Math.max(0, Math.min(1, magnitude));
-    // const peak = 0.12 + 0.18 * clampedMag; // 0.12..0.30-ish
-
-    // gain.gain.setValueAtTime(0, now);
-    // gain.gain.linearRampToValueAtTime(peak, now + 0.01);
-    // gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-
-    // osc.connect(gain);
-    // gain.connect(masterGain);
-
-    // osc.start(now);
-    // osc.stop(now + 0.12);
     const now = ctx.currentTime;
 
     // Duration of the noise burst
@@ -273,7 +251,7 @@ function createTickingSoundEngine(): TickingSoundEngine {
 
     // Scale loudness a bit with intensity, but keep it subtle
     const clamped = Math.min(16, Math.max(1, 10*magnitude || 1));
-    const peak = 0.06 + (clamped / 8) * 0.16;
+    const peak = 0.12 + (clamped / 8) * 0.32;
 
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(peak, now + 0.002);
