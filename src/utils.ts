@@ -256,40 +256,66 @@ export function nodeStateLetter(s: NodeState): string {
     return String(s);
   }
   
-  export function describeRuleHuman(item: RuleItem): string {
-    const c = item.condition, o = item.operation;
-    const cur = nodeStateLetter(c.currentState);
-    const prior = nodeStateLetter(c.priorState);
-    const parts: string[] = [];
-  
-    // degree/parents ranges
-    const deg =
-      (c.allConnectionsCount_GE >= 0 ? `c≥${c.allConnectionsCount_GE}` : "") +
-      (c.allConnectionsCount_LE >= 0 ? `${parts.length ? "," : ""}c≤${c.allConnectionsCount_LE}` : "");
-    const par =
-      (c.parentsCount_GE >= 0 ? `p≥${c.parentsCount_GE}` : "") +
-      (c.parentsCount_LE >= 0 ? `${(c.parentsCount_GE>=0) ? "," : ""}p≤${c.parentsCount_LE}` : "");
-  
-    if (deg) parts.push(deg);
-    if (par) parts.push(par);
-  
-    const cond =
-      `if current=${cur}` +
-      (c.priorState !== NodeState.Ignored ? ` & prior=${prior}` : "") +
-      (parts.length ? ` & ${parts.join(" & ")}` : "");
-  
-    const opState = nodeStateLetter(o.operandNodeState);
-    let act = "";
-    switch (o.kind) {
-      case OperationKindEnum.TurnToState: act = `turn to ${opState}`; break;
-      case OperationKindEnum.GiveBirthConnected: act = `give birth to ${opState} (connected)`; break;
-      case OperationKindEnum.GiveBirth: act = `give birth to ${opState}`; break;
-      case OperationKindEnum.TryToConnectWithNearest: act = `connect to nearest ${opState}`; break;
-      case OperationKindEnum.TryToConnectWith: act = `connect to all ${opState}`; break;
-      case OperationKindEnum.DisconectFrom: act = `disconnect from ${opState}`; break;
-      case OperationKindEnum.Die: act = `die`; break;
-      default: act = `do operation`;
-    }
-    return `${act} ${cond}`;
+export function describeRuleHuman(item: RuleItem): string {
+const c = item.condition, o = item.operation;
+const cur = nodeStateLetter(c.currentState);
+const prior = nodeStateLetter(c.priorState);
+const parts: string[] = [];
+
+// degree/parents ranges
+const deg =
+    (c.allConnectionsCount_GE >= 0 ? `c≥${c.allConnectionsCount_GE}` : "") +
+    (c.allConnectionsCount_LE >= 0 ? `${parts.length ? "," : ""}c≤${c.allConnectionsCount_LE}` : "");
+const par =
+    (c.parentsCount_GE >= 0 ? `p≥${c.parentsCount_GE}` : "") +
+    (c.parentsCount_LE >= 0 ? `${(c.parentsCount_GE>=0) ? "," : ""}p≤${c.parentsCount_LE}` : "");
+
+if (deg) parts.push(deg);
+if (par) parts.push(par);
+
+const cond =
+    `if current=${cur}` +
+    (c.priorState !== NodeState.Ignored ? ` & prior=${prior}` : "") +
+    (parts.length ? ` & ${parts.join(" & ")}` : "");
+
+const opState = nodeStateLetter(o.operandNodeState);
+let act = "";
+switch (o.kind) {
+    case OperationKindEnum.TurnToState: act = `turn to ${opState}`; break;
+    case OperationKindEnum.GiveBirthConnected: act = `give birth to ${opState} (connected)`; break;
+    case OperationKindEnum.GiveBirth: act = `give birth to ${opState}`; break;
+    case OperationKindEnum.TryToConnectWithNearest: act = `connect to nearest ${opState}`; break;
+    case OperationKindEnum.TryToConnectWith: act = `connect to all ${opState}`; break;
+    case OperationKindEnum.DisconectFrom: act = `disconnect from ${opState}`; break;
+    case OperationKindEnum.Die: act = `die`; break;
+    default: act = `do operation`;
+}
+return `${act} ${cond}`;
+}
+
+// Quantify structural change between two graph snapshots (for sound intensity).
+// Returns whether anything changed at all, and a normalized magnitude in [0,1].
+export function computeGraphChangeMagnitude(
+  prevNodes: number,
+  prevEdges: number,
+  nextNodes: number,
+  nextEdges: number
+): { changed: boolean; magnitude: number } {
+  const dNodes = nextNodes - prevNodes;
+  const dEdges = nextEdges - prevEdges;
+
+  const changed = dNodes !== 0 || dEdges !== 0;
+  if (!changed) {
+    return { changed: false, magnitude: 0 };
   }
+
+  // Nodes weigh a bit more than edges; this is arbitrary but gives a nice feel.
+  const weighted = Math.abs(dNodes) + 0.5 * Math.abs(dEdges);
+
+  // Normalize: about "10 units of change" saturates the effect.
+  const magnitude = Math.min(1, weighted / 10);
+
+  return { changed: true, magnitude };
+}
+
   

@@ -22,6 +22,7 @@ import {
   Node, Link, edgeColorByStates, PALETTE16,
   getAllStateColorOverrides, setStateColorOverride,
   replaceStateColorOverrides, getStateColorOverride,
+  computeGraphChangeMagnitude,
 } from './utils';
 
 
@@ -171,6 +172,164 @@ const FIT_PARAMS = {
   defaultK: 1,
 };
 
+/* =========================================================================
+   Sound: mechanical ticking tied to graph changes
+   ========================================================================= */
+
+type TickReason = 'auto' | 'manual';
+type TickDirection = 'grow' | 'shrink' | 'mixed';
+
+interface TickingSoundEngine {
+  setEnabled(on: boolean): void;
+  isEnabled(): boolean;
+  tick(magnitude: number, direction: TickDirection, reason: TickReason): void;
+}
+
+function createTickingSoundEngine(): TickingSoundEngine {
+  let AudioCtor: any = null;
+  if (typeof window !== 'undefined') {
+    AudioCtor = (window as any).AudioContext || (window as any).webkitAudioContext;
+  }
+
+  let ctx: AudioContext | null = null;
+  let masterGain: GainNode | null = null;
+  let enabled = false;
+
+  function ensureContext() {
+    if (!AudioCtor || ctx) return;
+    ctx = new AudioCtor();
+    if (!ctx) {   
+      return;
+    }
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(ctx.destination);
+  }
+
+  function setEnabled(on: boolean) {
+    enabled = on;
+    if (!on) return;
+    ensureContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => { /* ignore */ });
+    }
+  }
+
+  function isEnabled() {
+    return enabled && !!ctx && !!masterGain;
+  }
+
+  function tick(magnitude: number, direction: TickDirection, _reason: TickReason) {
+    if (!isEnabled() || !ctx || !masterGain) return;
+
+    // const now = ctx.currentTime;
+    // const osc = ctx.createOscillator();
+    // const gain = ctx.createGain();
+
+    // // Slightly different base frequency for "growth" vs "shrink"
+    // const baseFreq = direction === 'shrink' ? 720 : 920;
+    // const jitter = (Math.random() - 0.5) * 220;
+    // osc.type = 'triangle';
+    // osc.frequency.setValueAtTime(baseFreq + jitter, now);
+
+    // const clampedMag = Math.max(0, Math.min(1, magnitude));
+    // const peak = 0.12 + 0.18 * clampedMag; // 0.12..0.30-ish
+
+    // gain.gain.setValueAtTime(0, now);
+    // gain.gain.linearRampToValueAtTime(peak, now + 0.01);
+    // gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+    // osc.connect(gain);
+    // gain.connect(masterGain);
+
+    // osc.start(now);
+    // osc.stop(now + 0.12);
+    const now = ctx.currentTime;
+
+    // Duration of the noise burst
+    const duration = 0.08; // 80 ms
+    const sampleRate = ctx.sampleRate;
+    const frameCount = Math.floor(sampleRate * duration);
+
+    // Create a single-channel noise buffer
+    const buffer = ctx.createBuffer(1, frameCount, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    // White noise
+    for (let i = 0; i < frameCount; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    // High-pass filter to make it more "metal click" than "thump"
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    const baseFreq = direction === 'shrink' ? 4000 : 3000;
+    filter.frequency.value = baseFreq; // try 3000–8000 to taste
+
+    const gain = ctx.createGain();
+
+    // Scale loudness a bit with intensity, but keep it subtle
+    const clamped = Math.min(16, Math.max(1, 10*magnitude || 1));
+    const peak = 0.06 + (clamped / 8) * 0.16;
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start(now);
+    noise.stop(now + duration);
+  }
+
+  return { setEnabled, isEnabled, tick };
+}
+
+const tickingSound = createTickingSoundEngine();
+let soundEnabled = true;
+
+// Graph stats used to detect structural change for sound.
+let lastNodesCountForSound = 0;
+let lastEdgesCountForSound = 0;
+
+// This will be called from resetGraph() once the seed node is in place.
+function resetSoundGraphStats() {
+  // gumGraph is defined later; this function is only called after it exists.
+  lastNodesCountForSound = gumGraph.getNodes().length;
+  lastEdgesCountForSound = gumGraph.getEdges().length;
+}
+
+function handleGraphCountsPotentiallyChanged(reason: TickReason) {
+  const nodesNow = gumGraph.getNodes().length;
+  const edgesNow = gumGraph.getEdges().length;
+
+  const { changed, magnitude } = computeGraphChangeMagnitude(
+    lastNodesCountForSound,
+    lastEdgesCountForSound,
+    nodesNow,
+    edgesNow
+  );
+
+  if (soundEnabled && changed) {
+    const deltaNodes = nodesNow - lastNodesCountForSound;
+    const deltaEdges = edgesNow - lastEdgesCountForSound;
+    const totalDelta = deltaNodes + deltaEdges;
+
+    let dir: TickDirection = 'mixed';
+    if (totalDelta > 0) dir = 'grow';
+    else if (totalDelta < 0) dir = 'shrink';
+
+    tickingSound.tick(magnitude, dir, reason);
+  }
+
+  lastNodesCountForSound = nodesNow;
+  lastEdgesCountForSound = edgesNow;
+}
 
 /* =========================================================================
    3) DOM REFERENCES (queried once)
@@ -198,8 +357,12 @@ const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonEle
 const view2dBtn = document.getElementById('view-2d-button') as HTMLButtonElement | null;
 const view3dBtn = document.getElementById('view-3d-button') as HTMLButtonElement | null;
 
+const soundToggleBtn = document.getElementById('sound-toggle-button') as HTMLButtonElement | null;
+
 const mobileView2dBtn = document.getElementById('mobile-view-2d') as HTMLButtonElement | null;
 const mobileView3dBtn = document.getElementById('mobile-view-3d') as HTMLButtonElement | null;
+
+const mobileSoundBtn  = document.getElementById('mobile-sound') as HTMLButtonElement | null;
 
 const threeContainer = document.getElementById('three-container') as HTMLDivElement | null;
 
@@ -499,6 +662,25 @@ function syncSlowButtonsUI() {
   }
 }
 
+function syncSoundButtonsUI() {
+  if (soundToggleBtn) {
+    soundToggleBtn.classList.toggle('active', soundEnabled);
+    soundToggleBtn.textContent = soundEnabled ? '🔊 Sound' : '🔈 Sound';
+    soundToggleBtn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+    soundToggleBtn.title = soundEnabled
+      ? 'Click to mute mechanical ticking'
+      : 'Click to enable mechanical ticking';
+  }
+
+  if (mobileSoundBtn) {
+    mobileSoundBtn.classList.toggle('toggle-active', soundEnabled);
+    mobileSoundBtn.textContent = soundEnabled ? '🔊' : '🔈';
+    mobileSoundBtn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+    mobileSoundBtn.title = soundEnabled
+      ? 'Mute mechanical ticking'
+      : 'Enable mechanical ticking';
+  }
+}
 
 
 function fitGraphInstant(maxFill = AUTO_MAX_FILL) {
@@ -881,6 +1063,7 @@ function cutEdgesBetween(p0:{x:number;y:number}, p1:{x:number;y:number}) {
   const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
   if (typeof enforce === 'function') enforce.call(gumMachine);
 
+  handleGraphCountsPotentiallyChanged('manual');
   update();
 }
 
@@ -1417,6 +1600,9 @@ pauseResumeButton.style.backgroundColor = 'lightgreen';
 pauseResumeButton.addEventListener('click', () => {
   isSimulationRunning = !isSimulationRunning;
   if (isSimulationRunning) {
+    if (soundEnabled) {
+      tickingSound.setEnabled(true);
+    }
     simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
     pauseResumeButton.textContent = 'Pause';
     setControlsEnabled(false);
@@ -1498,6 +1684,7 @@ document.getElementById('connect-button')?.addEventListener('click', () => {
       gumGraph.addEdge(sourceNode, targetNode);
       const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
       if (typeof enforce === 'function') enforce.call(gumMachine);
+      handleGraphCountsPotentiallyChanged('manual');
       update();
     }
   }
@@ -1513,6 +1700,7 @@ document.getElementById('add-node-button')?.addEventListener('click', () => {
   nodes.push({ id: newNode.id, state: newNode.state });
   const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
   if (typeof enforce === 'function') enforce.call(gumMachine);
+  handleGraphCountsPotentiallyChanged('manual');
   update();
 });
 
@@ -1526,6 +1714,7 @@ document.getElementById('remove-node-button')?.addEventListener('click', () => {
       nodes = nodes.filter(node => node.id !== nodeToRemove.id);
       const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
       if (typeof enforce === 'function') enforce.call(gumMachine);
+      handleGraphCountsPotentiallyChanged('manual');
       update();
     }
   }
@@ -1556,6 +1745,7 @@ document.getElementById('disconnect-button')?.addEventListener('click', () => {
       gumGraph.removeEdge(sourceNode, targetNode);
       const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
       if (typeof enforce === 'function') enforce.call(gumMachine);
+      handleGraphCountsPotentiallyChanged('manual');
       update();
     }
   }
@@ -1571,6 +1761,7 @@ document.getElementById('connect-nearest-button')?.addEventListener('click', () 
     gumMachine.tryToConnectWithNearest(node, NodeState[state]);
     const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
     if (typeof enforce === 'function') enforce.call(gumMachine);
+    handleGraphCountsPotentiallyChanged('manual');
     update();
   }
 });
@@ -1581,6 +1772,19 @@ toggleRulesBtn?.addEventListener('click', () => {
   toggleRulesBtn.textContent = showAllRules ? 'Show less' : 'Show more';  
   updateDebugInfo({ forceRulesRebuild: true });
 });
+
+soundToggleBtn?.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  tickingSound.setEnabled(soundEnabled);
+  syncSoundButtonsUI();
+});
+
+mobileSoundBtn?.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  tickingSound.setEnabled(soundEnabled);
+  syncSoundButtonsUI();
+});
+
 
 /* =========================================================================
    14) UNFOLD LOOP & GRAPH RESET
@@ -1605,13 +1809,14 @@ function unfoldGraph() {
   const enforce = (gumMachine as any)?.enforceSingleComponentIfEnabled;
   if (typeof enforce === 'function') enforce.call(gumMachine);
 
+  handleGraphCountsPotentiallyChanged('auto');
+
   simulation.tick();
   update();
   simulation.tick();
   update();
 }
 
-// Replace the whole resetGraph() body with:
 function resetGraph() {
   const st = currentStartState();
 
@@ -1634,6 +1839,7 @@ function resetGraph() {
   gumGraph.addNode(new GUMNode(newId, st));
 
   // 5) paint once, then snap-fit (no smoothing, instant)
+  resetSoundGraphStats(); 
   update();  
   fitInitialOnReset();
   
@@ -1674,4 +1880,5 @@ loadGenesLibrary().then(() => {
   applyResponsiveMode();
   syncMobilePlayIcon();
   syncSlowButtonsUI();
+  syncSoundButtonsUI();
 });

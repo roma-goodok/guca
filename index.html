@@ -267,14 +267,15 @@
       <div id="three-container" hidden></div>
       <svg></svg>
         <div id="mobile-toolbar" aria-label="Mobile controls" hidden>
-          <button id="mobile-play">▶︎</button>
-          <button id="mobile-reset">⟲</button>
-          <button id="mobile-slow">🐢</button>    
-          <button id="mobile-view-2d" class="toggle-active" title="2D view">2D</button>
-          <button id="mobile-view-3d" title="3D view (beta)">3D</button>
-          <select id="gene-select-mobile" title="Genome"></select>
-        </div>
-        <div id="rules-overlay" hidden></div>
+        <button id="mobile-play">▶︎</button>
+        <button id="mobile-reset">⟲</button>
+        <button id="mobile-slow">🐢</button>
+        <button id="mobile-sound" title="Toggle mechanical ticking sound">🔈</button>
+        <button id="mobile-view-2d" class="toggle-active" title="2D view">2D</button>
+        <button id="mobile-view-3d" title="3D view (beta)">3D</button>
+        <select id="gene-select-mobile" title="Genome"></select>
+      </div>
+      <div id="rules-overlay" hidden></div>
     </div>
 
     <aside id="ui-panel">
@@ -292,13 +293,17 @@
       </div>
 
       <div class="control-group">
-        <h4>Tools</h4>
-        <div class="toggle-group">
-          <button id="tool-move-button" class="toggle-btn active" title="Move / pan / drag nodes">🖐️ Move</button>
-          <button id="tool-scissors-button" class="toggle-btn" title="Cut edges while dragging">✂️ Scissors</button>
-          <button id="slowdown-button" class="toggle-btn" title="Toggle slow mode">🐢 Slow down</button>
-        </div>
+      <h4>Tools</h4>
+      <div class="toggle-group">
+        <button id="tool-move-button" class="toggle-btn active" title="Move / pan / drag nodes">🖐️ Move</button>
+        <button id="tool-scissors-button" class="toggle-btn" title="Cut edges while dragging">✂️ Scissors</button>
+        <button id="slowdown-button" class="toggle-btn" title="Toggle slow mode">🐢 Slow down</button>
+        <button id="sound-toggle-button" class="toggle-btn active" title="Toggle mechanical ticking sound">
+          🔈 Sound
+        </button>
       </div>
+    </div>
+
 
       <div class="control-group">
         <h4>View</h4>
