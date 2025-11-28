@@ -5,6 +5,10 @@
 ## Main Idea
 
 The web visualization of graph unfolding cellular automata (GUCA) showcases a "gene" of the graph, which is a program of primitive operations (add node, connect nodes, change node status by conditions), created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata. This project demonstrates genetic programming over graphs and artificial life, particularly morphogenesis.
+
+<p align="center">
+  <img src="preview.png" width="512">
+</p>
   
 ## Requirements  
   
