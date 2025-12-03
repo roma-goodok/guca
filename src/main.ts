@@ -840,6 +840,7 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   resetGraph();                // handles zoom+fit
   refreshMaxStepsInput();
+  updateDebugInfo({ forceRulesRebuild: true });
 
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
   if (labelForSelect && sel) {
