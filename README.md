@@ -1,6 +1,15 @@
 # Graph Unfolding Cellular Automata (GUCA) Interactive Demonstration Project
   
-[GUCA Interactive Demonstration](https://roma-goodok.github.io/guca)  
+[GUCA Interactive Demonstration](https://roma-goodok.github.io/guca)
+
+## Video intro (6 min)
+
+[![GUCA intro video](https://img.youtube.com/vi/Y01hXneYZ2w/hqdefault.jpg)](https://youtu.be/Y01hXneYZ2w?utm_source=github&utm_medium=referral&utm_campaign=guca_intro)
+
+## Create your own organism
+
+See: [docs/GENOME_GUIDE.md](docs/GENOME_GUIDE.md)
+
 
 ## Main Idea
 
@@ -23,12 +32,6 @@ The web visualization of graph unfolding cellular automata (GUCA) showcases a "g
   
 - **Frontend**: JavaScript/TypeScript with Three.js  
   - Motivation: Three.js is a powerful 3D visualization library that leverages WebGL for creating advanced graphics. It is suitable for implementing a custom force-directed algorithm and provides the necessary tools for creating interactive 3D graph visualizations.  
-  
-- **Backend**: Go with a web framework (e.g., Gin, Revel, or Echo)  
-  - Motivation: Go is a performant and efficient programming language with excellent concurrency handling. It is suitable for building a fast and responsive server-side application to support the frontend's interactive requirements.  
-  
-By using JavaScript/TypeScript with Three.js for the frontend and Go for the backend, The project aims to create a visually stunning, high-performance, and interactive graph visualization application that meets the project's vision and requirements.  
-
 
 ## Links
 

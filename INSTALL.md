@@ -83,15 +83,12 @@ npm -v
 
 ```bash
 git clone https://github.com/roma-goodok/guca.git
-cd vogue
+cd guca
 ```
 
 If you use SSH:
 ```bash
 git clone git@github.com:roma-goodok/guca.git
-```
-
-```
 cd guca
 ```
 
@@ -221,5 +218,3 @@ npx webpack --config webpack.config.js
 ```
 
 ---
-
-If anything is unclear or fails on your machine, please copy the terminal error and I’ll adjust these instructions.
