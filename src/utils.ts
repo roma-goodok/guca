@@ -83,19 +83,20 @@ export interface Link {
  * @throws An error if the operation kind is unknown.
  */
 export function mapOperationKind(kind: string): OperationKindEnum {
-    switch (kind) {
-      case "TurnToState": return OperationKindEnum.TurnToState;
-      case "TryToConnectWithNearest": return OperationKindEnum.TryToConnectWithNearest;
-      case "GiveBirthConnected": return OperationKindEnum.GiveBirthConnected;
-      case "DisconnectFrom":
-      case "DisconectFrom":      // legacy
-        return OperationKindEnum.DisconectFrom;
-      case "Die": return OperationKindEnum.Die;
-      case "TryToConnectWith": return OperationKindEnum.TryToConnectWith;
-      case "GiveBirth": return OperationKindEnum.GiveBirth;
-      default: throw new Error(`Unknown operation kind: ${kind}`);
-    }
+  switch (kind) {
+    case 'TurnToState': return OperationKindEnum.TurnToState;
+    case 'TryToConnectWithNearest': return OperationKindEnum.TryToConnectWithNearest;
+    case 'GiveBirthConnected': return OperationKindEnum.GiveBirthConnected;
+    case 'DisconnectFrom':
+    case 'DisconectFrom': // legacy spelling still accepted
+      return OperationKindEnum.DisconnectFrom;
+    case 'Die': return OperationKindEnum.Die;
+    case 'TryToConnectWith': return OperationKindEnum.TryToConnectWith;
+    case 'GiveBirth': return OperationKindEnum.GiveBirth;
+    default: throw new Error(`Unknown operation kind: ${kind}`);
   }
+}
+
   
 
 export function getVertexRenderColor(state: NodeState): string {
@@ -154,8 +155,8 @@ export function mapOperationKindToString(kind: OperationKindEnum): string {
             return 'TryToConnectWithNearest';
         case OperationKindEnum.GiveBirthConnected:
             return 'GiveBirthConnected';
-        case OperationKindEnum.DisconectFrom:
-            return 'DisconectFrom';
+        case OperationKindEnum.DisconnectFrom:
+            return 'DisconnectFrom';
         case OperationKindEnum.Die:
             return 'Die';
         case OperationKindEnum.TryToConnectWith:
@@ -223,7 +224,7 @@ export function convertToShortForm(RuleItems: RuleItem[]): string {
             case OperationKindEnum.TryToConnectWithNearest:
                 operationStr = `+N${NodeState[operation.operandNodeState]}`;
                 break;
-            case OperationKindEnum.DisconectFrom:
+            case OperationKindEnum.DisconnectFrom:
                 operationStr = `-${NodeState[operation.operandNodeState]}`;
                 break;
             case OperationKindEnum.Die:
@@ -286,7 +287,7 @@ switch (o.kind) {
     case OperationKindEnum.GiveBirth: act = `give birth to ${opState}`; break;
     case OperationKindEnum.TryToConnectWithNearest: act = `connect to nearest ${opState}`; break;
     case OperationKindEnum.TryToConnectWith: act = `connect to all ${opState}`; break;
-    case OperationKindEnum.DisconectFrom: act = `disconnect from ${opState}`; break;
+    case OperationKindEnum.DisconnectFrom: act = `disconnect from ${opState}`; break;
     case OperationKindEnum.Die: act = `die`; break;
     default: act = `do operation`;
 }

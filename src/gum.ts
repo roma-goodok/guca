@@ -68,7 +68,7 @@ export enum OperationKindEnum {
   TurnToState = 0x0,
   TryToConnectWithNearest = 0x1,
   GiveBirthConnected = 0x2,
-  DisconectFrom = 0x3, // keep legacy spelling
+  DisconnectFrom = 0x3,
   Die = 0x4,
   TryToConnectWith = 0x5,
   GiveBirth = 0x6,
@@ -467,8 +467,8 @@ export class GraphUnfoldingMachine {
         break;
       case OperationKindEnum.GiveBirthConnected:
         this.giveBirthConnected(node, operation.operandNodeState);
-        break;
-      case OperationKindEnum.DisconectFrom:
+        break;      
+      case OperationKindEnum.DisconnectFrom:
         this.disconnectFrom(node, operation.operandNodeState);
         break;
       case OperationKindEnum.TryToConnectWithNearest:

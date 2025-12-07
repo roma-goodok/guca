@@ -535,7 +535,7 @@ function opKindColor(kind: OperationKindEnum): string {
     case OperationKindEnum.GiveBirth:              return '#dcfce7';
     case OperationKindEnum.TryToConnectWithNearest:return '#bfdbfe';
     case OperationKindEnum.TryToConnectWith:       return '#dbeafe';
-    case OperationKindEnum.DisconectFrom:          return '#fecaca';
+    case OperationKindEnum.DisconnectFrom:         return '#fecaca';
     case OperationKindEnum.Die:                    return '#e5e7eb';
     default:                                       return '#e5e7eb';
   }
@@ -566,7 +566,7 @@ function describeRuleHuman(item: RuleItem): string {
     case OperationKindEnum.GiveBirth:              act = `give birth to ${opS}`; break;
     case OperationKindEnum.TryToConnectWithNearest:act = `connect to nearest ${opS}`; break;
     case OperationKindEnum.TryToConnectWith:       act = `connect to all ${opS}`; break;
-    case OperationKindEnum.DisconectFrom:          act = `disconnect from ${opS}`; break;
+    case OperationKindEnum.DisconnectFrom:         act = `disconnect from ${opS}`; break;
     case OperationKindEnum.Die:                    act = `die`; break;
     default:                                       act = `do operation`;
   }
