@@ -122,6 +122,56 @@ rules:
     op:
       kind: DisconnectFrom
       operand: F
+  - condition:
+      current: D
+      prior: D
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: G
+  - condition:
+      current: G
+      prior: D
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: GiveBirthConnected
+      operand: B
+  - condition:
+      current: G
+      prior: G
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: C
+  - condition:
+      current: G
+      prior: G
+      conn_ge: 5
+      conn_le: 5
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: E
+  - condition:
+      current: E
+      prior: E
+      conn_ge: 5
+      conn_le: 5
+      parents_ge: 1
+      parents_le: 30
+    op:
+      kind: TurnToState
+      operand: F
   # - condition:
   #     current: D
   #     prior: C
