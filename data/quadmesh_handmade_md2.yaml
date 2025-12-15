@@ -1,0 +1,185 @@
+machine:
+  transcription: resettable
+  count_compare: range
+  max_vertices: 1000
+  max_steps: -1
+  nearest_search:
+    max_depth: 2
+    tie_breaker: stable
+    connect_all: true
+  maintain_single_component: false
+  orphan_cleanup:
+    enabled: false
+    thresholds:
+      size1: 5
+      size2: 7
+      others: 10
+    fadeStarts:
+      size1: 3
+      size2: 5
+      others: 8
+  reseed_isolated_A: true
+init_graph:  
+  nodes: [A]   
+rules:
+  - condition:
+      current: A
+      prior: Unknown
+      conn_ge: 0
+      conn_le: 1
+      parents_ge: 0
+      parents_le: 30
+    op:
+      kind: GiveBirthConnected
+      operand: A
+  - condition:
+      current: A
+      prior: A
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: 0
+      parents_le: 0
+    op:
+      kind: GiveBirthConnected
+      operand: B
+  - condition:
+      current: A
+      prior: A
+      conn_ge: 1
+      conn_le: 2
+      parents_ge: 1
+      parents_le: 30
+    op:
+      kind: GiveBirthConnected
+      operand: B
+  - condition:
+      current: B
+      prior: Unknown
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: C
+  - condition:
+      current: A
+      prior: A
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: C
+  - condition:
+      current: C
+      prior: B
+      conn_ge: 1
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: D
+  - condition:
+      current: D
+      prior: C
+      conn_ge: 2
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: C
+  - condition:
+      current: A
+      prior: A
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: 1
+      parents_le: 30
+    op:
+      kind: TurnToState
+      operand: E
+  - condition:
+      current: E
+      prior: E
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: 1
+      parents_le: 30
+    op:
+      kind: TurnToState
+      operand: F
+  - condition:
+      current: D
+      prior: D
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: DisconnectFrom
+      operand: F
+  # - condition:
+  #     current: D
+  #     prior: C
+  #     conn_ge: 2
+  #     conn_le: 3
+  #     parents_ge: -1
+  #     parents_le: -1
+  #   op:
+  #     kind: GiveBirthConnected
+  #     operand: B
+  # - condition:
+  #     current: B
+  #     prior: B
+  #     conn_ge: 2
+  #     conn_le: 2
+  #     parents_ge: 0
+  #     parents_le: 0
+  #   op:
+  #     kind: GiveBirthConnected
+  #     operand: C
+  # - condition:
+  #     current: B
+  #     prior: B
+  #     conn_ge: 2
+  #     conn_le: 3
+  #     parents_ge: 1
+  #     parents_le: 10
+  #   op:
+  #     kind: GiveBirthConnected
+  #     operand: C
+  # - condition:
+  #     current: C
+  #     prior: C
+  #     conn_ge: 1
+  #     conn_le: 1
+  #     parents_ge: -1
+  #     parents_le: -1
+  #   op:
+  #     kind: TryToConnectWithNearest
+  #     operand: C
+
+  # - condition:
+  #     current: D
+  #     prior: B
+  #     conn_ge: 6
+  #     conn_le: 13
+  #     parents_ge: 0
+  #     parents_le: 14
+  #   op:
+  #     kind: DisconnectFrom
+  #     operand: A
+  # - condition:
+  #     current: B
+  #     prior: B
+  #     conn_ge: 1
+  #     conn_le: 1
+  #     parents_ge: -1
+  #     parents_le: -1
+  #   op:
+  #     kind: TryToConnectWithNearest
+  #     operand: B
