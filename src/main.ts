@@ -315,15 +315,24 @@ function handleGraphCountsPotentiallyChanged(reason: TickReason) {
 
 const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
 const resetBtn          = document.getElementById('reset-button') as HTMLButtonElement | null;
-// Reset: stop timers, reseed graph, reset camera & UI state
+
 resetBtn?.addEventListener('click', () => {
   clearInterval(simulationInterval);
   isSimulationRunning = false;
   pauseResumeButton.textContent = 'Start';
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   setControlsEnabled(true);
-  resetGraph();                 // now self-centers
-  gumMachine.resetIterations?.();  
+
+  if (lastLoadedConfig) {
+    // Rebuild machine + graph from the last loaded genome.
+    // Note: we don’t pass a custom label so it won’t touch the dropdown options.
+    void applyGenomConfig(lastLoadedConfig, null);
+  } else {
+    // Fallback: just reset view/iterations if no genome is loaded yet.
+    gumMachine.resetIterations?.();
+    resetGraph();
+  }
+
   syncMobilePlayIcon();
 });
 
@@ -735,6 +744,8 @@ function currentStartState(): NodeState {
    ========================================================================= */
 
 const YAML_CATALOG = [
+  
+  { name: 'quadmesh_handmade', path: 'data/quadmesh_handmade.yaml' },
   { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
   { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml' },  
   { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },    
@@ -744,6 +755,7 @@ const YAML_CATALOG = [
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
   { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
+  { name: 'two_wheels', path: 'data/genoms/two_wheels.yaml' }, 
 ];
 
 async function fetchYaml(path: string): Promise<any> {
@@ -1176,32 +1188,38 @@ function update() {
     return { source: sourceNode, target: targetNode };
   });
 
+  // NOTE: use a stable undirected key so edge identity doesn't flip
   const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
-    .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
+    .data(links, d => {
+      const s = (d.source as Node).id;
+      const t = (d.target as Node).id;
+      const a = Math.min(s, t);
+      const b = Math.max(s, t);
+      return `${a}-${b}`;
+    });
 
   const linkEnter = link.enter().append("line")
     .attr("class", "link")
-    .attr("vector-effect", "non-scaling-stroke")
-    .attr("stroke", d => {
-      const s = gumGraph.getNodeById((d.source as Node).id);
-      const t = gumGraph.getNodeById((d.target as Node).id);
-      const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
-      const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
-      return mixWithBlack(base, f);
-    });
+    .attr("vector-effect", "non-scaling-stroke");
 
-  linkEnter.merge(link)
+  // IMPORTANT: merged selection = enter + update
+  const mergedLinks = linkEnter.merge(link);
+
+  const linkStroke = (d: Link) => {
+    const s = gumGraph.getNodeById((d.source as Node).id);
+    const t = gumGraph.getNodeById((d.target as Node).id);
+    const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
+    const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
+    return mixWithBlack(base, f);
+  };
+
+  // Set initial geometry/stroke immediately (so it looks right right away)
+  mergedLinks
     .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
     .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
     .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
     .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-    .attr("stroke", d => {
-      const s = gumGraph.getNodeById((d.source as Node).id);
-      const t = gumGraph.getNodeById((d.target as Node).id);
-      const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
-      const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
-      return mixWithBlack(base, f);
-    });
+    .attr("stroke", linkStroke);
 
   link.exit().remove();
 
@@ -1269,32 +1287,29 @@ function update() {
         const f = gn?.fade ?? 0;
         return mixWithBlack(base, f);
       });
+
     mergedNodes.select("text")
       .attr("x", d => d.x!)
       .attr("y", d => d.y!)
       .attr("fill", d => getVertexRenderTextColor(d.state))
       .text(d => getNodeDisplayText(d.state, d.id, config.debug));
-    link
+
+    // IMPORTANT: update merged links (enter+update), not only the update selection
+    mergedLinks
       .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
       .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
       .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
       .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-      .attr("stroke", d => {
-        const s = gumGraph.getNodeById((d.source as Node).id);
-        const t = gumGraph.getNodeById((d.target as Node).id);
-        const base = edgeColorByStates((d.source as Node).state, (d.target as Node).state);
-        const f = Math.max(s?.fade ?? 0, t?.fade ?? 0);
-        return mixWithBlack(base, f);
-      });
+      .attr("stroke", linkStroke);
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
   simulation.alpha(0.5).restart();
-  
+
   updateDebugInfo({ forceRulesRebuild: false });
   populateComboBoxes();
   simulation.tick();       // ensure positions flushed
-  
+
   if (viewMode === '2d') {
     maybeAutoViewport();
   } else if (viewMode === '3d') {
@@ -1302,6 +1317,7 @@ function update() {
     graph3D.syncFromGum(false);
   }
 }
+
 
 /* =========================================================================
    12) STATUS / DEBUG / SIDE PANELS
@@ -1797,36 +1813,21 @@ function unfoldGraph() {
 }
 
 function resetGraph() {
-  const st = currentStartState();
+  // Use whatever graph is currently in gumGraph (built by buildMachineFromConfig).
+  // Just reset camera/view + sound stats.
 
-  // 1) reset zoom first (avoid drawing off-screen with previous transform)
   resetZoom();
+  resetSoundGraphStats();
 
-  // 2) wipe graph model
-  gumGraph.getNodes().forEach(n => n.markedAsDeleted = true);
-  gumGraph.removeMarkedNodes();
+  update();             // rebuilds nodes/links from gumGraph
+  fitInitialOnReset();  // center & zoom to fit
 
-  // 3) seed D3 layer at real SVG center
-  const rect = (svg.node() as SVGSVGElement).getBoundingClientRect();
-  const cx = rect.width  / 2;
-  const cy = rect.height / 2;
-  nodes = [{ id: 1, x: cx, y: cy, state: st }];
-  links = [];
-
-  // 4) seed GUM
-  const newId = gumGraph.allocateNodeId();
-  gumGraph.addNode(new GUMNode(newId, st));
-
-  // 5) paint once, then snap-fit (no smoothing, instant)
-  resetSoundGraphStats(); 
-  update();  
-  fitInitialOnReset();
-  
   if (viewMode === '3d' && threeContainer) {
     graph3D.ensure(threeContainer);
     graph3D.syncFromGum(true);
   }
 }
+
 
 
 /* =========================================================================

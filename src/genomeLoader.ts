@@ -41,15 +41,80 @@ import {
     // 2) seed nodes from init_graph (BEFORE constructing the machine)
     const machineBlock = cfg?.machine ?? {};
     const startState = toNodeStateFlex(machineBlock?.start_state ?? 'A');
-  
-    if (Array.isArray(cfg?.init_graph?.nodes) && cfg.init_graph.nodes.length > 0) {
-      cfg.init_graph.nodes.forEach((n: any, idx: number) => {
-        const st = toNodeStateFlex(n?.state ?? startState);
-        gumGraph.addNode(new GUMNode(idx + 1, st));
+
+    const initNodes: any[] | null = Array.isArray(cfg?.init_graph?.nodes)
+      ? cfg.init_graph.nodes
+      : null;
+
+    if (initNodes && initNodes.length > 0) {
+      initNodes.forEach((n: any, idx: number) => {
+        let id: number;
+        let st: NodeState;
+
+        // Short form: nodes: [A, B, C]
+        if (typeof n === 'string' || typeof n === 'number') {
+          st = toNodeStateFlex(n);
+          id = idx + 1;  // implicit ids 1..N for scalar entries
+        } else {
+          // Long form: nodes: [{ id: 0, state: B }, { state: A }, ...]
+          st = toNodeStateFlex(n?.state ?? startState);
+          const rawId = n?.id;
+          id = (rawId !== undefined && rawId !== null)
+            ? Number(rawId)
+            : (idx + 1);
+        }
+
+        if (!Number.isFinite(id)) return;
+
+        const node = new GUMNode(id, st);
+
+        // Optional extra fields for long form (safe no-ops for scalar nodes)
+        if (n && typeof n === 'object') {
+          if (n.parents_count != null) node.parentsCount = Number(n.parents_count) || 0;
+          if (n.rule_index   != null) node.ruleIndex    = Number(n.rule_index)   || 0;
+          if (n.prior_state  != null) node.priorState   = toNodeStateFlex(n.prior_state);
+        }
+
+        gumGraph.addNode(node);
       });
     } else {
+      // default: single seed node
       gumGraph.addNode(new GUMNode(1, startState));
     }
+
+    // 2b) optional edges from init_graph
+    const initEdges: any[] | null = Array.isArray(cfg?.init_graph?.edges)
+      ? cfg.init_graph.edges
+      : null;
+
+    if (initEdges && initEdges.length > 0) {
+      for (const e of initEdges) {
+        let aId: number | null = null;
+        let bId: number | null = null;
+
+        // Tuple form: [1, 2]
+        if (Array.isArray(e) && e.length >= 2) {
+          aId = Number(e[0]);
+          bId = Number(e[1]);
+        }
+        // Object form: { source: 1, target: 2 }
+        else if (e && typeof e === 'object') {
+          if (e.source != null && e.target != null) {
+            aId = Number(e.source);
+            bId = Number(e.target);
+          }
+        }
+
+        if (!Number.isFinite(aId!) || !Number.isFinite(bId!)) continue;
+        const a = gumGraph.getNodeById(aId!);
+        const b = gumGraph.getNodeById(bId!);
+        if (!a || !b) continue;
+
+        gumGraph.addEdge(a, b);
+      }
+    }
+
+
 
     const mscFromCfg = machineBlock?.maintain_single_component;
     const maintainSingle = (typeof mscFromCfg === 'boolean') ? mscFromCfg : Boolean(maintainSingleComponent);

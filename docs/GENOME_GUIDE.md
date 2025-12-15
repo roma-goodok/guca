@@ -236,7 +236,30 @@ Marks the node for deletion; it is removed at the end of the step.
 op: { kind: Die }
 ```
 
----
+## initial seed graph (optional)
+
+You can specify an initial nodes list and undirected edge list either the verbose form:
+
+```yaml
+init_graph:
+  nodes:
+    - { id: 0, state: B }
+    - { id: 1, state: A }
+    - { id: 2, state: A }
+  edges:
+    - [0, 1]
+    - [1, 2]
+```
+or a short form that relies on the order:
+```yaml
+init_graph:
+  nodes: [B, A, A]  # implicit ids 1, 2, 3
+  edges:
+    - [1, 2]
+    - [2, 3]
+```
+
+If you care about specific numeric ids (e.g. you want node 0 to be B), use the verbose form with id fields.
 
 ## Minimal working example
 
