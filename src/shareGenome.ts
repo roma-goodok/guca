@@ -39,12 +39,23 @@ function getHashString(hash?: string): string {
 export function parseGenomeFromUrlHash(hash?: string): any | null {
   const h = getHashString(hash);
   if (!h || !h.startsWith('#g=')) return null;
-  const token = h.slice(3);
+  const raw = h.slice(3);
 
-  try {
+  const tryParse = (token: string) => {
     const json = decodeURIComponent(safeAtob(token));
     return JSON.parse(json);
+  };
+
+  try {
+    // Normal case: token is URI-encoded in the URL hash.
+    return tryParse(decodeURIComponent(raw));
   } catch {
-    return null;
-  }
+    try {
+      // Back-compat: accept already-decoded tokens too.
+      return tryParse(raw);
+    } catch {
+      return null;
+    }
+  }  
+
 }

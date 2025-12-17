@@ -863,15 +863,68 @@ async function fetchYaml(path: string): Promise<any> {
 }
 
 async function loadGenesLibrary() {
-  const geneSelect = document.getElementById('gene-select') as HTMLSelectElement;
+  const geneSelect = document.getElementById('gene-select') as HTMLSelectElement | null;
   if (!geneSelect) return;
 
-  geneSelect.innerHTML = '';
-  YAML_CATALOG.forEach(({ name, path }) => {
-    const opt = document.createElement('option');
-    opt.value = path; opt.text = name; geneSelect.add(opt);
-  });
+  const mobileSelect = document.getElementById('gene-select-mobile') as HTMLSelectElement | null;
 
+  const fillCatalogOptions = (sel: HTMLSelectElement | null) => {
+    if (!sel) return;
+    sel.innerHTML = '';
+    YAML_CATALOG.forEach(({ name, path }) => {
+      const opt = document.createElement('option');
+      opt.value = path;
+      opt.text = name;
+      sel.add(opt);
+    });
+  };
+
+  fillCatalogOptions(geneSelect);
+  fillCatalogOptions(mobileSelect);
+
+  if (mobileSelect) mobileSelect.value = geneSelect.value;
+
+  const handleGenomeSelection = async (value: string) => {
+    // "Custom" option (added by upload/share/editor)
+    if (value === GENOME_SELECT_VALUES.CUSTOM) {
+      // If we have a cached custom genome, restore it instead of fetching a file.
+      if (customGenomeCache) {
+        clearShareHashIfPresent();
+        currentGenomeSource = 'custom';
+        await applyGenomConfig(deepClone(customGenomeCache), null);
+      }
+      return;
+    }
+
+    // Normal: YAML catalog path
+    clearShareHashIfPresent();
+    currentGenomeSource = 'catalog';
+    baseGenomeLabel = YAML_CATALOG.find(x => x.path === value)?.name ?? 'Genome';
+    await loadGenomFromYaml(value);
+  };
+
+  const wireSelect = (sel: HTMLSelectElement | null) => {
+    if (!sel) return;
+    sel.addEventListener('change', (ev) => {
+      void (async () => {
+        if (syncingGenomeSelect) return;
+        const value = (ev.target as HTMLSelectElement).value;
+        syncGenomeSelects(value);
+        await handleGenomeSelection(value);
+      })();
+    });
+  };
+
+  wireSelect(geneSelect);
+  wireSelect(mobileSelect);
+  
+
+  // Mobile toolbar buttons proxy desktop logic (no code duplication)
+  document.getElementById('mobile-play')?.addEventListener('click', () => pauseResumeButton.click());
+  document.getElementById('mobile-reset')?.addEventListener('click', () => resetBtn?.click());
+  document.getElementById('mobile-slow')?.addEventListener('click', () => slowBtn?.click());
+
+  // Load initial genome: shared link wins, otherwise first catalog genome.
   const shared = parseGenomeFromUrlHash(window.location.hash);
   if (shared) {
     currentGenomeSource = 'shared';
@@ -879,34 +932,10 @@ async function loadGenesLibrary() {
     await applyGenomConfig(shared, 'Shared');
     syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
     showToast('Loaded genome from shared link.');
-    return;
+  } else {
+    await loadGenomFromYaml(geneSelect.value);
   }
 
-
-  await loadGenomFromYaml(geneSelect.value);
-
-  geneSelect.addEventListener('change', async (ev) => {
-    const path = (ev.target as HTMLSelectElement).value;
-    await loadGenomFromYaml(path);
-  });
-
-  const mobileSelect = document.getElementById('gene-select-mobile') as HTMLSelectElement | null;
-  if (mobileSelect) {
-    mobileSelect.innerHTML = '';
-    YAML_CATALOG.forEach(({ name, path }) => {
-      const opt = document.createElement('option');
-      opt.value = path; opt.text = name; mobileSelect.add(opt);
-    });
-    mobileSelect.value = (document.getElementById('gene-select') as HTMLSelectElement)?.value ?? YAML_CATALOG[0].path;
-    mobileSelect.onchange = async (ev) => {
-      await loadGenomFromYaml((ev.target as HTMLSelectElement).value);
-    };
-  }
-
-  // Mobile toolbar buttons proxy desktop logic (no code duplication)
-  document.getElementById('mobile-play')?.addEventListener('click', () => pauseResumeButton.click());
-  document.getElementById('mobile-reset')?.addEventListener('click', () => resetBtn?.click());
-  document.getElementById('mobile-slow')?.addEventListener('click', () => slowBtn?.click());
 
 
   updateDebugInfo({ forceRulesRebuild: true });
@@ -1611,6 +1640,12 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
       }
 
       board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+        // "+" tile: Add new rule
+        if (el.dataset.add === '1') {
+          el.addEventListener('click', () => openRuleEditor('add'));
+          return;
+        }
+
         const idx = Number(el.dataset.idx ?? '-1');
         if (Number.isNaN(idx) || idx < 0) return;
 
