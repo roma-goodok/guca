@@ -114,6 +114,73 @@
       outline:2px solid var(--accent);
       outline-offset:2px;
     }
+    /* Add-rule tile */
+    .gene-tile.add-tile{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      font-size:20px;
+      background:#fff;
+      border:2px dashed var(--border);
+      color:var(--muted);
+      box-shadow:none;
+    }
+    .gene-tile.add-tile:hover{
+      outline:2px solid var(--accent);
+      outline-offset:2px;
+    }
+
+    /* Modal (rule editor) */
+    body.modal-open{ overflow:hidden; }
+    .modal{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      z-index:1000;
+    }
+    .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,0.55); }
+    .modal-dialog{
+      position:relative;
+      width:min(560px, calc(100vw - 24px));
+      max-height:calc(100vh - 24px);
+      overflow:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    }
+    .modal-header{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:8px;
+      padding:6px 2px 8px;
+      border-bottom:1px solid var(--border);
+    }
+    .modal-title{ font-weight:700; }
+    .modal-subtitle{ font-size:.85rem; color:var(--muted); margin-top:2px; }
+    .modal-body{ padding:10px 2px; }
+    .modal-footer{
+      display:flex; gap:8px; align-items:center;
+      padding:10px 2px 2px;
+      border-top:1px solid var(--border);
+    }
+    .modal-sep{ border:none; border-top:1px solid var(--border); margin:10px 0; }
+
+    /* Toast */
+    #toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background:rgba(17,24,39,0.95);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:.95rem;
+      z-index:1100;
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+
     /* Palette grid (debug) */
     .palette-grid{
       display:grid;
@@ -274,6 +341,7 @@
         <button id="mobile-sound" title="Toggle mechanical ticking sound">🔈</button>
         <button id="mobile-view-2d" class="toggle-active" title="2D view">2D</button>
         <button id="mobile-view-3d" title="3D view (beta)">3D</button>
+        <button id="mobile-share" title="Copy a shareable link">🔗</button>
         <select id="gene-select-mobile" title="Genome"></select>
       </div>
       <div id="rules-overlay" hidden></div>
@@ -285,6 +353,7 @@
         <div class="row">
           <select id="gene-select" style="flex:1"></select>
           <button id="download-yaml-button" class="toggle-btn" title="Export current genome">⤓ Export</button>
+          <button id="share-genome-button" class="toggle-btn" title="Copy a shareable link">🔗 Share</button>
         </div>
         <div class="row" style="margin-top:6px">
           <label for="gene-upload">Upload:</label>
@@ -444,6 +513,80 @@
       <span class="pill">Zoom: wheel • Pan: drag (Move)</span>
     </div>
   </footer>
+
+    <div id="rule-editor-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rule-editor-title">
+      <div class="modal-header">
+        <div>
+          <div id="rule-editor-title" class="modal-title">Edit rule</div>
+          <div id="rule-editor-subtitle" class="modal-subtitle"></div>
+        </div>
+        <button id="rule-editor-close" class="toggle-btn" title="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row" style="justify-content:space-between;">
+          <label><input type="checkbox" id="rule-editor-enabled" checked> Enabled</label>
+          <div class="row" style="gap:6px">
+            <label style="font-size:.85rem;color:var(--muted)">Insert at:</label>
+            <input id="rule-editor-insert-index" type="number" min="1" step="1" style="width:92px">
+          </div>
+        </div>
+
+        <hr class="modal-sep">
+
+        <h4 style="margin:0 0 6px 0">Condition</h4>
+        <div class="row">
+          <label>Current:</label>
+          <select id="rule-editor-current"></select>
+          <label>Prior:</label>
+          <select id="rule-editor-prior"></select>
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <label>Conn ≥</label>
+          <input id="rule-editor-conn-ge" type="number" step="1" style="width:92px" placeholder="(ignore)">
+          <label>Conn ≤</label>
+          <input id="rule-editor-conn-le" type="number" step="1" style="width:92px" placeholder="(ignore)">
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <label>Parents ≥</label>
+          <input id="rule-editor-par-ge" type="number" step="1" style="width:92px" placeholder="(ignore)">
+          <label>Parents ≤</label>
+          <input id="rule-editor-par-le" type="number" step="1" style="width:92px" placeholder="(ignore)">
+        </div>
+
+        <hr class="modal-sep">
+
+        <h4 style="margin:0 0 6px 0">Operation</h4>
+        <div class="row">
+          <label>Kind:</label>
+          <select id="rule-editor-op-kind" style="flex:1"></select>
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <label>Operand:</label>
+          <select id="rule-editor-op-operand"></select>
+          <small id="rule-editor-op-hint" style="color:var(--muted)"></small>
+        </div>
+
+        <div id="rule-editor-error" style="color:#b91c1c;font-size:.9rem;margin-top:8px" hidden></div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="rule-editor-remove" class="toggle-btn" title="Remove this rule">🗑 Remove</button>
+        <button id="rule-editor-clone" class="toggle-btn" title="Clone this rule">⎘ Clone</button>
+        <div style="flex:1"></div>
+        <button id="rule-editor-cancel" class="toggle-btn">Cancel</button>
+        <button id="rule-editor-save" class="toggle-btn" style="background:#111827;color:#fff;border-color:#111827">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" hidden></div>
 
   <script src="dist/bundle.js" type="module"></script>
 </body>

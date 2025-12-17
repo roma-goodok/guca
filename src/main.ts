@@ -31,6 +31,7 @@ import { buildMachineFromConfig } from './genomeLoader';
 import { computeKToSatisfyMaxFill } from './viewport';
 import { shouldUseMobileBasic } from './responsive';
 import { createGraph3DController } from './graph3d';
+import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
 
 
 /* =========================================================================
@@ -171,6 +172,21 @@ const FIT_PARAMS = {
   maxInitialK: 1.4,          // cap “instant fit” zoom-in
   defaultK: 1,
 };
+
+const GENOME_SELECT_VALUES = {
+  NEW: '__new__',
+  CUSTOM: '__custom__',
+} as const;
+
+// NOTE: "url" is a legacy alias some branches used for the shared-via-URL flow.
+// Keeping it here makes the code resilient to older call sites.
+type GenomeSource = 'catalog' | 'upload' | 'shared' | 'url' | 'new' | 'custom';
+let currentGenomeSource: GenomeSource = 'catalog';
+let baseGenomeLabel = 'Genome';
+
+let customGenomeCache: any | null = null;
+let syncingGenomeSelect = false;
+
 
 /* =========================================================================
    Sound: mechanical ticking tied to graph changes
@@ -369,6 +385,42 @@ const simulationIntervalLabel  = document.getElementById('simulation-interval-va
 
 let autoCenterEnabled = !!autoCenterChk?.checked;
 let autoScaleEnabled  = !!autoScaleChk?.checked;
+
+const shareGenomeBtn = document.getElementById('share-genome-button') as HTMLButtonElement | null;
+const mobileShareBtn = document.getElementById('mobile-share') as HTMLButtonElement | null;
+// Optional element: some layouts include a title area in the mobile toolbar.
+// It's safe for this to be null when the element is not present.
+const mobileToolbarTitle = document.getElementById('mobile-toolbar-title') as HTMLElement | null;
+
+const toastEl = document.getElementById('toast') as HTMLDivElement | null;
+
+// Rule editor modal refs
+const ruleEditorModal = document.getElementById('rule-editor-modal') as HTMLDivElement | null;
+const ruleEditorTitle = document.getElementById('rule-editor-title') as HTMLDivElement | null;
+const ruleEditorSubtitle = document.getElementById('rule-editor-subtitle') as HTMLDivElement | null;
+const ruleEditorCloseBtn = document.getElementById('rule-editor-close') as HTMLButtonElement | null;
+
+const ruleEditorEnabled = document.getElementById('rule-editor-enabled') as HTMLInputElement | null;
+const ruleEditorInsertIndex = document.getElementById('rule-editor-insert-index') as HTMLInputElement | null;
+
+const ruleEditorCurrent = document.getElementById('rule-editor-current') as HTMLSelectElement | null;
+const ruleEditorPrior = document.getElementById('rule-editor-prior') as HTMLSelectElement | null;
+const ruleEditorConnGe = document.getElementById('rule-editor-conn-ge') as HTMLInputElement | null;
+const ruleEditorConnLe = document.getElementById('rule-editor-conn-le') as HTMLInputElement | null;
+const ruleEditorParGe = document.getElementById('rule-editor-par-ge') as HTMLInputElement | null;
+const ruleEditorParLe = document.getElementById('rule-editor-par-le') as HTMLInputElement | null;
+
+const ruleEditorOpKind = document.getElementById('rule-editor-op-kind') as HTMLSelectElement | null;
+const ruleEditorOpOperand = document.getElementById('rule-editor-op-operand') as HTMLSelectElement | null;
+const ruleEditorOpHint = document.getElementById('rule-editor-op-hint') as HTMLSpanElement | null;
+
+const ruleEditorError = document.getElementById('rule-editor-error') as HTMLDivElement | null;
+
+const ruleEditorRemoveBtn = document.getElementById('rule-editor-remove') as HTMLButtonElement | null;
+const ruleEditorCloneBtn = document.getElementById('rule-editor-clone') as HTMLButtonElement | null;
+const ruleEditorCancelBtn = document.getElementById('rule-editor-cancel') as HTMLButtonElement | null;
+const ruleEditorSaveBtn = document.getElementById('rule-editor-save') as HTMLButtonElement | null;
+
 
 /* =========================================================================
    4) SVG / D3 SETUP
@@ -596,7 +648,7 @@ function mixWithBlack(cssColor: string, t: number): string {
 
 function buildRuleTilesHTML(items: RuleItem[], cap: number): string {
   const shown = items.slice(0, cap);
-  return shown.map((it) => {
+  const tiles = shown.map((it) => {
     const c = it.condition, o = it.operation;
     const curColor = getVertexRenderColor(c.currentState);
     const priorColor = getVertexRenderColor(c.priorState);
@@ -613,7 +665,11 @@ function buildRuleTilesHTML(items: RuleItem[], cap: number): string {
         <span style="background:${argColor}"></span>
       </div>`;
   }).join('');
+
+  const addTile = `<div class="gene-tile add-tile" data-add="1" title="Add a new rule">+</div>`;
+  return tiles + addTile;
 }
+
 
 function syncMobilePlayIcon() {
   const mp = document.getElementById('mobile-play') as HTMLButtonElement | null;
@@ -708,6 +764,49 @@ function fitInitialOnReset() {
   fitGraphInstant(0.5);
 }
 
+let toastTimer: any = null;
+function showToast(msg: string, ms = 2200) {
+  if (!toastEl) return;
+  toastEl.textContent = msg;
+  toastEl.hidden = false;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl!.hidden = true; toastTimer = null; }, ms);
+}
+
+function syncGenomeSelects(value: string) {
+  const desktop = document.getElementById('gene-select') as HTMLSelectElement | null;
+  const mobile = document.getElementById('gene-select-mobile') as HTMLSelectElement | null;
+  syncingGenomeSelect = true;
+  if (desktop) desktop.value = value;
+  if (mobile) mobile.value = value;
+  syncingGenomeSelect = false;
+}
+
+function setShareHash(token: string | null) {
+  const base = `${window.location.pathname}${window.location.search}`;
+  const next = token ? `${base}#g=${encodeURIComponent(token)}` : base;
+  window.history.replaceState(null, '', next);
+}
+function clearShareHashIfPresent() {
+  if (window.location.hash && window.location.hash.includes('g=')) setShareHash(null);
+}
+
+function deepClone<T>(value: T): T {
+  // Prefer structuredClone when available (handles nested objects, arrays, etc.).
+  const sc = (globalThis as any).structuredClone;
+  if (typeof sc === 'function') {
+    try {
+      return sc(value);
+    } catch {
+      // Fall back to JSON cloning below.
+    }
+  }
+
+  // JSON-based cloning is sufficient for our genome configs (plain data).
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+
 
 
 /* =========================================================================
@@ -773,6 +872,17 @@ async function loadGenesLibrary() {
     opt.value = path; opt.text = name; geneSelect.add(opt);
   });
 
+  const shared = parseGenomeFromUrlHash(window.location.hash);
+  if (shared) {
+    currentGenomeSource = 'shared';
+    baseGenomeLabel = 'Shared';
+    await applyGenomConfig(shared, 'Shared');
+    syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
+    showToast('Loaded genome from shared link.');
+    return;
+  }
+
+
   await loadGenomFromYaml(geneSelect.value);
 
   geneSelect.addEventListener('change', async (ev) => {
@@ -809,7 +919,7 @@ async function loadGenomFromYaml(path: string) {
 }
 
 async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
-  lastLoadedConfig = cfg ? JSON.parse(JSON.stringify(cfg)) : {};
+  lastLoadedConfig = cfg ? deepClone(cfg) : {};
 
   (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
   gumMachine.setMaxSteps(-1);
@@ -819,7 +929,7 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   if (ocFromCfg) {
     // YAML explicitly provides orphan_cleanup → respect it (enabled can be true or false)
     lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-    lastLoadedConfig.machine.orphan_cleanup = JSON.parse(JSON.stringify(ocFromCfg));
+    lastLoadedConfig.machine.orphan_cleanup = deepClone(ocFromCfg);
     // No need to call setOrphanCleanup here: buildMachineFromConfig already wired it into the machine.
   } else {
     // No orphan_cleanup block in the genome → apply a default runtime config (enabled)
@@ -855,51 +965,42 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   updateDebugInfo({ forceRulesRebuild: true });
 
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
-  if (labelForSelect && sel) {
-    let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
-    if (!opt) {
-      opt = document.createElement('option');
-      opt.setAttribute('data-custom', '1');
-      sel.insertBefore(opt, sel.firstChild);
-    }
-    opt.value = '__custom__';
-    opt.text = `Custom: ${labelForSelect}`;
-    sel.selectedIndex = 0;
+  if (labelForSelect) {
+    const upsert = (sel: HTMLSelectElement | null) => {
+      if (!sel) return;
+      let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.setAttribute('data-custom', '1');
+        sel.insertBefore(opt, sel.firstChild);
+      }
+      opt.value = GENOME_SELECT_VALUES.CUSTOM;
+      opt.text = `Custom: ${labelForSelect}`;
+      sel.selectedIndex = 0;
+    };
+
+    upsert(document.getElementById('gene-select') as HTMLSelectElement | null);
+    upsert(document.getElementById('gene-select-mobile') as HTMLSelectElement | null);
+
+    customGenomeCache = deepClone(lastLoadedConfig);
+    syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
   }
+
+
+  // Keep in-memory config aligned with what the machine is actually running
+  lastLoadedConfig.machine = buildMachineBlockFromRuntime();
+  lastLoadedConfig.rules = exportRulesFromMachine();
+  if (lastLoadedConfig?.meta && typeof lastLoadedConfig.meta === 'object') {
+    delete (lastLoadedConfig.meta as any).activity_scheme;
+  }
+  delete (lastLoadedConfig as any).activity_scheme;
+
 }
 
 downloadBtn?.addEventListener('click', () => {
-  const items = gumMachine.getRuleItems();
-  const toName = (s:number)=> (typeof s==='number' ? (NodeState as any)[s] ?? s : s);
-  const toRule = (it:any)=>({
-    condition: {
-      current: toName(it.condition.currentState),
-      prior:   toName(it.condition.priorState === undefined ? 'any' : it.condition.priorState),
-      conn_ge: it.condition.allConnectionsCount_GE,
-      conn_le: it.condition.allConnectionsCount_LE,
-      parents_ge: it.condition.parentsCount_GE,
-      parents_le: it.condition.parentsCount_LE,
-    },
-    op: {
-      kind: (it.operation.kind !== undefined) ? mapOperationKindToString(it.operation.kind) : String(it.operation.kind),
-      operand: toName(it.operation.operandNodeState),
-    }
-  });
-
-  const machineBlock: any = {
-    ...(lastLoadedConfig?.machine ?? {}),
-    max_steps: gumMachine.getMaxSteps(),
-  };
-
-  machineBlock.reseed_isolated_A = (gumMachine as any).getReseedIsolatedA?.();
-
-  const out = {
-    machine: machineBlock,
-    init_graph: lastLoadedConfig?.init_graph ?? { nodes: [{ state: toName((machineBlock.start_state ?? NodeState.A)) }] },
-    rules: items.map(toRule),
-  };
-
+  const out = buildGenomeSnapshot();
   const text = yaml.dump(out, { lineWidth: 120 });
+
   const blob = new Blob([text], { type: 'application/x-yaml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -907,6 +1008,7 @@ downloadBtn?.addEventListener('click', () => {
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 });
+
 
 if (uploadInput) {
   uploadInput.addEventListener('change', async () => {
@@ -926,6 +1028,73 @@ if (uploadInput) {
     updateDebugInfo({ forceRulesRebuild: true });
   });
 }
+
+function ruleItemToConfigRule(it: RuleItem): any {
+  const c = it.condition, o = it.operation;
+  return {
+    enabled: !!it.isEnabled,
+    condition: {
+      current: nodeStateLetter(c.currentState),
+      prior: nodeStateLetter(c.priorState ?? NodeState.Ignored),
+      conn_ge: c.allConnectionsCount_GE,
+      conn_le: c.allConnectionsCount_LE,
+      parents_ge: c.parentsCount_GE,
+      parents_le: c.parentsCount_LE,
+    },
+    op: {
+      kind: mapOperationKindToString(o.kind),
+      operand: nodeStateLetter(o.operandNodeState ?? NodeState.Ignored),
+    }
+  };
+}
+
+function exportRulesFromMachine(): any[] {
+  return gumMachine.getRuleItems().map(ruleItemToConfigRule);
+}
+
+function buildMachineBlockFromRuntime(): any {
+  const base = deepClone(lastLoadedConfig?.machine ?? {});
+
+  base.start_state = nodeStateLetter(currentStartState());
+  base.max_steps = gumMachine.getMaxSteps();
+  base.max_vertices = gumMachine.getMaxVertices();
+
+  base.maintain_single_component = (gumMachine as any).getMaintainSingleComponent?.() ?? true;
+  base.orphan_cleanup = (gumMachine as any).getOrphanCleanup?.() ?? base.orphan_cleanup ?? { enabled: false };
+  base.reseed_isolated_A = (gumMachine as any).getReseedIsolatedA?.() ?? true;
+
+  if (!base.nearest_search) {
+    base.nearest_search = { max_depth: 2, tie_breaker: 'stable', connect_all: false };
+  }
+  return base;
+}
+
+function buildGenomeSnapshot(): any {
+  const machine = buildMachineBlockFromRuntime();
+  const init_graph = lastLoadedConfig?.init_graph ?? { nodes: [{ state: nodeStateLetter(currentStartState()) }] };
+  const rules = exportRulesFromMachine();
+  return { machine, init_graph, rules };
+}
+
+async function copyShareLinkToClipboard() {
+  const snapshot = buildGenomeSnapshot();
+  const token = encodeGenomeToUrlToken(snapshot);
+  const url = `${window.location.origin}${window.location.pathname}#g=${encodeURIComponent(token)}`;
+
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Share link copied.');
+  } catch {
+    window.prompt('Copy this link:', url);
+  }
+
+  setShareHash(token); // keep URL consistent with what we copied
+}
+
+shareGenomeBtn?.addEventListener('click', () => { void copyShareLinkToClipboard(); });
+mobileShareBtn?.addEventListener('click', () => { void copyShareLinkToClipboard(); });
+
+
 
 /* =========================================================================
    10) SCISSORS TOOL (edge cutting) and view
@@ -1457,12 +1626,9 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
         });
 
         el.addEventListener('click', () => {
-          const all = gumMachine.getRuleItems();
-          if (!all[idx]) return;
-          all[idx].isEnabled = !all[idx].isEnabled;
-          // Toggle without nuking the whole DOM tree:
-          updateDebugInfo({ forceRulesRebuild: false });
+          openRuleEditor('edit', idx);
         });
+
       });
     } else {
       // Lightweight update: keep existing elements & listeners, just update classes/tooltips
@@ -1504,6 +1670,7 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
       if (toggleBtn) {
         toggleBtn.style.display = (lines.length > maxLines ? 'inline-block' : 'none');
       }
+      
     }
   }
 
@@ -1539,21 +1706,322 @@ function renderRulesOverlay(forceRulesRebuild = true) {
   container.innerHTML = buildRuleTilesHTML(items, 48);
 
   container.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
+  if (el.dataset.add === '1') {
+      el.onclick = () => openRuleEditor('add');
+      return;
+    }
     const idx = Number(el.dataset.idx ?? '-1');
     if (Number.isNaN(idx) || idx < 0) return;
-    el.onclick = () => {
-      const all = gumMachine.getRuleItems();
-      if (!all[idx]) return;
-      all[idx].isEnabled = !all[idx].isEnabled;
-      // Re-sync both desktop board and overlay, without rebuilding everything
-      updateDebugInfo({ forceRulesRebuild: false });
-      renderRulesOverlay(false);
-    };
+    el.onclick = () => openRuleEditor('edit', idx);
   });
+
 }
 
+/* ========================================================================
+   Rule Editor
+ * ======================================================================== */
 
+type RuleEditorMode = 'add' | 'edit';
+let ruleEditorState: { mode: RuleEditorMode; index: number } | null = null;
+let ruleEditorSelectsReady = false;
 
+function showRuleEditorError(msg: string | null) {
+  if (!ruleEditorError) return;
+  if (!msg) {
+    ruleEditorError.textContent = '';
+    ruleEditorError.hidden = true;
+    return;
+  }
+  ruleEditorError.textContent = msg;
+  ruleEditorError.hidden = false;
+}
+
+function pauseSimulationForEditor() {
+  if (!isSimulationRunning) return;
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+  pauseResumeButton.textContent = 'Resume';
+  setControlsEnabled(true);
+  syncMobilePlayIcon();
+}
+
+function ensureRuleEditorSelects() {
+  if (ruleEditorSelectsReady) return;
+  if (!ruleEditorCurrent || !ruleEditorPrior || !ruleEditorOpOperand || !ruleEditorOpKind) return;
+
+  const fillStates = (sel: HTMLSelectElement) => {
+    sel.innerHTML = '';
+    const add = (v: string) => {
+      const o = document.createElement('option');
+      o.value = v; o.text = v;
+      sel.add(o);
+    };
+    add('any');
+    add('Unknown');
+    for (let i = NodeState.A; i <= NodeState.Z; i++) {
+      // @ts-ignore enum reverse mapping
+      add((NodeState as any)[i]);
+    }
+  };
+
+  fillStates(ruleEditorCurrent);
+  fillStates(ruleEditorPrior);
+  fillStates(ruleEditorOpOperand);
+
+  ruleEditorOpKind.innerHTML = '';
+  const kinds: OperationKindEnum[] = [
+    OperationKindEnum.TurnToState,
+    OperationKindEnum.GiveBirthConnected,
+    OperationKindEnum.GiveBirth,
+    OperationKindEnum.TryToConnectWithNearest,
+    OperationKindEnum.TryToConnectWith,
+    OperationKindEnum.DisconnectFrom,
+    OperationKindEnum.Die,
+  ];
+  for (const k of kinds) {
+    const s = mapOperationKindToString(k);
+    const o = document.createElement('option');
+    o.value = s; o.text = s;
+    ruleEditorOpKind.add(o);
+  }
+
+  ruleEditorSelectsReady = true;
+}
+
+function setIntField(input: HTMLInputElement | null, v: number) {
+  if (!input) return;
+  input.value = (Number.isFinite(v) && v >= 0) ? String(Math.trunc(v)) : '';
+}
+function readIntField(input: HTMLInputElement | null): number | undefined {
+  if (!input) return undefined;
+  const t = input.value.trim();
+  if (!t) return undefined;
+  const n = parseInt(t, 10);
+  if (Number.isNaN(n)) return undefined;
+  return Math.trunc(n);
+}
+
+function updateRuleEditorOperandUI() {
+  if (!ruleEditorOpKind || !ruleEditorOpOperand) return;
+  const kind = String(ruleEditorOpKind.value);
+  const hasOperand = kind !== 'Die';
+  ruleEditorOpOperand.disabled = !hasOperand;
+  if (ruleEditorOpHint) ruleEditorOpHint.textContent = hasOperand ? '' : 'No operand for Die.';
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function readRuleEditorForm(): { rule: any; insertAt1: number } | null {
+  if (!ruleEditorEnabled || !ruleEditorCurrent || !ruleEditorPrior ||
+      !ruleEditorOpKind || !ruleEditorOpOperand || !ruleEditorInsertIndex) return null;
+
+  const enabled = !!ruleEditorEnabled.checked;
+  const current = String(ruleEditorCurrent.value || 'A');
+  const prior = String(ruleEditorPrior.value || 'any');
+
+  const kind = String(ruleEditorOpKind.value || 'TurnToState');
+  const operand = String(ruleEditorOpOperand.value || 'any');
+
+  const insertAtRaw = parseInt(ruleEditorInsertIndex.value, 10);
+  const insertAt1 = Number.isFinite(insertAtRaw) ? Math.trunc(insertAtRaw) : NaN;
+
+  if (!Number.isFinite(insertAt1) || insertAt1 < 1) {
+    showRuleEditorError('Insert position must be a positive integer (1-based).');
+    return null;
+  }
+  if (kind !== 'Die' && !operand) {
+    showRuleEditorError('Operand is required for this operation.');
+    return null;
+  }
+
+  const conn_ge = readIntField(ruleEditorConnGe);
+  const conn_le = readIntField(ruleEditorConnLe);
+  const parents_ge = readIntField(ruleEditorParGe);
+  const parents_le = readIntField(ruleEditorParLe);
+
+  const rule: any = {
+    enabled,
+    condition: {
+      current,
+      prior,
+      ...(conn_ge !== undefined ? { conn_ge } : {}),
+      ...(conn_le !== undefined ? { conn_le } : {}),
+      ...(parents_ge !== undefined ? { parents_ge } : {}),
+      ...(parents_le !== undefined ? { parents_le } : {}),
+    },
+    op: {
+      kind,
+      ...(kind === 'Die' ? {} : { operand }),
+    }
+  };
+
+  showRuleEditorError(null);
+  return { rule, insertAt1 };
+}
+
+async function commitRuleTable(nextRules: any[]) {
+  // Stop tick loop before rebuilding
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+
+  const nextCfg = deepClone(lastLoadedConfig ?? {});
+  nextCfg.machine = buildMachineBlockFromRuntime();
+  nextCfg.init_graph = lastLoadedConfig?.init_graph ?? { nodes: [{ state: nodeStateLetter(currentStartState()) }] };
+  nextCfg.rules = nextRules;
+
+  if (nextCfg?.meta && typeof nextCfg.meta === 'object') delete nextCfg.meta.activity_scheme;
+  delete nextCfg.activity_scheme;
+
+  clearShareHashIfPresent();
+
+  const shouldCustom = (currentGenomeSource !== 'new');
+  const label = shouldCustom ? `Edited: ${baseGenomeLabel}` : null;
+
+  await applyGenomConfig(nextCfg, label);
+
+  if (shouldCustom) {
+    customGenomeCache = deepClone(lastLoadedConfig);
+    syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
+  } else {
+    syncGenomeSelects(GENOME_SELECT_VALUES.NEW);
+  }
+
+  showToast('Rule table updated — simulation reset.');
+}
+
+function openRuleEditor(mode: RuleEditorMode, index: number = -1) {
+  if (!ruleEditorModal) return;
+
+  pauseSimulationForEditor();
+  ensureRuleEditorSelects();
+
+  ruleEditorState = { mode, index };
+
+  const count = gumMachine.getRuleItems().length;
+  const startTok = nodeStateLetter(currentStartState());
+
+  if (ruleEditorTitle) ruleEditorTitle.textContent = (mode === 'add') ? 'Add rule' : `Edit rule #${index + 1}`;
+  if (ruleEditorSubtitle) {
+    ruleEditorSubtitle.textContent = (mode === 'add')
+      ? 'Saving will rebuild the machine and reset the graph.'
+      : 'Saving, cloning, or removing will rebuild the machine and reset the graph.';
+  }
+
+  if (ruleEditorRemoveBtn) ruleEditorRemoveBtn.hidden = (mode === 'add');
+  if (ruleEditorCloneBtn) ruleEditorCloneBtn.hidden = (mode === 'add');
+
+  if (mode === 'add') {
+    if (ruleEditorEnabled) ruleEditorEnabled.checked = true;
+    if (ruleEditorCurrent) ruleEditorCurrent.value = startTok;
+    if (ruleEditorPrior) ruleEditorPrior.value = 'any';
+    setIntField(ruleEditorConnGe, -1);
+    setIntField(ruleEditorConnLe, -1);
+    setIntField(ruleEditorParGe, -1);
+    setIntField(ruleEditorParLe, -1);
+    if (ruleEditorOpKind) ruleEditorOpKind.value = 'TurnToState';
+    if (ruleEditorOpOperand) ruleEditorOpOperand.value = startTok;
+    if (ruleEditorInsertIndex) ruleEditorInsertIndex.value = String(count + 1);
+  } else {
+    const it = gumMachine.getRuleItems()[index];
+    if (!it) return;
+
+    if (ruleEditorEnabled) ruleEditorEnabled.checked = !!it.isEnabled;
+    if (ruleEditorCurrent) ruleEditorCurrent.value = nodeStateLetter(it.condition.currentState);
+    if (ruleEditorPrior) ruleEditorPrior.value = nodeStateLetter(it.condition.priorState);
+    setIntField(ruleEditorConnGe, it.condition.allConnectionsCount_GE);
+    setIntField(ruleEditorConnLe, it.condition.allConnectionsCount_LE);
+    setIntField(ruleEditorParGe, it.condition.parentsCount_GE);
+    setIntField(ruleEditorParLe, it.condition.parentsCount_LE);
+    if (ruleEditorOpKind) ruleEditorOpKind.value = mapOperationKindToString(it.operation.kind);
+    if (ruleEditorOpOperand) ruleEditorOpOperand.value = nodeStateLetter(it.operation.operandNodeState);
+
+    // Used for Clone/Add insertion; default = next position
+    if (ruleEditorInsertIndex) ruleEditorInsertIndex.value = String(Math.min(count + 1, index + 2));
+  }
+
+  updateRuleEditorOperandUI();
+  showRuleEditorError(null);
+
+  ruleEditorModal.hidden = false;
+  document.body.classList.add('modal-open');
+  requestAnimationFrame(() => ruleEditorCurrent?.focus());
+}
+
+function closeRuleEditor() {
+  if (!ruleEditorModal) return;
+  ruleEditorModal.hidden = true;
+  document.body.classList.remove('modal-open');
+  ruleEditorState = null;
+  showRuleEditorError(null);
+}
+
+// Wire modal controls
+ruleEditorCloseBtn?.addEventListener('click', closeRuleEditor);
+ruleEditorCancelBtn?.addEventListener('click', closeRuleEditor);
+
+ruleEditorModal?.addEventListener('click', (e) => {
+  const t = e.target as HTMLElement;
+  if (t?.dataset?.close === '1') closeRuleEditor();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && ruleEditorModal && !ruleEditorModal.hidden) closeRuleEditor();
+});
+
+ruleEditorOpKind?.addEventListener('change', updateRuleEditorOperandUI);
+
+ruleEditorSaveBtn?.addEventListener('click', () => {
+  void (async () => {
+    if (!ruleEditorState) return;
+    const parsed = readRuleEditorForm();
+    if (!parsed) return;
+
+    const rules = exportRulesFromMachine();
+    if (ruleEditorState.mode === 'add') {
+      const idx0 = clamp(parsed.insertAt1 - 1, 0, rules.length);
+      rules.splice(idx0, 0, parsed.rule);
+    } else {
+      if (ruleEditorState.index < 0 || ruleEditorState.index >= rules.length) return;
+      rules[ruleEditorState.index] = parsed.rule;
+    }
+
+    closeRuleEditor();
+    await commitRuleTable(rules);
+  })();
+});
+
+ruleEditorRemoveBtn?.addEventListener('click', () => {
+  void (async () => {
+    if (!ruleEditorState || ruleEditorState.mode !== 'edit') return;
+    const idx = ruleEditorState.index;
+    const rules = exportRulesFromMachine();
+    if (idx < 0 || idx >= rules.length) return;
+
+    const ok = window.confirm(`Remove rule #${idx + 1}?`);
+    if (!ok) return;
+
+    rules.splice(idx, 1);
+    closeRuleEditor();
+    await commitRuleTable(rules);
+  })();
+});
+
+ruleEditorCloneBtn?.addEventListener('click', () => {
+  void (async () => {
+    if (!ruleEditorState || ruleEditorState.mode !== 'edit') return;
+    const parsed = readRuleEditorForm();
+    if (!parsed) return;
+
+    const rules = exportRulesFromMachine();
+    const idx0 = clamp(parsed.insertAt1 - 1, 0, rules.length);
+    rules.splice(idx0, 0, parsed.rule);
+
+    closeRuleEditor();
+    await commitRuleTable(rules);
+  })();
+});
 
 /* =========================================================================
    13) CONTROL WIRING (buttons, sliders, toggles)
@@ -1853,6 +2321,7 @@ function initStateCombos() {
 loadColorOverridesFromStorage();
 
 loadGenesLibrary().then(() => {
+
   setControlsEnabled(false);
   refreshMaxStepsInput();
   renderPaletteOpenCollapsed();

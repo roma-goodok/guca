@@ -169,7 +169,19 @@ import {
         Number(c.parents_le ?? c.parentsCount_LE ?? -1),
         );
         const op = new Operation(mapOperationKind(String(o.kind)), toNodeStateFlex(o.operand));
-        machine.addRuleItem({ condition: cond, operation: op, isActive: false, isEnabled: true, lastActivationInterationIndex: -1, isActiveInNodes: [] });
+        
+        const enabledRaw = r?.enabled ?? r?.is_enabled ?? r?.isEnabled;
+        const isEnabled = (typeof enabledRaw === 'boolean') ? enabledRaw : true;
+
+        machine.addRuleItem({
+          condition: cond,
+          operation: op,
+          isActive: false,
+          isEnabled,
+          lastActivationInterationIndex: -1,
+          isActiveInNodes: []
+        });
+
     }
 
   
