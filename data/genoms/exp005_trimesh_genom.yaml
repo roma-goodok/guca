@@ -21,7 +21,7 @@ machine:
       others: 8
 init_graph:
   nodes:
-    - state: B
+    - state: A
 rules:
   - condition:
       current: G

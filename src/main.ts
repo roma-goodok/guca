@@ -32,6 +32,8 @@ import { computeKToSatisfyMaxFill } from './viewport';
 import { shouldUseMobileBasic } from './responsive';
 import { createGraph3DController } from './graph3d';
 import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
+import { createRuleEditorController } from './ruleEditor';
+
 
 
 /* =========================================================================
@@ -393,33 +395,6 @@ const mobileShareBtn = document.getElementById('mobile-share') as HTMLButtonElem
 const mobileToolbarTitle = document.getElementById('mobile-toolbar-title') as HTMLElement | null;
 
 const toastEl = document.getElementById('toast') as HTMLDivElement | null;
-
-// Rule editor modal refs
-const ruleEditorModal = document.getElementById('rule-editor-modal') as HTMLDivElement | null;
-const ruleEditorTitle = document.getElementById('rule-editor-title') as HTMLDivElement | null;
-const ruleEditorSubtitle = document.getElementById('rule-editor-subtitle') as HTMLDivElement | null;
-const ruleEditorCloseBtn = document.getElementById('rule-editor-close') as HTMLButtonElement | null;
-
-const ruleEditorEnabled = document.getElementById('rule-editor-enabled') as HTMLInputElement | null;
-const ruleEditorInsertIndex = document.getElementById('rule-editor-insert-index') as HTMLInputElement | null;
-
-const ruleEditorCurrent = document.getElementById('rule-editor-current') as HTMLSelectElement | null;
-const ruleEditorPrior = document.getElementById('rule-editor-prior') as HTMLSelectElement | null;
-const ruleEditorConnGe = document.getElementById('rule-editor-conn-ge') as HTMLInputElement | null;
-const ruleEditorConnLe = document.getElementById('rule-editor-conn-le') as HTMLInputElement | null;
-const ruleEditorParGe = document.getElementById('rule-editor-par-ge') as HTMLInputElement | null;
-const ruleEditorParLe = document.getElementById('rule-editor-par-le') as HTMLInputElement | null;
-
-const ruleEditorOpKind = document.getElementById('rule-editor-op-kind') as HTMLSelectElement | null;
-const ruleEditorOpOperand = document.getElementById('rule-editor-op-operand') as HTMLSelectElement | null;
-const ruleEditorOpHint = document.getElementById('rule-editor-op-hint') as HTMLSpanElement | null;
-
-const ruleEditorError = document.getElementById('rule-editor-error') as HTMLDivElement | null;
-
-const ruleEditorRemoveBtn = document.getElementById('rule-editor-remove') as HTMLButtonElement | null;
-const ruleEditorCloneBtn = document.getElementById('rule-editor-clone') as HTMLButtonElement | null;
-const ruleEditorCancelBtn = document.getElementById('rule-editor-cancel') as HTMLButtonElement | null;
-const ruleEditorSaveBtn = document.getElementById('rule-editor-save') as HTMLButtonElement | null;
 
 
 /* =========================================================================
@@ -839,12 +814,51 @@ function currentStartState(): NodeState {
 }
 
 /* =========================================================================
+   Rule Editor
+   ========================================================================= */
+
+function pauseSimulationForRuleEditor() {
+  if (!isSimulationRunning) return;
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+  pauseResumeButton.textContent = 'Resume';
+  setControlsEnabled(true);
+  syncMobilePlayIcon();
+}
+
+function stopSimulationLoop() {
+  clearInterval(simulationInterval);
+  isSimulationRunning = false;
+}
+const ruleEditor = createRuleEditorController({
+  pauseForEditor: pauseSimulationForRuleEditor,
+  stopSimulation: stopSimulationLoop,
+
+  getRuleItems: () => gumMachine.getRuleItems(),
+  exportRulesFromMachine,
+  getStartStateToken: () => nodeStateLetter(currentStartState()),
+
+  getLastLoadedConfig: () => lastLoadedConfig,
+  buildMachineBlockFromRuntime,
+  clearShareHashIfPresent,
+
+  getCurrentGenomeSource: () => currentGenomeSource,
+  getBaseGenomeLabel: () => baseGenomeLabel,
+
+  setCustomGenomeCache: (cfg) => { customGenomeCache = cfg; },
+  syncGenomeSelects,
+  genomeSelectValues: GENOME_SELECT_VALUES,
+
+  applyGenomeConfig: applyGenomConfig,
+  showToast,
+});
+
+/* =========================================================================
    9) GENOME CATALOG / LOADING / EXPORT
    ========================================================================= */
 
 const YAML_CATALOG = [
   
-  { name: 'quadmesh_handmade', path: 'data/quadmesh_handmade.yaml' },
   { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
   { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml' },  
   { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },    
@@ -1642,7 +1656,7 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
       board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
         // "+" tile: Add new rule
         if (el.dataset.add === '1') {
-          el.addEventListener('click', () => openRuleEditor('add'));
+          el.addEventListener('click', () => ruleEditor.open('add'));
           return;
         }
 
@@ -1661,8 +1675,9 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
         });
 
         el.addEventListener('click', () => {
-          openRuleEditor('edit', idx);
+          ruleEditor.open('edit', idx);
         });
+
 
       });
     } else {
@@ -1741,322 +1756,18 @@ function renderRulesOverlay(forceRulesRebuild = true) {
   container.innerHTML = buildRuleTilesHTML(items, 48);
 
   container.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
-  if (el.dataset.add === '1') {
-      el.onclick = () => openRuleEditor('add');
+  if (el.dataset.add === '1') {      
+      el.onclick = () => ruleEditor.open('add');
       return;
     }
     const idx = Number(el.dataset.idx ?? '-1');
-    if (Number.isNaN(idx) || idx < 0) return;
-    el.onclick = () => openRuleEditor('edit', idx);
+    if (Number.isNaN(idx) || idx < 0) return;    
+    el.onclick = () => ruleEditor.open('edit', idx);
+
   });
 
 }
 
-/* ========================================================================
-   Rule Editor
- * ======================================================================== */
-
-type RuleEditorMode = 'add' | 'edit';
-let ruleEditorState: { mode: RuleEditorMode; index: number } | null = null;
-let ruleEditorSelectsReady = false;
-
-function showRuleEditorError(msg: string | null) {
-  if (!ruleEditorError) return;
-  if (!msg) {
-    ruleEditorError.textContent = '';
-    ruleEditorError.hidden = true;
-    return;
-  }
-  ruleEditorError.textContent = msg;
-  ruleEditorError.hidden = false;
-}
-
-function pauseSimulationForEditor() {
-  if (!isSimulationRunning) return;
-  clearInterval(simulationInterval);
-  isSimulationRunning = false;
-  pauseResumeButton.textContent = 'Resume';
-  setControlsEnabled(true);
-  syncMobilePlayIcon();
-}
-
-function ensureRuleEditorSelects() {
-  if (ruleEditorSelectsReady) return;
-  if (!ruleEditorCurrent || !ruleEditorPrior || !ruleEditorOpOperand || !ruleEditorOpKind) return;
-
-  const fillStates = (sel: HTMLSelectElement) => {
-    sel.innerHTML = '';
-    const add = (v: string) => {
-      const o = document.createElement('option');
-      o.value = v; o.text = v;
-      sel.add(o);
-    };
-    add('any');
-    add('Unknown');
-    for (let i = NodeState.A; i <= NodeState.Z; i++) {
-      // @ts-ignore enum reverse mapping
-      add((NodeState as any)[i]);
-    }
-  };
-
-  fillStates(ruleEditorCurrent);
-  fillStates(ruleEditorPrior);
-  fillStates(ruleEditorOpOperand);
-
-  ruleEditorOpKind.innerHTML = '';
-  const kinds: OperationKindEnum[] = [
-    OperationKindEnum.TurnToState,
-    OperationKindEnum.GiveBirthConnected,
-    OperationKindEnum.GiveBirth,
-    OperationKindEnum.TryToConnectWithNearest,
-    OperationKindEnum.TryToConnectWith,
-    OperationKindEnum.DisconnectFrom,
-    OperationKindEnum.Die,
-  ];
-  for (const k of kinds) {
-    const s = mapOperationKindToString(k);
-    const o = document.createElement('option');
-    o.value = s; o.text = s;
-    ruleEditorOpKind.add(o);
-  }
-
-  ruleEditorSelectsReady = true;
-}
-
-function setIntField(input: HTMLInputElement | null, v: number) {
-  if (!input) return;
-  input.value = (Number.isFinite(v) && v >= 0) ? String(Math.trunc(v)) : '';
-}
-function readIntField(input: HTMLInputElement | null): number | undefined {
-  if (!input) return undefined;
-  const t = input.value.trim();
-  if (!t) return undefined;
-  const n = parseInt(t, 10);
-  if (Number.isNaN(n)) return undefined;
-  return Math.trunc(n);
-}
-
-function updateRuleEditorOperandUI() {
-  if (!ruleEditorOpKind || !ruleEditorOpOperand) return;
-  const kind = String(ruleEditorOpKind.value);
-  const hasOperand = kind !== 'Die';
-  ruleEditorOpOperand.disabled = !hasOperand;
-  if (ruleEditorOpHint) ruleEditorOpHint.textContent = hasOperand ? '' : 'No operand for Die.';
-}
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n));
-}
-
-function readRuleEditorForm(): { rule: any; insertAt1: number } | null {
-  if (!ruleEditorEnabled || !ruleEditorCurrent || !ruleEditorPrior ||
-      !ruleEditorOpKind || !ruleEditorOpOperand || !ruleEditorInsertIndex) return null;
-
-  const enabled = !!ruleEditorEnabled.checked;
-  const current = String(ruleEditorCurrent.value || 'A');
-  const prior = String(ruleEditorPrior.value || 'any');
-
-  const kind = String(ruleEditorOpKind.value || 'TurnToState');
-  const operand = String(ruleEditorOpOperand.value || 'any');
-
-  const insertAtRaw = parseInt(ruleEditorInsertIndex.value, 10);
-  const insertAt1 = Number.isFinite(insertAtRaw) ? Math.trunc(insertAtRaw) : NaN;
-
-  if (!Number.isFinite(insertAt1) || insertAt1 < 1) {
-    showRuleEditorError('Insert position must be a positive integer (1-based).');
-    return null;
-  }
-  if (kind !== 'Die' && !operand) {
-    showRuleEditorError('Operand is required for this operation.');
-    return null;
-  }
-
-  const conn_ge = readIntField(ruleEditorConnGe);
-  const conn_le = readIntField(ruleEditorConnLe);
-  const parents_ge = readIntField(ruleEditorParGe);
-  const parents_le = readIntField(ruleEditorParLe);
-
-  const rule: any = {
-    enabled,
-    condition: {
-      current,
-      prior,
-      ...(conn_ge !== undefined ? { conn_ge } : {}),
-      ...(conn_le !== undefined ? { conn_le } : {}),
-      ...(parents_ge !== undefined ? { parents_ge } : {}),
-      ...(parents_le !== undefined ? { parents_le } : {}),
-    },
-    op: {
-      kind,
-      ...(kind === 'Die' ? {} : { operand }),
-    }
-  };
-
-  showRuleEditorError(null);
-  return { rule, insertAt1 };
-}
-
-async function commitRuleTable(nextRules: any[]) {
-  // Stop tick loop before rebuilding
-  clearInterval(simulationInterval);
-  isSimulationRunning = false;
-
-  const nextCfg = deepClone(lastLoadedConfig ?? {});
-  nextCfg.machine = buildMachineBlockFromRuntime();
-  nextCfg.init_graph = lastLoadedConfig?.init_graph ?? { nodes: [{ state: nodeStateLetter(currentStartState()) }] };
-  nextCfg.rules = nextRules;
-
-  if (nextCfg?.meta && typeof nextCfg.meta === 'object') delete nextCfg.meta.activity_scheme;
-  delete nextCfg.activity_scheme;
-
-  clearShareHashIfPresent();
-
-  const shouldCustom = (currentGenomeSource !== 'new');
-  const label = shouldCustom ? `Edited: ${baseGenomeLabel}` : null;
-
-  await applyGenomConfig(nextCfg, label);
-
-  if (shouldCustom) {
-    customGenomeCache = deepClone(lastLoadedConfig);
-    syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
-  } else {
-    syncGenomeSelects(GENOME_SELECT_VALUES.NEW);
-  }
-
-  showToast('Rule table updated — simulation reset.');
-}
-
-function openRuleEditor(mode: RuleEditorMode, index: number = -1) {
-  if (!ruleEditorModal) return;
-
-  pauseSimulationForEditor();
-  ensureRuleEditorSelects();
-
-  ruleEditorState = { mode, index };
-
-  const count = gumMachine.getRuleItems().length;
-  const startTok = nodeStateLetter(currentStartState());
-
-  if (ruleEditorTitle) ruleEditorTitle.textContent = (mode === 'add') ? 'Add rule' : `Edit rule #${index + 1}`;
-  if (ruleEditorSubtitle) {
-    ruleEditorSubtitle.textContent = (mode === 'add')
-      ? 'Saving will rebuild the machine and reset the graph.'
-      : 'Saving, cloning, or removing will rebuild the machine and reset the graph.';
-  }
-
-  if (ruleEditorRemoveBtn) ruleEditorRemoveBtn.hidden = (mode === 'add');
-  if (ruleEditorCloneBtn) ruleEditorCloneBtn.hidden = (mode === 'add');
-
-  if (mode === 'add') {
-    if (ruleEditorEnabled) ruleEditorEnabled.checked = true;
-    if (ruleEditorCurrent) ruleEditorCurrent.value = startTok;
-    if (ruleEditorPrior) ruleEditorPrior.value = 'any';
-    setIntField(ruleEditorConnGe, -1);
-    setIntField(ruleEditorConnLe, -1);
-    setIntField(ruleEditorParGe, -1);
-    setIntField(ruleEditorParLe, -1);
-    if (ruleEditorOpKind) ruleEditorOpKind.value = 'TurnToState';
-    if (ruleEditorOpOperand) ruleEditorOpOperand.value = startTok;
-    if (ruleEditorInsertIndex) ruleEditorInsertIndex.value = String(count + 1);
-  } else {
-    const it = gumMachine.getRuleItems()[index];
-    if (!it) return;
-
-    if (ruleEditorEnabled) ruleEditorEnabled.checked = !!it.isEnabled;
-    if (ruleEditorCurrent) ruleEditorCurrent.value = nodeStateLetter(it.condition.currentState);
-    if (ruleEditorPrior) ruleEditorPrior.value = nodeStateLetter(it.condition.priorState);
-    setIntField(ruleEditorConnGe, it.condition.allConnectionsCount_GE);
-    setIntField(ruleEditorConnLe, it.condition.allConnectionsCount_LE);
-    setIntField(ruleEditorParGe, it.condition.parentsCount_GE);
-    setIntField(ruleEditorParLe, it.condition.parentsCount_LE);
-    if (ruleEditorOpKind) ruleEditorOpKind.value = mapOperationKindToString(it.operation.kind);
-    if (ruleEditorOpOperand) ruleEditorOpOperand.value = nodeStateLetter(it.operation.operandNodeState);
-
-    // Used for Clone/Add insertion; default = next position
-    if (ruleEditorInsertIndex) ruleEditorInsertIndex.value = String(Math.min(count + 1, index + 2));
-  }
-
-  updateRuleEditorOperandUI();
-  showRuleEditorError(null);
-
-  ruleEditorModal.hidden = false;
-  document.body.classList.add('modal-open');
-  requestAnimationFrame(() => ruleEditorCurrent?.focus());
-}
-
-function closeRuleEditor() {
-  if (!ruleEditorModal) return;
-  ruleEditorModal.hidden = true;
-  document.body.classList.remove('modal-open');
-  ruleEditorState = null;
-  showRuleEditorError(null);
-}
-
-// Wire modal controls
-ruleEditorCloseBtn?.addEventListener('click', closeRuleEditor);
-ruleEditorCancelBtn?.addEventListener('click', closeRuleEditor);
-
-ruleEditorModal?.addEventListener('click', (e) => {
-  const t = e.target as HTMLElement;
-  if (t?.dataset?.close === '1') closeRuleEditor();
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && ruleEditorModal && !ruleEditorModal.hidden) closeRuleEditor();
-});
-
-ruleEditorOpKind?.addEventListener('change', updateRuleEditorOperandUI);
-
-ruleEditorSaveBtn?.addEventListener('click', () => {
-  void (async () => {
-    if (!ruleEditorState) return;
-    const parsed = readRuleEditorForm();
-    if (!parsed) return;
-
-    const rules = exportRulesFromMachine();
-    if (ruleEditorState.mode === 'add') {
-      const idx0 = clamp(parsed.insertAt1 - 1, 0, rules.length);
-      rules.splice(idx0, 0, parsed.rule);
-    } else {
-      if (ruleEditorState.index < 0 || ruleEditorState.index >= rules.length) return;
-      rules[ruleEditorState.index] = parsed.rule;
-    }
-
-    closeRuleEditor();
-    await commitRuleTable(rules);
-  })();
-});
-
-ruleEditorRemoveBtn?.addEventListener('click', () => {
-  void (async () => {
-    if (!ruleEditorState || ruleEditorState.mode !== 'edit') return;
-    const idx = ruleEditorState.index;
-    const rules = exportRulesFromMachine();
-    if (idx < 0 || idx >= rules.length) return;
-
-    const ok = window.confirm(`Remove rule #${idx + 1}?`);
-    if (!ok) return;
-
-    rules.splice(idx, 1);
-    closeRuleEditor();
-    await commitRuleTable(rules);
-  })();
-});
-
-ruleEditorCloneBtn?.addEventListener('click', () => {
-  void (async () => {
-    if (!ruleEditorState || ruleEditorState.mode !== 'edit') return;
-    const parsed = readRuleEditorForm();
-    if (!parsed) return;
-
-    const rules = exportRulesFromMachine();
-    const idx0 = clamp(parsed.insertAt1 - 1, 0, rules.length);
-    rules.splice(idx0, 0, parsed.rule);
-
-    closeRuleEditor();
-    await commitRuleTable(rules);
-  })();
-});
 
 /* =========================================================================
    13) CONTROL WIRING (buttons, sliders, toggles)

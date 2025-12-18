@@ -141,7 +141,8 @@
     .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,0.55); }
     .modal-dialog{
       position:relative;
-      width:min(560px, calc(100vw - 24px));
+      /* was: width:min(560px, calc(100vw - 24px)); */
+      width:min(440px, calc(100vw - 24px));
       max-height:calc(100vh - 24px);
       overflow:auto;
       background:#fff;
@@ -160,11 +161,32 @@
     .modal-subtitle{ font-size:.85rem; color:var(--muted); margin-top:2px; }
     .modal-body{ padding:10px 2px; }
     .modal-footer{
-      display:flex; gap:8px; align-items:center;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap; /* important when dialog is narrower */
       padding:10px 2px 2px;
       border-top:1px solid var(--border);
     }
+    .modal-footer-left{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-right:auto; /* pushes right side group */
+    }
+    .modal-footer-right{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
     .modal-sep{ border:none; border-top:1px solid var(--border); margin:10px 0; }
+    /* Shrink the (now short-labeled) operation kind select */
+    #rule-editor-op-kind{
+      width: 190px;
+      max-width: 100%;
+    }
 
     /* Toast */
     #toast{
@@ -527,12 +549,8 @@
       </div>
 
       <div class="modal-body">
-        <div class="row" style="justify-content:space-between;">
+        <div class="row">
           <label><input type="checkbox" id="rule-editor-enabled" checked> Enabled</label>
-          <div class="row" style="gap:6px">
-            <label style="font-size:.85rem;color:var(--muted)">Insert at:</label>
-            <input id="rule-editor-insert-index" type="number" min="1" step="1" style="width:92px">
-          </div>
         </div>
 
         <hr class="modal-sep">
@@ -564,7 +582,7 @@
         <h4 style="margin:0 0 6px 0">Operation</h4>
         <div class="row">
           <label>Kind:</label>
-          <select id="rule-editor-op-kind" style="flex:1"></select>
+          <select id="rule-editor-op-kind"></select>
         </div>
 
         <div class="row" style="margin-top:6px">
@@ -577,13 +595,26 @@
       </div>
 
       <div class="modal-footer">
-        <button id="rule-editor-remove" class="toggle-btn" title="Remove this rule">🗑 Remove</button>
-        <button id="rule-editor-clone" class="toggle-btn" title="Clone this rule">⎘ Clone</button>
-        <div style="flex:1"></div>
-        <button id="rule-editor-cancel" class="toggle-btn">Cancel</button>
-        <button id="rule-editor-save" class="toggle-btn" style="background:#111827;color:#fff;border-color:#111827">Save</button>
+        <div class="modal-footer-left">
+          <button id="rule-editor-remove" class="toggle-btn" title="Remove this rule">🗑 Remove</button>
+          <button id="rule-editor-clone" class="toggle-btn" title="Clone this rule">⎘ Clone</button>
+        </div>
+
+        <div class="modal-footer-right">
+          <div class="row" style="gap:6px">
+            <label id="rule-editor-insert-label" style="font-size:.85rem;color:var(--muted)">Insert at:</label>
+            <input id="rule-editor-insert-index" type="number" min="1" step="1" style="width:78px">
+          </div>
+
+          <button id="rule-editor-cancel" class="toggle-btn">Cancel</button>
+          <button id="rule-editor-save" class="toggle-btn" style="background:#111827;color:#fff;border-color:#111827">
+            Save
+          </button>
+        </div>
       </div>
+
     </div>
+    
   </div>
 
   <div id="toast" hidden></div>
