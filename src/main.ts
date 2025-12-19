@@ -366,8 +366,8 @@ const view3dBtn = document.getElementById('view-3d-button') as HTMLButtonElement
 
 const soundToggleBtn = document.getElementById('sound-toggle-button') as HTMLButtonElement | null;
 
-const mobileView2dBtn = document.getElementById('mobile-view-2d') as HTMLButtonElement | null;
-const mobileView3dBtn = document.getElementById('mobile-view-3d') as HTMLButtonElement | null;
+const mobileViewToggleBtn = document.getElementById('mobile-view-toggle') as HTMLButtonElement | null;
+
 
 const mobileSoundBtn  = document.getElementById('mobile-sound') as HTMLButtonElement | null;
 
@@ -1192,8 +1192,20 @@ function setViewMode(mode: ViewMode) {
   view2dBtn?.classList.toggle('active', mode === '2d');
   view3dBtn?.classList.toggle('active', mode === '3d');
 
-  mobileView2dBtn?.classList.toggle('toggle-active', mode === '2d');
-  mobileView3dBtn?.classList.toggle('toggle-active', mode === '3d');
+  if (mobileViewToggleBtn) {
+    // Button shows the CURRENT mode
+    mobileViewToggleBtn.textContent = (mode === '2d') ? '2D' : '3D';
+
+    // Style highlight in 3D (optional; tweak if you prefer highlight in 2D)
+    mobileViewToggleBtn.classList.toggle('toggle-active', mode === '3d');
+
+    // Accessibility + better UX: title shows the NEXT action
+    const next = (mode === '2d') ? '3D' : '2D';
+    mobileViewToggleBtn.title = `Switch to ${next} view`;
+    mobileViewToggleBtn.setAttribute('aria-label', `Switch to ${next} view`);
+    mobileViewToggleBtn.setAttribute('aria-pressed', mode === '3d' ? 'true' : 'false');
+  }
+
 
   const svgEl = svg.node() as SVGSVGElement | null;
   if (!svgEl || !threeContainer) return;
@@ -1225,9 +1237,9 @@ function setViewMode(mode: ViewMode) {
 view2dBtn?.addEventListener('click', () => setViewMode('2d'));
 view3dBtn?.addEventListener('click', () => setViewMode('3d'));
 
-mobileView2dBtn?.addEventListener('click', () => setViewMode('2d'));
-mobileView3dBtn?.addEventListener('click', () => setViewMode('3d'));
-
+mobileViewToggleBtn?.addEventListener('click', () => {
+  setViewMode(viewMode === '2d' ? '3d' : '2d');
+});
 
 function toGraphCoords(evt: any) {
   const [mx, my] = d3.pointer(evt, svg.node() as any);

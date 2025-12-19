@@ -135,15 +135,40 @@
     body.modal-open{ overflow:hidden; }
     .modal{
       position:fixed; inset:0;
-      display:flex; align-items:center; justify-content:center;
+      width:100vw;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       z-index:1000;
+
+      /* Keep dialog fully visible on phones with notches / system bars */
+      padding:
+        calc(12px + env(safe-area-inset-top, 0px))
+        calc(12px + env(safe-area-inset-right, 0px))
+        calc(12px + env(safe-area-inset-bottom, 0px))
+        calc(12px + env(safe-area-inset-left, 0px));
     }
-    .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,0.55); }
+
+    /* Prefer visual viewport units when available (mobile browser UI safe) */
+    @supports (height: 100dvh) {
+      .modal{
+        width:100dvw;
+        height:100dvh;
+      }
+    }
+
+    /* Backdrop must cover the whole viewport even if .modal has padding */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.55);
+    }
+
     .modal-dialog{
       position:relative;
-      /* was: width:min(560px, calc(100vw - 24px)); */
-      width:min(440px, calc(100vw - 24px));
-      max-height:calc(100vh - 24px);
+      width:min(440px, 100%);
+      max-height:100%;
       overflow:auto;
       background:#fff;
       border:1px solid var(--border);
@@ -151,6 +176,7 @@
       padding:10px;
       box-shadow:0 20px 60px rgba(0,0,0,0.35);
     }
+
     .modal-header{
       display:flex; align-items:flex-start; justify-content:space-between;
       gap:8px;
@@ -313,6 +339,13 @@
       border-radius: 8px;
       background: #fff;
     }
+    #mobile-toolbar select {
+      flex: 1 1 240px;   /* take remaining space */
+      min-width: 180px;  /* avoid ultra-tiny dropdown */
+      max-width: 100%;
+    }
+
+
     
     #mobile-toolbar button.toggle-active {
       background: #111827;
@@ -389,9 +422,7 @@
         <button id="mobile-play">▶︎</button>
         <button id="mobile-reset">⟲</button>
         <button id="mobile-slow">🐢</button>
-        <button id="mobile-sound" title="Toggle mechanical ticking sound">🔈</button>
-        <button id="mobile-view-2d" class="toggle-active" title="2D view">2D</button>
-        <button id="mobile-view-3d" title="3D view (beta)">3D</button>
+        <button id="mobile-view-toggle" class="toggle-active" title="Switch to 3D view">2D</button>
         <button id="mobile-share" title="Copy a shareable link">🔗</button>
         <select id="gene-select-mobile" title="Genome"></select>
       </div>
