@@ -398,6 +398,24 @@ const mobileToolbarTitle = document.getElementById('mobile-toolbar-title') as HT
 
 const toastEl = document.getElementById('toast') as HTMLDivElement | null;
 
+const maxVerticesInput = document.getElementById('max-vertices-input') as HTMLInputElement | null;
+const nearestMaxDepthInput = document.getElementById('nearest-max-depth-input') as HTMLInputElement | null;
+
+function onMaxVerticesUiChanged() {
+  syncMachineSettingsFromUi();
+}
+function onNearestDepthUiChanged() {
+  syncMachineSettingsFromUi();
+}
+
+maxVerticesInput?.addEventListener('input', onMaxVerticesUiChanged);
+maxVerticesInput?.addEventListener('change', onMaxVerticesUiChanged);
+
+nearestMaxDepthInput?.addEventListener('input', onNearestDepthUiChanged);
+nearestMaxDepthInput?.addEventListener('change', onNearestDepthUiChanged);
+
+
+
 
 /* =========================================================================
    4) SVG / D3 SETUP
@@ -1007,6 +1025,7 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   pauseResumeButton.style.backgroundColor = 'lightgreen';
   resetGraph();                // handles zoom+fit
   refreshMaxStepsInput();
+  refreshMachineSettingsInputs();
   updateDebugInfo({ forceRulesRebuild: true });
 
   const sel = document.getElementById('gene-select') as HTMLSelectElement;
@@ -1107,14 +1126,20 @@ function buildMachineBlockFromRuntime(): any {
   base.maintain_single_component = (gumMachine as any).getMaintainSingleComponent?.() ?? true;
   base.orphan_cleanup = (gumMachine as any).getOrphanCleanup?.() ?? base.orphan_cleanup ?? { enabled: false };
   base.reseed_isolated_A = (gumMachine as any).getReseedIsolatedA?.() ?? true;
-
+  const ns = (gumMachine as any).getNearestSearchCfg?.();
   if (!base.nearest_search) {
     base.nearest_search = { max_depth: 2, tie_breaker: 'stable', connect_all: false };
   }
-  return base;
+  if (ns) {
+    base.nearest_search = { ...base.nearest_search, ...ns };
+  }
+  
 }
 
+
+
 function buildGenomeSnapshot(): any {
+  syncMachineSettingsFromUi();
   const machine = buildMachineBlockFromRuntime();
   const init_graph = lastLoadedConfig?.init_graph ?? { nodes: [{ state: nodeStateLetter(currentStartState()) }] };
   const rules = exportRulesFromMachine();
@@ -1876,6 +1901,43 @@ maxStepsInput?.addEventListener('change', () => {
 function refreshMaxStepsInput() {
   if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
 }
+
+function syncMachineSettingsFromUi() {
+  // Max vertices
+  if (maxVerticesInput) {
+    const v = parseInt(maxVerticesInput.value, 10);
+    if (!Number.isNaN(v)) {
+      const next = Math.max(0, Math.trunc(v));
+      (gumMachine as any).setMaxVertices?.(next);
+      lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+      lastLoadedConfig.machine.max_vertices = next;
+    }
+  }
+
+  // Nearest search max depth
+  if (nearestMaxDepthInput) {
+    const v = parseInt(nearestMaxDepthInput.value, 10);
+    if (!Number.isNaN(v)) {
+      const next = Math.max(0, Math.trunc(v));
+      (gumMachine as any).setNearestSearchMaxDepth?.(next);
+
+      lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
+      lastLoadedConfig.machine.nearest_search =
+        lastLoadedConfig.machine.nearest_search ?? { tie_breaker: 'stable', connect_all: false };
+      lastLoadedConfig.machine.nearest_search.max_depth = next;
+    }
+  }
+}
+
+
+function refreshMachineSettingsInputs() {
+  if (maxVerticesInput) maxVerticesInput.value = String(gumMachine.getMaxVertices());
+  if (nearestMaxDepthInput) {
+    const ns = (gumMachine as any).getNearestSearchCfg?.();
+    nearestMaxDepthInput.value = String(ns?.max_depth ?? 2);
+  }
+}
+
 
 /* Advanced manual operations */
 document.getElementById('connect-button')?.addEventListener('click', () => {

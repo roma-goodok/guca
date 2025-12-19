@@ -356,6 +356,20 @@ export class GraphUnfoldingMachine {
     this.iterations = 0;
   }
 
+  public setMaxVertices(n: number) {
+    const v = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : this.cfg.max_vertices;
+    (this.cfg as any).max_vertices = v;
+  }
+
+  public getNearestSearchCfg(): NearestSearchCfg {
+    return { ...this.cfg.nearest_search };
+  }
+
+  public setNearestSearchMaxDepth(n: number) {
+    const v = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : this.cfg.nearest_search.max_depth;
+    (this.cfg.nearest_search as any).max_depth = v;
+  }
+
   private snapshotAllNodes() {
     const nodes = this.graph.getNodes();
     for (const n of nodes) {

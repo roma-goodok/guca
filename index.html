@@ -475,7 +475,22 @@
           <label for="max-steps-input">Max iterations:</label>
           <input id="max-steps-input" type="number" value="120" min="-1" step="1" style="width:120px">
           <small>(-1 = unlimited)</small>
-        </div>       
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label for="max-vertices-input" title="Maximum number of nodes allowed. 0 = unlimited.">
+            Max vertices:
+          </label>
+          <input id="max-vertices-input" type="number" value="200" min="0" step="1" style="width:120px">
+          <small title="0 means unlimited">(0 = unlimited)</small>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label for="nearest-max-depth-input" title="BFS depth limit for TryToConnectWithNearest. 0 disables nearest search.">
+            Nearest search max depth:
+          </label>
+          <input id="nearest-max-depth-input" type="number" value="2" min="0" step="1" style="width:120px">
+        </div>
+       
         <div class="row" style="margin-top:8px">
           <label><input type="checkbox" id="orphan-cleanup-checkbox"> Auto-dissolve detached subgraphs</label>
         </div>
