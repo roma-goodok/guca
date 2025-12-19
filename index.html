@@ -332,6 +332,35 @@
     #rules-overlay .gene-tile { width: 48px; height: 30px; border-radius: 6px; }
     #rules-overlay::-webkit-scrollbar { height: 6px; }
     #rules-overlay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 4px; }
+
+    /* Node inspector overlay (debug): bottom-right on the black canvas */
+    #node-inspector-overlay{
+      position:absolute;
+      right:12px;
+      bottom:12px;
+      max-width:min(420px, 65vw);
+
+      padding:8px 10px;
+      border-radius:10px;
+      border:0px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+
+      color: rgba(128,128,128,0.5);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: pre-line;
+
+      pointer-events:none;
+      z-index: 8; /* under mobile toolbar (10) and rules overlay (9) */
+    }
+
+    /* respect safe-area on mobile */
+    body.mobile-basic #node-inspector-overlay{
+      right: env(safe-area-inset-right, 8px);
+      bottom: env(safe-area-inset-bottom, 8px);
+    }
+
     
   </style>
 </head>
@@ -367,6 +396,7 @@
         <select id="gene-select-mobile" title="Genome"></select>
       </div>
       <div id="rules-overlay" hidden></div>
+      <div id="node-inspector-overlay" hidden></div>
     </div>
 
     <aside id="ui-panel">
@@ -428,12 +458,6 @@
           <div id="gene-inspector-body" style="font-size:.9rem; color:#374151">
             Hover a rule tile to see its description. Click a tile to enable/disable that rule.
           </div>
-        </div>
-      </div>
-      <div id="node-inspector" class="control-group">
-        <h4>Node Inspector</h4>
-        <div id="node-inspector-body" style="font-size:.9rem; color:#374151">
-          Select the 🖐️ Move tool, then hover a node to see details.
         </div>
       </div>
 

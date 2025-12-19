@@ -33,6 +33,8 @@ import { shouldUseMobileBasic } from './responsive';
 import { createGraph3DController } from './graph3d';
 import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
 import { createRuleEditorController } from './ruleEditor';
+import { formatNodeInspectorText } from './nodeInspector';
+
 
 
 
@@ -1150,7 +1152,10 @@ function setTool(tool: Tool) {
   svg.style('cursor', tool === 'scissors' ? 'crosshair' : 'default');
   graphGroup.selectAll<SVGGElement, Node>('.node')
     .style('pointer-events', tool === 'scissors' ? 'none' : 'auto');
-}
+    renderNodeInspector(undefined);
+
+  }
+
 btnMove?.addEventListener('click', () => setTool('move'));
 btnScissors?.addEventListener('click', () => setTool('scissors'));
 setTool('move');
@@ -1342,29 +1347,19 @@ function populateComboBoxes() {
 }
 
 function renderNodeInspector(n?: GUMNode) {
-  const body = document.getElementById('node-inspector-body') as HTMLDivElement | null;
-  if (!body) return;
+  const el = document.getElementById('node-inspector-overlay') as HTMLDivElement | null;
+  if (!el) return;
+
   if (!n) {
-    body.textContent = 'Select the 🖐️ Move tool, then hover a node to see details.';
+    el.textContent = '';
+    el.hidden = true;
     return;
   }
-  const liveState = nodeStateName(n.state);
-  const prior     = nodeStateName(n.priorState);
-  const saved     = nodeStateName(n.getSavedCurrentState?.() ?? n.state);
-  const liveDeg   = n.connectionsCount;
-  const savedDeg  = (n as any).savedDegree ?? liveDeg;
-  const livePar   = n.parentsCount;
-  const savedPar  = (n as any).savedParents ?? livePar;
 
-  body.innerHTML = `
-    <div><b>ID:</b> ${n.id}</div>
-    <div><b>State:</b> ${liveState}</div>
-    <div><b>Prior:</b> ${prior}</div>
-    <div><b>Saved (for matching):</b> ${saved}</div>
-    <div><b>Degree (live/saved):</b> ${liveDeg} / ${savedDeg}</div>
-    <div><b>Parents (live/saved):</b> ${livePar} / ${savedPar}</div>
-  `;
+  el.textContent = formatNodeInspectorText(n);
+  el.hidden = false;
 }
+
 
 graph3D.onNodeHover((n?: GUMNode) => {
   renderNodeInspector(n);
