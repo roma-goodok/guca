@@ -344,11 +344,9 @@ resetBtn?.addEventListener('click', () => {
   setControlsEnabled(true);
 
   if (lastLoadedConfig) {
-    // Rebuild machine + graph from the last loaded genome.
-    // Note: we don’t pass a custom label so it won’t touch the dropdown options.
+    syncMachineSettingsFromUi();
     void applyGenomConfig(lastLoadedConfig, null);
   } else {
-    // Fallback: just reset view/iterations if no genome is loaded yet.
     gumMachine.resetIterations?.();
     resetGraph();
   }
@@ -1126,6 +1124,7 @@ function buildMachineBlockFromRuntime(): any {
   base.maintain_single_component = (gumMachine as any).getMaintainSingleComponent?.() ?? true;
   base.orphan_cleanup = (gumMachine as any).getOrphanCleanup?.() ?? base.orphan_cleanup ?? { enabled: false };
   base.reseed_isolated_A = (gumMachine as any).getReseedIsolatedA?.() ?? true;
+
   const ns = (gumMachine as any).getNearestSearchCfg?.();
   if (!base.nearest_search) {
     base.nearest_search = { max_depth: 2, tie_breaker: 'stable', connect_all: false };
@@ -1133,8 +1132,10 @@ function buildMachineBlockFromRuntime(): any {
   if (ns) {
     base.nearest_search = { ...base.nearest_search, ...ns };
   }
-  
+
+  return base;
 }
+
 
 
 
@@ -1906,40 +1907,64 @@ reseedIsolatedACheckbox?.addEventListener('change', () => {
   lastLoadedConfig.machine.reseed_isolated_A = on;
 });
 
+
 maxStepsInput?.addEventListener('change', () => {
-  const v = parseInt(maxStepsInput.value, 10);
-  gumMachine.setMaxSteps(Number.isNaN(v) ? gumMachine.getMaxSteps() : v);
+  syncMachineSettingsFromUi();
+  refreshMaxStepsInput();
 });
+
 function refreshMaxStepsInput() {
   if (maxStepsInput) maxStepsInput.value = String(gumMachine.getMaxSteps());
 }
 
+function ensureLastLoadedMachineBlock(): any {
+  if (!lastLoadedConfig || typeof lastLoadedConfig !== 'object') lastLoadedConfig = {};
+  if (!lastLoadedConfig.machine || typeof lastLoadedConfig.machine !== 'object') lastLoadedConfig.machine = {};
+  return lastLoadedConfig.machine;
+}
+
 function syncMachineSettingsFromUi() {
-  // Max vertices
+  const machineBlock = ensureLastLoadedMachineBlock();
+
+  // Max steps
+  if (maxStepsInput) {
+    const v = parseInt(maxStepsInput.value, 10);
+    const next = Number.isNaN(v) ? gumMachine.getMaxSteps() : Math.trunc(v);
+    gumMachine.setMaxSteps(next);
+    machineBlock.max_steps = next;
+  }
+
+  // Max vertices (existing behavior, but ensure machineBlock exists)
   if (maxVerticesInput) {
     const v = parseInt(maxVerticesInput.value, 10);
     if (!Number.isNaN(v)) {
       const next = Math.max(0, Math.trunc(v));
       (gumMachine as any).setMaxVertices?.(next);
-      lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-      lastLoadedConfig.machine.max_vertices = next;
+      machineBlock.max_vertices = next;
     }
   }
 
-  // Nearest search max depth
+  // Nearest depth (existing behavior)
   if (nearestMaxDepthInput) {
     const v = parseInt(nearestMaxDepthInput.value, 10);
     if (!Number.isNaN(v)) {
       const next = Math.max(0, Math.trunc(v));
       (gumMachine as any).setNearestSearchMaxDepth?.(next);
 
-      lastLoadedConfig.machine = lastLoadedConfig.machine ?? {};
-      lastLoadedConfig.machine.nearest_search =
-        lastLoadedConfig.machine.nearest_search ?? { tie_breaker: 'stable', connect_all: false };
-      lastLoadedConfig.machine.nearest_search.max_depth = next;
+      machineBlock.nearest_search =
+        machineBlock.nearest_search ?? { tie_breaker: 'stable', connect_all: false };
+      machineBlock.nearest_search.max_depth = next;
     }
   }
+
+  // Maintain single component (NEW persistence)
+  if (maintainChk) {
+    const on = !!maintainChk.checked;
+    (gumMachine as any).setMaintainSingleComponent?.(on);
+    machineBlock.maintain_single_component = on;
+  }
 }
+
 
 
 function refreshMachineSettingsInputs() {
