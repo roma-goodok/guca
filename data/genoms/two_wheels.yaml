@@ -4,7 +4,7 @@ machine:
   max_vertices: 200
   max_steps: -1
   nearest_search:
-    max_depth: 2
+    max_depth: 3
     tie_breaker: stable
     connect_all: true
   maintain_single_component: false
@@ -20,7 +20,9 @@ machine:
       others: 8
   reseed_isolated_A: true
 init_graph:  
-  nodes: [A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, B, B, B, B, B, B, C]  # A:1-20, B:21-26, C:27
+  nodes: [D, E, A, A, A, A, A, A, A, A, 
+          A, A, A, A, A, A, A, A, A, A, 
+          F, G, B, B, B, B, C]  # A:1-20, B:21-26, C:27
   edges:
     # large wheel:
     - [1, 2]
@@ -60,13 +62,179 @@ init_graph:
     - [1, 21]
     - [2, 22]    
 rules:
-  - condition:
-      current: B
-      prior: B
-      conn_ge: 0
-      conn_le: 1
-      parents_ge: 0
-      parents_le: 10
+  - enabled: true
+    condition:
+      current: G
+      prior: G
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: -1
+      parents_le: -1
     op:
       kind: GiveBirthConnected
+      operand: H
+  - enabled: true
+    condition:
+      current: H
+      prior: Unknown
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: B
+  - enabled: true
+    condition:
+      current: B
+      prior: B
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: G
+  - enabled: true
+    condition:
+      current: G
+      prior: B
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: A
+  - enabled: true
+    condition:
+      current: H
+      prior: H
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: DisconnectFrom
+      operand: B
+  - enabled: true
+    condition:
+      current: H
+      prior: H
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: DisconnectFrom
+      operand: F
+  - enabled: true
+    condition:
+      current: G
+      prior: G
+      conn_ge: 5
+      conn_le: 5
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: F
+  - enabled: true
+    condition:
+      current: A
+      prior: A
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: E
+  - enabled: true
+    condition:
+      current: D
+      prior: D
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: K
+  - enabled: true
+    condition:
+      current: F
+      prior: F
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: B
+  - enabled: true
+    condition:
+      current: E
+      prior: E
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: J
+  - enabled: true
+    condition:
+      current: J
+      prior: J
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: D
+  - enabled: true
+    condition:
+      current: D
+      prior: J
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: A
+  - enabled: true
+    condition:
+      current: K
+      prior: D
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: DisconnectFrom
+      operand: F
+  - enabled: true
+    condition:
+      current: K
+      prior: K
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: L
+  - enabled: true
+    condition:
+      current: L
+      prior: K
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
       operand: A

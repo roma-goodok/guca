@@ -886,7 +886,8 @@ const YAML_CATALOG = [
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
   { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
-  { name: 'two_wheels', path: 'data/genoms/two_wheels.yaml' }, 
+  { name: 'two_wheels', path: 'data/genoms/two_wheels.yaml' },
+  { name: 'New (empty)', path: 'data/genoms/empty.yaml' }, 
 ];
 
 async function fetchYaml(path: string): Promise<any> {

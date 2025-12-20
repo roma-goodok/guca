@@ -1,0 +1,27 @@
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 200
+  max_steps: -1
+  nearest_search:
+    max_depth: 2
+    tie_breaker: stable
+    connect_all: true
+  maintain_single_component: false
+  orphan_cleanup:
+    enabled: false  
+init_graph:
+  nodes:
+    - state: A
+rules:
+  - condition:
+      current: A
+      prior: Unknown
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: B
