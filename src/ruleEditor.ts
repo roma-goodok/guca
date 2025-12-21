@@ -97,6 +97,7 @@ type DomRefs = {
 
   currentSel: HTMLSelectElement;
   priorSel: HTMLSelectElement;
+  connWithStateSel: HTMLSelectElement;
   connGeInput: HTMLInputElement;
   connLeInput: HTMLInputElement;
   parGeInput: HTMLInputElement;
@@ -135,6 +136,7 @@ function dom(): DomRefs {
 
     currentSel: mustGetEl<HTMLSelectElement>('rule-editor-current'),
     priorSel: mustGetEl<HTMLSelectElement>('rule-editor-prior'),
+    connWithStateSel: mustGetEl<HTMLSelectElement>('rule-editor-conn-with-state'),
     connGeInput: mustGetEl<HTMLInputElement>('rule-editor-conn-ge'),
     connLeInput: mustGetEl<HTMLInputElement>('rule-editor-conn-le'),
     parGeInput: mustGetEl<HTMLInputElement>('rule-editor-par-ge'),
@@ -206,6 +208,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     fillStates(d.currentSel);
     fillStates(d.priorSel);
     fillStates(d.opOperandSel);
+    fillStates(d.connWithStateSel);
 
     // Operation kinds: canonical values, shorter visible labels (reduces dropdown width)
     d.opKindSel.innerHTML = '';
@@ -253,6 +256,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
 
     const current = String(d.currentSel.value || 'A');
     const prior = String(d.priorSel.value || 'any');
+    const conn_with_state = String(d.connWithStateSel.value || 'any');
 
     const kind = String(d.opKindSel.value || 'TurnToState');
     const operand = String(d.opOperandSel.value || 'any');
@@ -279,6 +283,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
       condition: {
         current,
         prior,
+        ...(conn_with_state !== 'any' ? { conn_with_state } : {}),
         ...(conn_ge !== undefined ? { conn_ge } : {}),
         ...(conn_le !== undefined ? { conn_le } : {}),
         ...(parents_ge !== undefined ? { parents_ge } : {}),
@@ -436,6 +441,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
 
       d.currentSel.value = startTok;
       d.priorSel.value = 'any';
+      d.connWithStateSel.value = 'any';
 
       setIntField(d.connGeInput, -1);
       setIntField(d.connLeInput, -1);
@@ -455,6 +461,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
 
       d.currentSel.value = toStateToken(it.condition.currentState);
       d.priorSel.value = toStateToken(it.condition.priorState);
+      d.connWithStateSel.value = toStateToken((it.condition as any).allConnectionsWithState ?? NodeState.Ignored);
 
       setIntField(d.connGeInput, it.condition.allConnectionsCount_GE);
       setIntField(d.connLeInput, it.condition.allConnectionsCount_LE);

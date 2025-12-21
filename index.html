@@ -208,10 +208,22 @@
       justify-content:flex-end;
     }
     .modal-sep{ border:none; border-top:1px solid var(--border); margin:10px 0; }
+
     /* Shrink the (now short-labeled) operation kind select */
     #rule-editor-op-kind{
       width: 190px;
       max-width: 100%;
+    }
+
+    /* Rule editor: very small integer inputs for Conn ≥ / Conn ≤ */
+    .rule-int-tiny{
+      width: 70px; /* ~3x narrower than the old 92px */
+      appearance: textfield;
+    }
+    .rule-int-tiny::-webkit-outer-spin-button,
+    .rule-int-tiny::-webkit-inner-spin-button{
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     /* Toast */
@@ -632,19 +644,21 @@
           <label>Prior:</label>
           <select id="rule-editor-prior"></select>
         </div>
-
-        <div class="row" style="margin-top:6px">
-          <label>Conn ≥</label>
-          <input id="rule-editor-conn-ge" type="number" step="1" style="width:92px" placeholder="(ignore)">
-          <label>Conn ≤</label>
-          <input id="rule-editor-conn-le" type="number" step="1" style="width:92px" placeholder="(ignore)">
+        
+        <div class="row" style="margin-top:6px">          
+          <label>Conns ≥</label>
+          <input id="rule-editor-conn-ge" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
+          <label>≤</label>
+          <input id="rule-editor-conn-le" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
+          <label>with:</label>
+          <select id="rule-editor-conn-with-state"></select>
         </div>
 
         <div class="row" style="margin-top:6px">
           <label>Parents ≥</label>
-          <input id="rule-editor-par-ge" type="number" step="1" style="width:92px" placeholder="(ignore)">
-          <label>Parents ≤</label>
-          <input id="rule-editor-par-le" type="number" step="1" style="width:92px" placeholder="(ignore)">
+          <input id="rule-editor-par-ge" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
+          <label>≤</label>
+          <input id="rule-editor-par-le" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
         </div>
 
         <hr class="modal-sep">

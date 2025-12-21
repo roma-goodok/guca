@@ -205,8 +205,11 @@ export function convertToShortForm(RuleItems: RuleItem[]): string {
 
         const currentState = condition.currentState === NodeState.Unknown ? "+" : NodeState[condition.currentState];
         const priorState = condition.priorState === NodeState.Ignored ? '-' : (condition.priorState === NodeState.Unknown ? '+' : NodeState[condition.priorState]);
-        const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `c>=${condition.allConnectionsCount_GE}` : '';
-        const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `c<=${condition.allConnectionsCount_LE}` : '';
+         const connWith = (condition as any).allConnectionsWithState ?? NodeState.Ignored;
+        const connWithTok = (connWith === NodeState.Ignored) ? '' : (NodeState as any)[connWith];
+        const cPrefix = (connWith === NodeState.Ignored) ? 'c' : `c(${connWithTok})`;
+        const connectionsCountGE = condition.allConnectionsCount_GE !== -1 ? `${cPrefix}>=${condition.allConnectionsCount_GE}` : '';
+        const connectionsCountLE = condition.allConnectionsCount_LE !== -1 ? `${cPrefix}<=${condition.allConnectionsCount_LE}` : '';
         const parentsCountGE = condition.parentsCount_GE !== -1 ? `p>=${condition.parentsCount_GE}` : '';
         const parentsCountLE = condition.parentsCount_LE !== -1 ? `p<=${condition.parentsCount_LE}` : '';
 
@@ -262,11 +265,13 @@ const c = item.condition, o = item.operation;
 const cur = nodeStateLetter(c.currentState);
 const prior = nodeStateLetter(c.priorState);
 const parts: string[] = [];
+const connWith = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
+const cPrefix = (connWith !== 'any') ? `c(${connWith})` : 'c';
 
 // degree/parents ranges
 const deg =
-    (c.allConnectionsCount_GE >= 0 ? `c≥${c.allConnectionsCount_GE}` : "") +
-    (c.allConnectionsCount_LE >= 0 ? `${parts.length ? "," : ""}c≤${c.allConnectionsCount_LE}` : "");
+    (c.allConnectionsCount_GE >= 0 ? `${cPrefix}≥${c.allConnectionsCount_GE}` : "") +
+    (c.allConnectionsCount_LE >= 0 ? `${(c.allConnectionsCount_GE>=0) ? "," : ""}${cPrefix}≤${c.allConnectionsCount_LE}` : "");
 const par =
     (c.parentsCount_GE >= 0 ? `p≥${c.parentsCount_GE}` : "") +
     (c.parentsCount_LE >= 0 ? `${(c.parentsCount_GE>=0) ? "," : ""}p≤${c.parentsCount_LE}` : "");

@@ -10,8 +10,8 @@ test('shared genome roundtrip works with URI-encoded #g= token', () => {
     max_vertices: 200,
   },
   init_graph: { nodes: [{ state: 'A' }] },
-  rules: [
-    { enabled: true, condition: { current: 'A', prior: 'any' }, op: { kind: 'Die' } },
+  rules: [    
+    { enabled: true, condition: { current: 'A', prior: 'any', conn_with_state: 'B', conn_ge: 1 }, op: { kind: 'Die' } },
   ],
 };
 

@@ -607,8 +607,10 @@ function describeRuleHuman(item: RuleItem): string {
   const cur = nodeStateLetter(c.currentState);
   const prior = nodeStateLetter(c.priorState);
   const bits: string[] = [];
-  if (c.allConnectionsCount_GE >= 0) bits.push(`c≥${c.allConnectionsCount_GE}`);
-  if (c.allConnectionsCount_LE >= 0) bits.push(`c≤${c.allConnectionsCount_LE}`);
+  const connWith = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
+  const cPrefix = (connWith !== 'any') ? `c(${connWith})` : 'c';
+  if (c.allConnectionsCount_GE >= 0) bits.push(`${cPrefix}≥${c.allConnectionsCount_GE}`);
+  if (c.allConnectionsCount_LE >= 0) bits.push(`${cPrefix}≤${c.allConnectionsCount_LE}`);
   if (c.parentsCount_GE >= 0)        bits.push(`p≥${c.parentsCount_GE}`);
   if (c.parentsCount_LE >= 0)        bits.push(`p≤${c.parentsCount_LE}`);
   const cond = `if current=${cur}${c.priorState!==NodeState.Ignored?` & prior=${prior}`:''}${bits.length?` & ${bits.join(' & ')}`:''}`;
@@ -887,6 +889,11 @@ const YAML_CATALOG = [
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
   { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
   { name: 'two_wheels', path: 'data/genoms/two_wheels.yaml' },
+  { name: "Conway's game of life", path: 'data/genoms/conways_game_of_life.yaml' },
+  { name: "Conway's game of life (Cylinder)", path: 'data/genoms/conways_game_of_life_diagonal_cylinder.yaml' },
+  { name: "Conway's game of life (Torus)", path: 'data/genoms/conways_game_of_life_torus.yaml' },
+  // { name: "Moving Hole Particle", path: 'data/genoms/moving_hole_particle.yaml' },
+  // { name: "Moving Density Particle", path: 'data/genoms/moving_density_particle.yaml' },
   { name: 'New (empty)', path: 'data/genoms/empty.yaml' }, 
 ];
 
@@ -1094,11 +1101,13 @@ if (uploadInput) {
 
 function ruleItemToConfigRule(it: RuleItem): any {
   const c = it.condition, o = it.operation;
+  const connWithTok = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
   return {
     enabled: !!it.isEnabled,
     condition: {
       current: nodeStateLetter(c.currentState),
       prior: nodeStateLetter(c.priorState ?? NodeState.Ignored),
+      ...(connWithTok !== 'any' ? { conn_with_state: connWithTok } : {}),
       conn_ge: c.allConnectionsCount_GE,
       conn_le: c.allConnectionsCount_LE,
       parents_ge: c.parentsCount_GE,

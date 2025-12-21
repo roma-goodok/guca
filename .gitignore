@@ -5,6 +5,8 @@ node_modules/
 #dist/
 
 code2prompt/output.txt
+
+scripts/*.yaml
   
 # TypeScript compiled files  
 #*.js  

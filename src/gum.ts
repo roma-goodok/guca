@@ -88,9 +88,11 @@ export class OperationCondition {
     public currentState: NodeState,
     public priorState: NodeState = NodeState.Ignored,
     public allConnectionsCount_GE: number = -1,
-    public allConnectionsCount_LE: number = -1,
+    public allConnectionsCount_LE: number = -1,    
     public parentsCount_GE: number = -1,
-    public parentsCount_LE: number = -1
+    public parentsCount_LE: number = -1,
+    // NodeState.Ignored means "any" (count all connections).
+    public allConnectionsWithState: NodeState = NodeState.Ignored
   ) {}
 }
 
@@ -132,6 +134,7 @@ export class GUMNode {
   public savedDegree = 0;
   public savedParents = 0;
   protected savedCurrentState = NodeState.Unknown;
+  public savedConnByState: Record<number, number> = {};
 
   public ruleIndex = 0; // for continuable transcription
 
@@ -370,14 +373,42 @@ export class GraphUnfoldingMachine {
     (this.cfg.nearest_search as any).max_depth = v;
   }
 
-  private snapshotAllNodes() {
+
+ private snapshotAllNodes() {
     const nodes = this.graph.getNodes();
+
+    // Pass 1: freeze state/parents and capture snapshot neighbor ids
+    const neighborIdsByNode = new Map<number, number[]>();
     for (const n of nodes) {
       n.markedNew = false;
       n.saveCurrentState();
-      n.savedDegree = this.graph.getEdges().filter(e => e.source === n || e.target === n).length;
       n.savedParents = n.parentsCount;
+
+      const nbs = this.graph.getNeighbors(n);
+      neighborIdsByNode.set(n.id, nbs.map(nb => nb.id));
     }
+
+    // Pass 2: compute degree + per-state neighbor counts from the snapshot
+    for (const n of nodes) {
+      const nbIds = neighborIdsByNode.get(n.id) ?? [];
+      n.savedDegree = nbIds.length;
+
+      const counts: Record<number, number> = {};
+      for (const nbId of nbIds) {
+        const nb = this.graph.getNodeById(nbId);
+        if (!nb) continue;
+        const st = (nb.getSavedCurrentState?.() ?? nb.state);
+        const k = Number(st);
+        counts[k] = (counts[k] ?? 0) + 1;
+      }
+      n.savedConnByState = counts;
+    }
+  }
+
+  private getSavedConnectionsCount(node: GUMNode, withState: NodeState): number {
+    if (withState === NodeState.Ignored) return node.savedDegree; // "any"
+    const key = Number(withState);
+    return node.savedConnByState?.[key] ?? 0;
   }
 
   private matchInts(val: number, ge: number, le: number): boolean {
@@ -404,8 +435,10 @@ export class GraphUnfoldingMachine {
         const c = it.condition;        
         const currentOk = c.currentState === node.getSavedCurrentState() || c.currentState === NodeState.Ignored;
         const priorOk = c.priorState === NodeState.Ignored || c.priorState === node.priorState;
-        const connOk = this.matchInts(node.savedDegree, c.allConnectionsCount_GE, c.allConnectionsCount_LE);
+        const connCount = this.getSavedConnectionsCount(node, c.allConnectionsWithState ?? NodeState.Ignored);
+        const connOk = this.matchInts(connCount, c.allConnectionsCount_GE, c.allConnectionsCount_LE);
         const parOk = this.matchInts(node.savedParents, c.parentsCount_GE, c.parentsCount_LE);
+        
         if (currentOk && priorOk && connOk && parOk) return it;
       }
       return null;

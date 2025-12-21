@@ -165,8 +165,9 @@ import {
         mapNodeState(String(c.prior ?? 'any')),
         Number(c.conn_ge ?? c.allConnectionsCount_GE ?? -1),
         Number(c.conn_le ?? c.allConnectionsCount_LE ?? -1),
-        Number(c.parents_ge ?? c.parentsCount_GE ?? -1),
+        Number(c.parents_ge ?? c.parentsCount_GE ?? -1),        
         Number(c.parents_le ?? c.parentsCount_LE ?? -1),
+        toNodeStateFlex(c.conn_with_state ?? 'any'),
         );
         const op = new Operation(mapOperationKind(String(o.kind)), toNodeStateFlex(o.operand));
         
