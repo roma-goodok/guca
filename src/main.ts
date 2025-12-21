@@ -892,7 +892,7 @@ const YAML_CATALOG = [
   { name: "Conway's game of life", path: 'data/genoms/conways_game_of_life.yaml' },
   { name: "Conway's game of life (Cylinder)", path: 'data/genoms/conways_game_of_life_diagonal_cylinder.yaml' },
   { name: "Conway's game of life (Torus)", path: 'data/genoms/conways_game_of_life_torus.yaml' },
-  // { name: "Moving Hole Particle", path: 'data/genoms/moving_hole_particle.yaml' },
+  { name: "Moving Hole Particle", path: 'data/genoms/moving_hole_particle.yaml' },
   // { name: "Moving Density Particle", path: 'data/genoms/moving_density_particle.yaml' },
   { name: 'New (empty)', path: 'data/genoms/empty.yaml' }, 
 ];

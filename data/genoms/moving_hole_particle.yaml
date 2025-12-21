@@ -1,10 +1,10 @@
 machine:
   transcription: resettable
   count_compare: range
-  max_vertices: 200
+  max_vertices: 2500
   max_steps: -1
   nearest_search:
-    max_depth: 3
+    max_depth: 2
     tie_breaker: stable
     connect_all: true
   maintain_single_component: false
@@ -29,9 +29,9 @@ init_graph:
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, C, Z, B, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
+    X, A, A, A, A, A, A, A, D, C, B, A, A, A, A, A, A, A, A, Y,
+    X, A, A, A, A, A, A, A, D, Z, B, A, A, A, A, A, A, A, A, Y,
+    X, A, A, A, A, A, A, A, D, C, B, A, A, A, A, A, A, A, A, Y,
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
     X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
