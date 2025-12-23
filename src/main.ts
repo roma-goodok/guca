@@ -1420,6 +1420,47 @@ function nodeStateName(n: number): string {
   return (NodeState as any)[n] ?? String(n);
 }
 
+// Around the D3 link distance (currently 50), with some jitter so siblings don’t overlap perfectly.
+const BIRTH_SPAWN_BASE_R = 50;
+const BIRTH_SPAWN_JITTER_R = 18;
+
+function pickBirthAnchor2D(child: GUMNode): Node | null {
+  // Preferred: explicit metadata from the engine
+  const hinted = child.bornFromId;
+  let parentId: number | null =
+    (typeof hinted === 'number' && Number.isFinite(hinted)) ? hinted : null;
+
+  // Fallback: nearest neighbor by id (works for GiveBirthConnected)
+  if (parentId == null) {
+    const nbs = gumGraph.getNeighbors(child);
+    if (nbs.length > 0) {
+      parentId = nbs.reduce((m, nb) => Math.min(m, nb.id), nbs[0].id);
+    }
+  }
+
+  if (parentId == null) return null;
+  return nodes.find(n => n.id === parentId) ?? null;
+}
+
+function seedNewNodePosition2D(newNode: Node, anchor: Node) {
+  const ax = (anchor.x ?? (width / 2));
+  const ay = (anchor.y ?? (height / 2));
+
+  const angle = Math.random() * 2 * Math.PI;
+  const r = Math.max(
+    6,
+    BIRTH_SPAWN_BASE_R + (Math.random() - 0.5) * 2 * BIRTH_SPAWN_JITTER_R
+  );
+
+  newNode.x = ax + r * Math.cos(angle);
+  newNode.y = ay + r * Math.sin(angle);
+
+  // Inherit velocity to reduce “tearing” when the parent is moving fast.
+  if (anchor.vx != null) newNode.vx = anchor.vx;
+  if (anchor.vy != null) newNode.vy = anchor.vy;
+}
+
+
 function update() {
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
@@ -1427,15 +1468,14 @@ function update() {
   nodes = gumNodes.map(gumNode => {
     let existingNode = nodes.find(node => node.id === gumNode.id);
     if (!existingNode) {
-      const centerNode = nodes[0];
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = Math.random() * 200;
       existingNode = mapGUMNodeToNode(gumNode);
-      existingNode.x = centerNode.x! + distance * Math.cos(angle);
-      existingNode.y = centerNode.y! + distance * Math.sin(angle);
+
+      const anchor = pickBirthAnchor2D(gumNode) ?? nodes[0];
+      if (anchor) seedNewNodePosition2D(existingNode, anchor);
     } else {
       existingNode.state = gumNode.state;
     }
+
     return existingNode;
   });
 

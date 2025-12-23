@@ -141,6 +141,7 @@ export class GUMNode {
   public position: { x: number; y: number } | null = null;
   public velocity: { vx: number; vy: number } | null = null;
   public force: { fx: number | null; fy: number | null } | null = null;
+  public bornFromId: number | null = null;
 
   constructor(public id: number, public state: NodeState = NodeState.Unknown) {}
 
@@ -155,6 +156,7 @@ export class GUMNode {
   public getSavedCurrentState(): NodeState {
     return this.savedCurrentState;
   }
+  
 }
 
 export class GUMGraph {
@@ -540,6 +542,7 @@ export class GraphUnfoldingMachine {
     const newNode = new GUMNode(newId, state);
     newNode.parentsCount = node.parentsCount + 1;
     newNode.markedNew = true;
+    newNode.bornFromId = node.id;
     this.graph.addNode(newNode);
     this.graph.addEdge(node, newNode);
   }
@@ -551,6 +554,7 @@ export class GraphUnfoldingMachine {
     const newNode = new GUMNode(newId, state);
     newNode.parentsCount = node.parentsCount + 1;
     newNode.markedNew = true;
+    newNode.bornFromId = node.id;
     this.graph.addNode(newNode);
   }
 

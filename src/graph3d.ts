@@ -14,8 +14,15 @@ export interface Graph3DController {
   onNodeHover(handler: (node?: GUMNode) => void): void;
 }
 
-type InternalNode = { id: number; state: number };
 type InternalLink = { source: number; target: number };
+
+type InternalNode = {
+  id: number;
+  state: number;
+  x?: number; y?: number; z?: number;
+  vx?: number; vy?: number; vz?: number;
+};
+
 
 export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   let fg: ForceGraph3DInstance | null = null;
@@ -80,6 +87,47 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
     resize();
   }
 
+  const BIRTH3D_SPAWN_BASE_R = 45;
+  const BIRTH3D_SPAWN_JITTER_R = 18;
+
+  function pickBirthAnchorId3D(child: GUMNode): number | null {
+    const hinted = child.bornFromId;
+    if (typeof hinted === 'number' && Number.isFinite(hinted)) return hinted;
+
+    const nbs = gumGraph.getNeighbors(child);
+    if (!nbs.length) return null;
+    return nbs.reduce((m, nb) => Math.min(m, nb.id), nbs[0].id);
+  }
+
+  function seedNewNodePosition3D(newNode: InternalNode, parent: any) {
+    const px = (typeof parent.x === 'number') ? parent.x : 0;
+    const py = (typeof parent.y === 'number') ? parent.y : 0;
+    const pz = (typeof parent.z === 'number') ? parent.z : 0;
+
+    const r = Math.max(
+      6,
+      BIRTH3D_SPAWN_BASE_R + (Math.random() - 0.5) * 2 * BIRTH3D_SPAWN_JITTER_R
+    );
+
+    // Random direction on a sphere
+    const theta = Math.random() * 2 * Math.PI;
+    const u = (Math.random() * 2) - 1; // cos(phi) in [-1,1]
+    const phi = Math.acos(u);
+
+    const sx = r * Math.sin(phi) * Math.cos(theta);
+    const sy = r * Math.sin(phi) * Math.sin(theta);
+    const sz = r * Math.cos(phi);
+
+    newNode.x = px + sx;
+    newNode.y = py + sy;
+    newNode.z = pz + sz;
+
+    if (typeof parent.vx === 'number') newNode.vx = parent.vx;
+    if (typeof parent.vy === 'number') newNode.vy = parent.vy;
+    if (typeof parent.vz === 'number') newNode.vz = parent.vz;
+  }
+
+
   function syncFromGum(triggerZoomFit: boolean) {
     if (!fg || !containerEl) return;
 
@@ -92,13 +140,20 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
       currentIds.add(gn.id);
       let node = nodeById.get(gn.id);
       if (!node) {
-        node = { id: gn.id, state: gn.state };
-        nodeById.set(gn.id, node);
-        data.nodes.push(node);
-      } else {
-        // Update state in place (position x,y,z is kept by 3d-force-graph)
-        node.state = gn.state;
-      }
+          node = { id: gn.id, state: gn.state };
+
+          const parentId = pickBirthAnchorId3D(gn);
+          const parent = (parentId != null) ? nodeById.get(parentId) : null;
+          if (parent && (typeof (parent as any).x === 'number' || typeof (parent as any).y === 'number' || typeof (parent as any).z === 'number')) {
+            seedNewNodePosition3D(node, parent as any);
+          }
+
+          nodeById.set(gn.id, node);
+          data.nodes.push(node);
+        } else {
+          node.state = gn.state;
+        }
+
     }
 
     // Remove deleted nodes
