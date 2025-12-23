@@ -1,7 +1,7 @@
 machine:
   transcription: resettable
   count_compare: range
-  max_vertices: 300
+  max_vertices: 600
   max_steps: -1
   nearest_search:
     max_depth: 3
@@ -19,23 +19,26 @@ machine:
       size2: 5
       others: 8
   reseed_isolated_A: true
-init_graph:  
-# Torus (rectangular grid) substrate for Conway Life (Moore 8-neighborhood).
-# R=10, C=20, wrapped in both directions. Every node degree=8 (asserted).
-# Node id = row*C + col + 1.
 
+init_graph:
+  # Brian's Brain Cellular Automaton (https://en.wikipedia.org/wiki/Brian%27s_Brain)
+  # on a torus (rectangular grid) substrate with Moore (8-neighborhood).
+  # States: A=off, B=on, C=dying.
+  # R=10, C=20, wrapped in both directions. Every node degree=8 (asserted).
+  # Node id = row*C + col + 1.
   nodes: [
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, B, B, B, A, A, A, C, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, C, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, C, C, C, A, A, A, A, A, B, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, B, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, B, B, B, A, A, A,
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, B, B, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, B, B, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, B, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
   ]
+
   edges:
     - [1, 2]
     - [1, 20]
@@ -838,29 +841,62 @@ init_graph:
     - [198, 199]
     - [199, 200]
 
-
-
-
 rules:
-  # Birth (B3): dead cell (A) with exactly 3 live neighbors (B) becomes live (B)
-  - condition: { current: A, prior: any, conn_with_state: B, conn_ge: 3, conn_le: 3 }
+  # Brian's Brain:
+  # 1) off (A) -> on (B) if exactly 2 "on" neighbors (B)
+  - condition: { current: A, prior: any, conn_with_state: B, conn_ge: 2, conn_le: 2 }
     op:        { kind: TurnToState, operand: B }
 
-  # Death by underpopulation: live cell (B) with 0–1 live neighbors dies -> A
-  - condition: { current: B, prior: any, conn_with_state: B, conn_le: 1 }
-    op:        { kind: TurnToState, operand: A }
-
-  # Death by overpopulation: live cell (B) with 4–8 live neighbors dies -> A
-  - condition: { current: B, prior: any, conn_with_state: B, conn_ge: 4 }
-    op:        { kind: TurnToState, operand: A }
-
-  - condition: { current: A, prior: any, conn_with_state: C, conn_ge: 3, conn_le: 3 }
+  # 2) on (B) -> dying (C) unconditionally
+  - condition: { current: B, prior: any }
     op:        { kind: TurnToState, operand: C }
-  
-  - condition: { current: C, prior: any, conn_with_state: C, conn_le: 1 }
+
+  # 3) dying (C) -> off (A) unconditionally
+  - condition: { current: C, prior: any }
     op:        { kind: TurnToState, operand: A }
   
-  - condition: { current: C, prior: any, conn_with_state: C, conn_ge: 4 }
-    op:        { kind: TurnToState, operand: A }
-
-
+  # spikes:
+  - enabled: true
+    condition:
+      current: A
+      prior: C
+      conn_ge: 8
+      conn_le: 8
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: GiveBirthConnected
+      operand: F
+  - enabled: true
+    condition:
+      current: F
+      prior: Unknown
+      conn_ge: -1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: 1
+    op:
+      kind: GiveBirthConnected
+      operand: F
+  - enabled: true
+    condition:
+      current: F
+      prior: F
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: G
+  - enabled: true
+    condition:
+      current: G
+      prior: F
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: Die
+      operand: Unknown

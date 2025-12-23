@@ -26,13 +26,13 @@ init_graph:
 
   nodes: [
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, B, B, B, A, A, A, C, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, D, A, A, A, A, A, A, A, A, A, A, A, A, A, D, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, C, A, A, A, A, A, A, A, A, A, A, A,
     A, A, A, A, A, A, A, A, A, C, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, C, C, C, A, A, A, A, A, B, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, B, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, B, B, B, A, A, A,
+    A, A, A, A, A, A, A, C, C, C, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
   ]
@@ -862,5 +862,14 @@ rules:
   
   - condition: { current: C, prior: any, conn_with_state: C, conn_ge: 4 }
     op:        { kind: TurnToState, operand: A }
+
+  - condition: { current: D, prior: D, conn_with_state: C, conn_ge: 1, conn_le: 1 }
+    op:        { kind: TurnToState, operand: E }
+
+  - condition: { current: E, prior: E, conn_le: 8 }
+    op:        { kind: GiveBirthConnected, operand: F }
+
+  - condition: { current: F, prior: any, conn_le: 4, parents_le: 2 }
+    op:        { kind: GiveBirthConnected, operand: F }
 
 
