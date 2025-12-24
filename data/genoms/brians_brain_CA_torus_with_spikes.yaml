@@ -856,7 +856,7 @@ rules:
     op:        { kind: TurnToState, operand: O }
   
   # spikes:
-  - enabled: true
+  - enabled: false
     condition:
       current: O
       prior: C

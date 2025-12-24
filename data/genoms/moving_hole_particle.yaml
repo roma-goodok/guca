@@ -29,9 +29,9 @@ init_graph:
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
-    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
-    X, O, O, O, O, O, O, O, D, Z, B, O, O, O, O, O, O, O, O, Y,
-    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
+    X, O, D, C, B, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, D, Z, B, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, D, C, B, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
     X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
@@ -410,9 +410,283 @@ init_graph:
     - [198, 199]
     - [199, 200]
 
+rules:
+  - enabled: true
+    condition:
+      current: Z
+      prior: any
+      conn_ge: 4
+      conn_le: 4
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: Die
+      operand: Unknown
+  - enabled: true
+    condition:
+      current: B
+      prior: any
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: GiveBirthConnected
+      operand: F
+  - enabled: true
+    condition:
+      current: F
+      prior: Unknown
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: O
+  - enabled: true
+    condition:
+      current: O
+      prior: any
+      conn_with_state: F
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: G
+  - enabled: true
+    condition:
+      current: B
+      prior: B
+      conn_with_state: F
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: H
+  - enabled: true
+    condition:
+      current: F
+      prior: F
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: B
+  - enabled: true
+    condition:
+      current: O
+      prior: O
+      conn_with_state: G
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: I
+  - enabled: true
+    condition:
+      current: I
+      prior: O
+      conn_with_state: H
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: B
+  - enabled: true
+    condition:
+      current: I
+      prior: O
+      conn_with_state: G
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: O
+  - enabled: true
+    condition:
+      current: H
+      prior: H
+      conn_ge: 5
+      conn_le: 5
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: C
+  - enabled: true
+    condition:
+      current: H
+      prior: any
+      conn_with_state: C
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: Die
+      operand: Unknown
+  - enabled: true
+    condition:
+      current: F
+      prior: any
+      conn_with_state: C
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: Die
+      operand: Unknown
+  - enabled: true
+    condition:
+      current: G
+      prior: G
+      conn_ge: 5
+      conn_le: 5
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: J
+  - enabled: true
+    condition:
+      current: J
+      prior: G
+      conn_ge: -1
+      conn_le: -1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: B
+  - enabled: true
+    condition:
+      current: D
+      prior: D
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: GiveBirthConnected
+      operand: K
+  - enabled: true
+    condition:
+      current: K
+      prior: Unknown
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: D
+  - enabled: true
+    condition:
+      current: D
+      prior: any
+      conn_with_state: K
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: L
+  - enabled: true
+    condition:
+      current: K
+      prior: any
+      conn_with_state: C
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: M
+  - enabled: true
+    condition:
+      current: K
+      prior: any
+      conn_with_state: L
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TryToConnectWithNearest
+      operand: C
+  - enabled: true
+    condition:
+      current: C
+      prior: any
+      conn_with_state: K
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: D
+  - enabled: true
+    condition:
+      current: L
+      prior: L
+      conn_with_state: D
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: O  
+  - enabled: true
+    condition:
+      current: L
+      prior: any
+      conn_with_state: D
+      conn_ge: 1
+      conn_le: 1
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: O
+  - enabled: true
+    condition:
+      current: M
+      prior: M
+      conn_with_state: O
+      conn_ge: 2
+      conn_le: 2
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: DisconnectFrom
+      operand: O
+  - enabled: true
+    condition:
+      current: M
+      prior: M
+      conn_ge: 3
+      conn_le: 3
+      parents_ge: -1
+      parents_le: -1
+    op:
+      kind: TurnToState
+      operand: D
 
-
-
-rules:  
-  - condition: { current: Z, prior: any, conn_ge: 4, conn_le: 4 }
-    op:        { kind: Die}

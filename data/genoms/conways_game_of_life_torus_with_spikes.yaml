@@ -863,7 +863,8 @@ rules:
   - condition: { current: C, prior: any, conn_with_state: C, conn_ge: 4 }
     op:        { kind: TurnToState, operand: O }
 
-  - condition: { current: D, prior: D, conn_with_state: C, conn_ge: 1, conn_le: 1 }
+  - enabled: false
+    condition: { current: D, prior: D, conn_with_state: C, conn_ge: 1, conn_le: 1 }
     op:        { kind: TurnToState, operand: E }
 
   - condition: { current: E, prior: E, conn_le: 8 }
