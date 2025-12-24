@@ -26,16 +26,16 @@ init_graph:
   # Hole (0-based): r0=4, c0=9, h=0, w=0. Set h=0 or w=0 for no hole.
 
   nodes: [
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, D, C, B, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, D, Z, B, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, D, C, B, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y,
-    X, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, Y
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, Z, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y
   ]
 
   edges:

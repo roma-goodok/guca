@@ -25,16 +25,16 @@ init_graph:
 # Node id = row*C + col + 1.
 
   nodes: [
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, D, A, A, A, A, A, A, A, A, A, A, A, A, A, D, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, C, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, C, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, C, C, C, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, D, O, O, O, O, O, O, O, O, O, O, O, O, O, D, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, C, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, C, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, C, C, C, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O
   ]
   edges:
     - [1, 2]
@@ -842,26 +842,26 @@ init_graph:
 
 
 rules:
-  # Birth (B3): dead cell (A) with exactly 3 live neighbors (B) becomes live (B)
-  - condition: { current: A, prior: any, conn_with_state: B, conn_ge: 3, conn_le: 3 }
+  # Birth (B3): dead cell (O) with exactly 3 live neighbors (B) becomes live (B)
+  - condition: { current: O, prior: any, conn_with_state: B, conn_ge: 3, conn_le: 3 }
     op:        { kind: TurnToState, operand: B }
 
-  # Death by underpopulation: live cell (B) with 0–1 live neighbors dies -> A
+  # Death by underpopulation: live cell (B) with 0–1 live neighbors dies -> O
   - condition: { current: B, prior: any, conn_with_state: B, conn_le: 1 }
-    op:        { kind: TurnToState, operand: A }
+    op:        { kind: TurnToState, operand: O }
 
-  # Death by overpopulation: live cell (B) with 4–8 live neighbors dies -> A
+  # Death by overpopulation: live cell (B) with 4–8 live neighbors dies -> O
   - condition: { current: B, prior: any, conn_with_state: B, conn_ge: 4 }
-    op:        { kind: TurnToState, operand: A }
+    op:        { kind: TurnToState, operand: O }
 
-  - condition: { current: A, prior: any, conn_with_state: C, conn_ge: 3, conn_le: 3 }
+  - condition: { current: O, prior: any, conn_with_state: C, conn_ge: 3, conn_le: 3 }
     op:        { kind: TurnToState, operand: C }
   
   - condition: { current: C, prior: any, conn_with_state: C, conn_le: 1 }
-    op:        { kind: TurnToState, operand: A }
+    op:        { kind: TurnToState, operand: O }
   
   - condition: { current: C, prior: any, conn_with_state: C, conn_ge: 4 }
-    op:        { kind: TurnToState, operand: A }
+    op:        { kind: TurnToState, operand: O }
 
   - condition: { current: D, prior: D, conn_with_state: C, conn_ge: 1, conn_le: 1 }
     op:        { kind: TurnToState, operand: E }

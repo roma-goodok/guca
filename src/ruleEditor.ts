@@ -17,6 +17,16 @@ export function getRuleEditorUiLabels(
   return { saveText: 'Save', insertLabel: 'Clone at:' };
 }
 
+export function getRuleEditorOpKindOptions(): Array<{ kind: OperationKindEnum; label: string }> {
+  return [
+    { kind: OperationKindEnum.TurnToState,             label: 'Turn to state' },
+    { kind: OperationKindEnum.GiveBirthConnected,      label: 'Birth (connected)' },
+    { kind: OperationKindEnum.TryToConnectWithNearest, label: 'Connect nearest' },
+    { kind: OperationKindEnum.DisconnectFrom,          label: 'Disconnect from' },
+    { kind: OperationKindEnum.Die,                     label: 'Die' },
+  ];
+}
+
 export interface RuleEditorDeps {
   // Simulation control (owned by main.ts)
   pauseForEditor(): void;   // called when opening modal
@@ -211,18 +221,8 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     fillStates(d.connWithStateSel);
 
     // Operation kinds: canonical values, shorter visible labels (reduces dropdown width)
-    d.opKindSel.innerHTML = '';
-    const kindOptions: Array<{ kind: OperationKindEnum; label: string }> = [
-      { kind: OperationKindEnum.TurnToState,             label: 'Turn to state' },
-      { kind: OperationKindEnum.GiveBirthConnected,      label: 'Birth (connected)' },
-      { kind: OperationKindEnum.GiveBirth,               label: 'Birth' },
-      { kind: OperationKindEnum.TryToConnectWithNearest, label: 'Connect nearest' },
-      { kind: OperationKindEnum.TryToConnectWith,        label: 'Connect all' },
-      { kind: OperationKindEnum.DisconnectFrom,          label: 'Disconnect from' },
-      { kind: OperationKindEnum.Die,                     label: 'Die' },
-    ];
-
-    for (const k of kindOptions) {
+    d.opKindSel.innerHTML = '';    
+    for (const k of getRuleEditorOpKindOptions()) {
       const value = mapOperationKindToString(k.kind);
       const o = document.createElement('option');
       o.value = value;
@@ -422,6 +422,7 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     editorState = { mode, index };
 
     const d = dom();
+    Array.from(d.opKindSel.querySelectorAll('option[data-legacy="1"]')).forEach(o => o.remove());
     const count = deps.getRuleItems().length;
     const startTok = deps.getStartStateToken();
 
@@ -468,7 +469,17 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
       setIntField(d.parGeInput, it.condition.parentsCount_GE);
       setIntField(d.parLeInput, it.condition.parentsCount_LE);
 
-      d.opKindSel.value = mapOperationKindToString(it.operation.kind);
+      
+      const kindValue = mapOperationKindToString(it.operation.kind);
+      // If a loaded genome contains a legacy kind we don't show by default, keep it losslessly.
+      if (!Array.from(d.opKindSel.options).some(o => o.value === kindValue)) {
+        const opt = document.createElement('option');
+        opt.value = kindValue;
+        opt.text = `Legacy: ${kindValue}`;
+        opt.setAttribute('data-legacy', '1');
+        d.opKindSel.insertBefore(opt, d.opKindSel.firstChild);
+      }
+      d.opKindSel.value = kindValue;
       d.opOperandSel.value = toStateToken(it.operation.operandNodeState);
 
       d.insertIndexInput.value = String(Math.min(count + 1, index + 2));

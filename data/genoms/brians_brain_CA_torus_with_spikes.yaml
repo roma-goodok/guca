@@ -23,20 +23,20 @@ machine:
 init_graph:
   # Brian's Brain Cellular Automaton (https://en.wikipedia.org/wiki/Brian%27s_Brain)
   # on a torus (rectangular grid) substrate with Moore (8-neighborhood).
-  # States: A=off, B=on, C=dying.
+  # States: O,=off, B=on, C=dying.
   # R=10, C=20, wrapped in both directions. Every node degree=8 (asserted).
   # Node id = row*C + col + 1.
   nodes: [
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, B, B, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, B, B, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, B, B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, B, B, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, B, B, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, B, B, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O
   ]
 
   edges:
@@ -843,22 +843,22 @@ init_graph:
 
 rules:
   # Brian's Brain:
-  # 1) off (A) -> on (B) if exactly 2 "on" neighbors (B)
-  - condition: { current: A, prior: any, conn_with_state: B, conn_ge: 2, conn_le: 2 }
+  # 1) off (O) -> on (B) if exactly 2 "on" neighbors (B)
+  - condition: { current: O, prior: any, conn_with_state: B, conn_ge: 2, conn_le: 2 }
     op:        { kind: TurnToState, operand: B }
 
   # 2) on (B) -> dying (C) unconditionally
   - condition: { current: B, prior: any }
     op:        { kind: TurnToState, operand: C }
 
-  # 3) dying (C) -> off (A) unconditionally
+  # 3) dying (C) -> off (O) unconditionally
   - condition: { current: C, prior: any }
-    op:        { kind: TurnToState, operand: A }
+    op:        { kind: TurnToState, operand: O }
   
   # spikes:
   - enabled: true
     condition:
-      current: A
+      current: O
       prior: C
       conn_ge: 8
       conn_le: 8

@@ -1636,14 +1636,67 @@ function renderPaletteGrid() {
 
   const size = PALETTE16.length;
 
+  function slotLetterLabel(idx: number): string {
+    // Slot 0 corresponds to NodeState.Ignored (=0) in your enum; user wants "Unknown" there.
+    if (idx === 0) return 'Unknown';
+
+    const states = COLOR_SLOT_STATES[idx] || [];
+    const letters = states
+      .filter(s => s >= NodeState.A && s <= NodeState.Z)
+      .sort((a, b) => Number(a) - Number(b));
+
+    if (letters.length === 0) return '';
+
+    // First letter only (smallest NodeState that maps to this slot)
+    const first = Number(letters[0]);
+    return String.fromCharCode(64 + first); // 1->A, 2->B, ...
+  }
+
+
+  function pickTextColorForBg(css: string): string {
+    const rgb = d3.color(css)?.rgb();
+    if (!rgb) return '#111827';
+    const lum = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+    return lum < 140 ? '#ffffff' : '#111827';
+  }
+
+
   for (let idx = 0; idx < size; idx++) {
     // Use a button so it’s fully clickable, but keep the original .palette-chip look.
     const cell = document.createElement('button');
     cell.type = 'button';
     cell.className = 'palette-chip';
-    cell.style.background = getPaletteSlotColor(idx);
+    const css = getPaletteSlotColor(idx);
+    cell.style.background = css;
     cell.style.cursor = 'pointer';
-    cell.title = `#${idx} — click to change color`;
+
+    // Centered label (static)
+    cell.style.position = 'relative';
+    const label = document.createElement('span');
+    label.textContent = slotLetterLabel(idx); // e.g. "A/Q"
+    label.style.position = 'absolute';
+    label.style.inset = '0';
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.justifyContent = 'center';
+    label.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+    label.style.fontSize = '12px';
+    label.style.fontWeight = '700';
+    label.style.letterSpacing = '0.2px';
+    label.style.color = pickTextColorForBg(css);
+    label.style.textShadow = '0 1px 2px rgba(0,0,0,0.35)';
+    label.style.pointerEvents = 'none';
+    label.style.userSelect = 'none';
+    cell.appendChild(label);
+
+    // Tooltip: include slot mapping + RGB in decimal
+    const rgb = d3.color(css)?.rgb();
+    const rgbText = rgb ? `(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})` : '(?, ?, ?)';
+    const statesText = (COLOR_SLOT_STATES[idx] || [])
+      .map(s => nodeStateLetter(s))
+      .join(', ');
+    cell.title = `#${idx} (States: ${statesText} — RGB ${rgbText} — click to change color`;
+
 
     // Hidden native color input; we just trigger it from the tile.
     const picker = document.createElement('input');
@@ -1715,9 +1768,10 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
   const items = gumMachine.getRuleItems();
   const MAX = 60;
 
+
   if (board) {
     const geneInspectorBody = document.getElementById('gene-inspector-body') as HTMLDivElement | null;
-    const defaultGI = 'Hover a rule tile to see its description. Click a tile to enable/disable that rule.';
+    const defaultGI = 'Hover a rule tile to see its description. Click a tile to edit that rule.';
     if (geneInspectorBody && !geneInspectorBody.textContent) {
       geneInspectorBody.textContent = defaultGI;
     }
@@ -1751,8 +1805,8 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
         el.addEventListener('mouseenter', () => {
           const it = items[idx] ?? gumMachine.getRuleItems()[idx];
           if (!it || !geneInspectorBody) return;
-          geneInspectorBody.textContent =
-            `${describeRuleHuman(it)} — Click to ${it.isEnabled ? 'disable' : 'enable'}.`;
+          const status = it.isEnabled ? 'Enabled' : 'Disabled';
+          geneInspectorBody.textContent = `${describeRuleHuman(it)} — ${status}. Click to edit.`;
         });
 
         el.addEventListener('mouseleave', () => {

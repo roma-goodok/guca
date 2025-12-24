@@ -1,10 +1,10 @@
 machine:
   transcription: resettable
   count_compare: range
-  max_vertices: 200
+  max_vertices: 2500
   max_steps: -1
   nearest_search:
-    max_depth: 3
+    max_depth: 2
     tie_breaker: stable
     connect_all: true
   maintain_single_component: false
@@ -20,22 +20,22 @@ machine:
       others: 8
   reseed_isolated_A: true
 init_graph:  
-  # Rectangle quad mesh (4-neighbor grid), open boundaries.
+ # Rectangle quad mesh (4-neighbor grid), open boundaries.
   # L=10, W=20. Node id = row*W + col + 1.
   # Hole cells are marked with '-' and are NOT connected by edges (degree 0).
-  # Hole (0-based): r0=4, c0=9, h=2, w=2. Set h=0 or w=0 for no hole.
+  # Hole (0-based): r0=4, c0=9, h=0, w=0. Set h=0 or w=0 for no hole.
 
   nodes: [
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, -, -, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, -, -, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, Z, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, D, C, B, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y,
+    X, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, Y
   ]
 
   edges:
@@ -175,7 +175,9 @@ init_graph:
     - [69, 70]
     - [69, 89]
     - [70, 71]
+    - [70, 90]
     - [71, 72]
+    - [71, 91]
     - [72, 73]
     - [72, 92]
     - [73, 74]
@@ -209,7 +211,12 @@ init_graph:
     - [87, 107]
     - [88, 89]
     - [88, 108]
+    - [89, 90]
     - [89, 109]
+    - [90, 91]
+    - [90, 110]
+    - [91, 92]
+    - [91, 111]
     - [92, 93]
     - [92, 112]
     - [93, 94]
@@ -243,7 +250,12 @@ init_graph:
     - [107, 127]
     - [108, 109]
     - [108, 128]
+    - [109, 110]
     - [109, 129]
+    - [110, 111]
+    - [110, 130]
+    - [111, 112]
+    - [111, 131]
     - [112, 113]
     - [112, 132]
     - [113, 114]
@@ -401,16 +413,6 @@ init_graph:
 
 
 
-rules:
-  # Birth (B3): dead cell (A) with exactly 3 live neighbors (B) becomes live (B)
-  - condition: { current: A, prior: any, conn_with_state: B, conn_ge: 3, conn_le: 3 }
-    op:        { kind: TurnToState, operand: B }
-
-  # Death by underpopulation: live cell (B) with 0–1 live neighbors dies -> A
-  - condition: { current: B, prior: any, conn_with_state: B, conn_le: 1 }
-    op:        { kind: TurnToState, operand: A }
-
-  # Death by overpopulation: live cell (B) with 4–8 live neighbors dies -> A
-  - condition: { current: B, prior: any, conn_with_state: B, conn_ge: 4 }
-    op:        { kind: TurnToState, operand: A }
-
+rules:  
+  - condition: { current: Z, prior: any, conn_ge: 4, conn_le: 4 }
+    op:        { kind: Die}
