@@ -3,6 +3,8 @@ import ForceGraph3D, { ForceGraph3DInstance } from '3d-force-graph';
 import { GUMGraph, GUMNode, NodeState } from './gum';
 import { edgeColorByStates, getVertexRenderColor } from './utils';
 import { buildGraphDataFromGum } from './graphData';
+import * as THREE from 'three';
+
 
 export interface Graph3DController {
   ensure(container: HTMLElement): void;
@@ -12,7 +14,9 @@ export interface Graph3DController {
   resume(): void;
   destroy(): void;
   onNodeHover(handler: (node?: GUMNode) => void): void;
+  setGradientEdges(on: boolean): void;
 }
+
 
 type InternalLink = { source: number; target: number };
 
@@ -79,16 +83,26 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
           hoverHandler(gNode ?? undefined);
         });
 
+      apply3DLinkRendering(false);
       // Initial empty data; positions will be filled once we sync
       fg.graphData(data);
-      fg.cooldownTicks(120);
+      fg.cooldownTicks(120);      
+
     }
 
     resize();
   }
 
+  function setGradientEdges(on: boolean) {
+    gradientEdgesEnabled = !!on;
+    apply3DLinkRendering(true);
+  }
+
+
   const BIRTH3D_SPAWN_BASE_R = 45;
   const BIRTH3D_SPAWN_JITTER_R = 18;
+
+
 
   function pickBirthAnchorId3D(child: GUMNode): number | null {
     const hinted = child.bornFromId;
@@ -171,9 +185,15 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
 
     const gumEdges = gumGraph.getEdges();
     data.links.length = 0;
+
     for (const e of gumEdges) {
-      data.links.push({ source: e.source.id, target: e.target.id });
+      const a = e.source.id;
+      const b = e.target.id;
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      data.links.push({ source: lo, target: hi });
     }
+
 
     // Apply incremental update
     fg.graphData(data);
@@ -210,6 +230,93 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
     hoverHandler = handler;
   }
 
+  let gradientEdgesEnabled = true;
+
+  function apply3DLinkRendering(refresh: boolean) {
+    if (!fg) return;
+
+    if (gradientEdgesEnabled) {
+      // Make default links be lines (not cylinders) so same-state edges stay lightweight.
+      fg.linkWidth(0);
+
+      (fg as any).linkThreeObject((link: any) => {
+        const srcId = typeof link.source === 'object' ? Number(link.source.id) : Number(link.source);
+        const tgtId = typeof link.target === 'object' ? Number(link.target.id) : Number(link.target);
+
+        const srcState =
+          typeof link.source === 'object' ? Number(link.source.state) : Number(nodeById.get(srcId)?.state);
+        const tgtState =
+          typeof link.target === 'object' ? Number(link.target.state) : Number(nodeById.get(tgtId)?.state);
+
+        // Optimization: same state => use default solid link
+        if (!Number.isFinite(srcState) || !Number.isFinite(tgtState) || srcState === tgtState) return false;
+
+        const c0 = new THREE.Color(getVertexRenderColor(srcState as NodeState));
+        const c1 = new THREE.Color(getVertexRenderColor(tgtState as NodeState));
+        const colors = new Float32Array([...c0.toArray(), ...c1.toArray()]);
+
+        const material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 1 });
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2 * 3), 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        return new THREE.Line(geometry, material);
+      });
+
+      (fg as any).linkPositionUpdate((line: any, { start, end }: any, link: any) => {
+        const geom = line?.geometry;
+        const posAttr = geom?.getAttribute?.('position');
+        if (!posAttr || posAttr.count !== 2) return false;
+
+        const dx = (end.x || 0) - (start.x || 0);
+        const dy = (end.y || 0) - (start.y || 0);
+        const dz = (end.z || 0) - (start.z || 0);
+        const lineLen = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        if (!(lineLen > 0)) return false;
+
+        // Trim so the line touches node surfaces (same trick as the official example).
+        const r = (fg as any).nodeRelSize?.() ?? 0;
+        const t0 = Math.min(0.49, r / lineLen);
+        const t1 = Math.max(0.51, 1 - r / lineLen);
+
+        const coords = [t0, t1]
+          .map(t => [start.x + dx * t, start.y + dy * t, start.z + dz * t])
+          .flat();
+
+        (posAttr.array as Float32Array).set(coords);
+        posAttr.needsUpdate = true;
+
+        // Keep gradient colors up-to-date if palette overrides change
+        const colorAttr = geom.getAttribute?.('color');
+        if (colorAttr && colorAttr.count === 2) {
+          const sState =
+            typeof link.source === 'object' ? Number(link.source.state) : Number(nodeById.get(Number(link.source))?.state);
+          const tState =
+            typeof link.target === 'object' ? Number(link.target.state) : Number(nodeById.get(Number(link.target))?.state);
+
+          if (Number.isFinite(sState) && Number.isFinite(tState)) {
+            const c0 = new THREE.Color(getVertexRenderColor(sState as NodeState));
+            const c1 = new THREE.Color(getVertexRenderColor(tState as NodeState));
+            (colorAttr.array as Float32Array).set([...c0.toArray(), ...c1.toArray()]);
+            colorAttr.needsUpdate = true;
+          }
+        }
+
+        return true;
+      });
+    } else {
+      // Restore your original look
+      fg.linkWidth(2);
+
+      // Disable custom link objects/updates
+      (fg as any).linkThreeObject(undefined);
+      (fg as any).linkPositionUpdate(undefined);
+    }
+
+    if (refresh) fg.graphData(data);
+  }
+
+
   return {
     ensure,
     syncFromGum,
@@ -218,5 +325,6 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
     resume,
     destroy,
     onNodeHover,
+    setGradientEdges
   };
 }

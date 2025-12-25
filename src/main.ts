@@ -34,6 +34,8 @@ import { createGraph3DController } from './graph3d';
 import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
 import { createRuleEditorController } from './ruleEditor';
 import { formatNodeInspectorText } from './nodeInspector';
+import { edgeGradientId, shouldUseGradientEdge } from './edgeGradients';
+
 
 
 
@@ -375,6 +377,22 @@ const maintainChk       = document.getElementById('maintain-single-component') a
 const orphanCleanupChk  = document.getElementById('orphan-cleanup-checkbox') as HTMLInputElement | null;
 const reseedIsolatedACheckbox = document.getElementById('reseed-isolated-a-checkbox') as HTMLInputElement | null;
 
+const gradientEdgesChk = document.getElementById('gradient-edges-checkbox') as HTMLInputElement | null;
+let gradientEdgesEnabled = gradientEdgesChk ? !!gradientEdgesChk.checked : true;
+
+gradientEdgesChk?.addEventListener('change', () => {
+  gradientEdgesEnabled = !!gradientEdgesChk.checked;
+
+  // 3D uses its own renderer; keep it in sync.
+  graph3D.setGradientEdges?.(gradientEdgesEnabled);
+
+  // 2D gradients can create lots of defs; clean them up when switching off.
+  if (!gradientEdgesEnabled) clearEdgeGradients();
+
+  update();
+});
+
+
 const autoCenterChk = document.getElementById('auto-center-checkbox') as HTMLInputElement | null;
 const autoScaleChk  = document.getElementById('auto-scale-checkbox')  as HTMLInputElement | null;
 
@@ -452,6 +470,46 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   });
 
 (svg as any).call(zoomBehavior as any);
+
+const svgDefs = svg.append('defs');
+
+const edgeGradientCache = new Map<
+  string,
+  d3.Selection<SVGLinearGradientElement, unknown, null, undefined>
+>();
+
+function getOrCreateEdgeGradient(id: string) {
+  let g = edgeGradientCache.get(id);
+  if (g) return g;
+
+  g = svgDefs.append('linearGradient')
+    .attr('id', id)
+    .attr('gradientUnits', 'userSpaceOnUse');
+
+  g.append('stop').attr('offset', '0%');
+  g.append('stop').attr('offset', '100%');
+
+  edgeGradientCache.set(id, g);
+  return g;
+}
+
+function syncEdgeGradientDefs(needed: Set<string>) {
+  // Remove unused
+  for (const [id, g] of edgeGradientCache) {
+    if (!needed.has(id)) {
+      g.remove();
+      edgeGradientCache.delete(id);
+    }
+  }
+  // Create missing
+  for (const id of needed) getOrCreateEdgeGradient(id);
+}
+
+function clearEdgeGradients() {
+  for (const g of edgeGradientCache.values()) g.remove();
+  edgeGradientCache.clear();
+}
+
 
 /* =========================================================================
    5) CAMERA & VIEWPORT HELPERS
@@ -1241,6 +1299,7 @@ function setViewMode(mode: ViewMode) {
     threeContainer.hidden = false;
 
     graph3D.ensure(threeContainer);
+    graph3D.setGradientEdges?.(gradientEdgesEnabled);
     graph3D.resize();
     graph3D.syncFromGum(true);  // includes cooldown + zoomToFit
     graph3D.resume();
@@ -1461,6 +1520,49 @@ function seedNewNodePosition2D(newNode: Node, anchor: Node) {
 }
 
 
+function linkSolidStroke(d: Link): string {
+  const sNode = d.source as Node;
+  const tNode = d.target as Node;
+
+  const sG = gumGraph.getNodeById(sNode.id);
+  const tG = gumGraph.getNodeById(tNode.id);
+
+  const base = edgeColorByStates(sNode.state, tNode.state);
+  const f = Math.max(sG?.fade ?? 0, tG?.fade ?? 0);
+  return mixWithBlack(base, f);
+}
+
+function updateLinkPaint(el: SVGLineElement, d: Link, p: { x1: number; y1: number; x2: number; y2: number }) {
+  const sNode = d.source as Node;
+  const tNode = d.target as Node;
+
+  const useGrad = shouldUseGradientEdge(gradientEdgesEnabled, Number(sNode.state), Number(tNode.state));
+  if (!useGrad) {
+    el.setAttribute('stroke', linkSolidStroke(d));
+    return;
+  }
+
+  const gid = edgeGradientId(sNode.id, tNode.id);
+  const grad = getOrCreateEdgeGradient(gid);
+
+  // Match gradient vector to the actual edge direction
+  grad.attr('x1', p.x1).attr('y1', p.y1).attr('x2', p.x2).attr('y2', p.y2);
+
+  // Endpoint colors (include per-node fade)
+  const sG = gumGraph.getNodeById(sNode.id);
+  const tG = gumGraph.getNodeById(tNode.id);
+
+  const c0 = mixWithBlack(getVertexRenderColor(sNode.state), sG?.fade ?? 0);
+  const c1 = mixWithBlack(getVertexRenderColor(tNode.state), tG?.fade ?? 0);
+
+  const stops = grad.selectAll<SVGStopElement, unknown>('stop');
+  stops.filter((_x, i) => i === 0).attr('stop-color', c0);
+  stops.filter((_x, i) => i === 1).attr('stop-color', c1);
+
+  el.setAttribute('stroke', `url(#${gid})`);
+}
+
+
 function update() {
   const gumNodes = gumGraph.getNodes();
   const gumEdges = gumGraph.getEdges();
@@ -1480,20 +1582,21 @@ function update() {
   });
 
   links = gumEdges.map(gumEdge => {
-    const sourceNode = nodes.find(node => node.id === gumEdge.source.id) as Node;
-    const targetNode = nodes.find(node => node.id === gumEdge.target.id) as Node;
+    const aId = gumEdge.source.id;
+    const bId = gumEdge.target.id;
+    const lo = Math.min(aId, bId);
+    const hi = Math.max(aId, bId);
+
+    const sourceNode = nodes.find(node => node.id === lo) as Node;
+    const targetNode = nodes.find(node => node.id === hi) as Node;
     return { source: sourceNode, target: targetNode };
   });
 
+
   // NOTE: use a stable undirected key so edge identity doesn't flip
-  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")
-    .data(links, d => {
-      const s = (d.source as Node).id;
-      const t = (d.target as Node).id;
-      const a = Math.min(s, t);
-      const b = Math.max(s, t);
-      return `${a}-${b}`;
-    });
+  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")    
+    .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
+
 
   const linkEnter = link.enter().append("line")
     .attr("class", "link")
@@ -1501,6 +1604,18 @@ function update() {
 
   // IMPORTANT: merged selection = enter + update
   const mergedLinks = linkEnter.merge(link);
+
+  if (gradientEdgesEnabled) {
+    const needed = new Set<string>();
+    for (const l of links) {
+      const s = l.source as Node;
+      const t = l.target as Node;
+      if (s.state !== t.state) needed.add(edgeGradientId(s.id, t.id));
+    }
+    syncEdgeGradientDefs(needed);
+  } else {
+    clearEdgeGradients();
+  }
 
   const linkStroke = (d: Link) => {
     const s = gumGraph.getNodeById((d.source as Node).id);
@@ -1511,12 +1626,19 @@ function update() {
   };
 
   // Set initial geometry/stroke immediately (so it looks right right away)
-  mergedLinks
-    .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
-    .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
-    .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-    .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-    .attr("stroke", linkStroke);
+  mergedLinks.each(function(d) {
+    const p = adjustForRadius(d.source as Node, d.target as Node);
+    const el = this as SVGLineElement;
+    el.setAttribute('x1', String(p.x1));
+    el.setAttribute('y1', String(p.y1));
+    el.setAttribute('x2', String(p.x2));
+    el.setAttribute('y2', String(p.y2));
+    updateLinkPaint(el, d, p);
+  });
+
+
+  
+
 
   link.exit().remove();
 
@@ -1592,12 +1714,16 @@ function update() {
       .text(d => getNodeDisplayText(d.state, d.id, config.debug));
 
     // IMPORTANT: update merged links (enter+update), not only the update selection
-    mergedLinks
-      .attr("x1", d => adjustForRadius(d.source as Node, d.target as Node).x1)
-      .attr("y1", d => adjustForRadius(d.source as Node, d.target as Node).y1)
-      .attr("x2", d => adjustForRadius(d.source as Node, d.target as Node).x2)
-      .attr("y2", d => adjustForRadius(d.source as Node, d.target as Node).y2)
-      .attr("stroke", linkStroke);
+    mergedLinks.each(function(d) {
+      const p = adjustForRadius(d.source as Node, d.target as Node);
+      const el = this as SVGLineElement;
+      el.setAttribute('x1', String(p.x1));
+      el.setAttribute('y1', String(p.y1));
+      el.setAttribute('x2', String(p.x2));
+      el.setAttribute('y2', String(p.y2));
+      updateLinkPaint(el, d, p);
+    });
+
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);
