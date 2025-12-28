@@ -1,25 +1,86 @@
 // utils.ts
 import { NodeState, OperationKindEnum, GUMNode, RuleItem } from './gum';
 
-// Default palette for node states (used when no per-state override is defined)
+// src/utils.ts
+
 export const DEFAULT_PALETTE16: string[] = [
-  'lightGray',     // 0
-  'pink',          // 1
-  'red',           // 2
-  'orangeRed',     // 3
-  'orange',        // 4
-  'violet',        // 5
-  'yellow',        // 6
-  'lightGreen',    // 7
-  'green',         // 8
-  'lightSeaGreen', // 9
-  'seaGreen',      // 10
-  'lightBlue',     // 11
-  'blue',          // 12
-  'violet',        // 13
-  'lightCyan',     // 14
-  'violet',        // 15
+  '#d3d3d3', // 0  Unknown (and "any")
+  '#f8a0a0', // 1  A, P
+  '#dc3433', // 2  B, Q
+  '#f9a223', // 3  C, R
+  '#c3dc07', // 4  D, S
+  '#2d8c2f', // 5  E, T
+  '#78ddf2', // 6  F, U
+  '#203fd9', // 7  G, V
+  '#7c4dea', // 8  H, W
+  '#81661e', // 9  I, X
+  '#71d86f', // 10 J, Y
+  '#fff9b3', // 11 K, Z
+  '#fb7fe4', // 12 L
+  '#b287ca', // 13 M
+  '#e0ffff', // 14 N
+  '#202122', // 15 O
 ];
+
+// Single source of truth: state -> palette slot [0..15]
+export function stateToPaletteIndex(state: NodeState): number {
+  const s = Number(state);
+
+  // Slot 0 reserved for Unknown and meta/wildcard states
+  if (state === NodeState.Unknown || state === NodeState.Ignored || s <= 0) return 0;
+
+  // A..Z => 1..15 cycling (15 slots), so P wraps to slot 1 => (A,P)
+  if (state >= NodeState.A && state <= NodeState.Z) {
+    const offset = s - Number(NodeState.A); // A->0, B->1, ...
+    return 1 + (offset % 15);
+  }
+
+  // Fallback
+  return 0;
+}
+
+function tryParseHexColor(css: string): { r: number; g: number; b: number } | null {
+  const t = String(css || '').trim();
+  const m6 = /^#([0-9a-f]{6})$/i.exec(t);
+  if (m6) {
+    const hex = m6[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return { r, g, b };
+  }
+  const m3 = /^#([0-9a-f]{3})$/i.exec(t);
+  if (m3) {
+    const h = m3[1];
+    const r = parseInt(h[0] + h[0], 16);
+    const g = parseInt(h[1] + h[1], 16);
+    const b = parseInt(h[2] + h[2], 16);
+    return { r, g, b };
+  }
+  return null;
+}
+
+function pickTextColorForBg(css: string): 'white' | 'black' {
+  const rgb = tryParseHexColor(css);
+  if (!rgb) return 'black';
+  const lum = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+  return lum < 140 ? 'white' : 'black';
+}
+
+export function getVertexRenderColor(state: NodeState): string {
+  const override = getStateColorOverride(state);
+  if (override) return override;
+
+  const paletteSize = DEFAULT_PALETTE16.length;
+  const idx0 = stateToPaletteIndex(state);
+  const idx = ((idx0 % paletteSize) + paletteSize) % paletteSize;
+  return DEFAULT_PALETTE16[idx] ?? '#808080';
+}
+
+export function getVertexRenderTextColor(state: NodeState): string {
+  return pickTextColorForBg(getVertexRenderColor(state));
+}
+
 
 // Backwards-compatible alias
 export const PALETTE16 = DEFAULT_PALETTE16;
@@ -95,29 +156,6 @@ export function mapOperationKind(kind: string): OperationKindEnum {
     case 'GiveBirth': return OperationKindEnum.GiveBirth;
     default: throw new Error(`Unknown operation kind: ${kind}`);
   }
-}
-
-  
-
-export function getVertexRenderColor(state: NodeState): string {
-  const override = getStateColorOverride(state);
-  if (override) return override;
-
-  const paletteSize = DEFAULT_PALETTE16.length;
-  const idx = ((Number(state) % paletteSize) + paletteSize) % paletteSize; // robust modulo
-  return DEFAULT_PALETTE16[idx] ?? 'gray';
-}
-
-/**
- * Gets the text color used to render a vertex based on its state.
- * @param state - The state of the node.
- * @returns The text color corresponding to the node state.
- */
-export function getVertexRenderTextColor(state: NodeState): string {
-  const paletteSize = DEFAULT_PALETTE16.length;
-  const idx = ((Number(state) % paletteSize) + paletteSize) % paletteSize;
-  const darkColors = [2, 3, 5, 7, 0]; // indices in DEFAULT_PALETTE16 that are visually darker
-  return darkColors.includes(idx) ? 'white' : 'black';
 }
 
 

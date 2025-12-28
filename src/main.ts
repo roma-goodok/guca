@@ -21,7 +21,7 @@ import {
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
   Node, Link, edgeColorByStates, PALETTE16,
   getAllStateColorOverrides, setStateColorOverride,
-  replaceStateColorOverrides, getStateColorOverride,
+  replaceStateColorOverrides, getStateColorOverride, stateToPaletteIndex,
   computeGraphChangeMagnitude,
 } from './utils';
 
@@ -97,8 +97,7 @@ function persistColorOverrides() {
 // Restore any saved colors as early as possible
 loadColorOverridesFromStorage();
 
-// Map each palette slot (0..15) to the NodeState values that use it.
-// This lets one color tile control all states mapped to that slot.
+
 const COLOR_SLOT_STATES: NodeState[][] = (() => {
   const size = PALETTE16.length || 16;
   const slots: NodeState[][] = Array.from({ length: size }, () => []);
@@ -116,7 +115,8 @@ const COLOR_SLOT_STATES: NodeState[][] = (() => {
 
   const len = slots.length;
   candidates.forEach(s => {
-    const idx = ((Number(s) % len) + len) % len;
+    const idx0 = stateToPaletteIndex(s);
+    const idx = ((idx0 % len) + len) % len;
     slots[idx].push(s);
   });
 
@@ -430,7 +430,7 @@ maxVerticesInput?.addEventListener('change', onMaxVerticesUiChanged);
 nearestMaxDepthInput?.addEventListener('input', onNearestDepthUiChanged);
 nearestMaxDepthInput?.addEventListener('change', onNearestDepthUiChanged);
 
-
+const resetColorsBtn = document.getElementById('reset-colors-button') as HTMLButtonElement | null;
 
 
 /* =========================================================================
@@ -2319,6 +2319,15 @@ mobileSoundBtn?.addEventListener('click', () => {
   tickingSound.setEnabled(soundEnabled);
   syncSoundButtonsUI();
 });
+
+resetColorsBtn?.addEventListener('click', () => {
+  replaceStateColorOverrides({});
+  persistColorOverrides();
+  renderPaletteGrid();
+  update();
+  showToast('Colors reset to default.');
+});
+
 
 
 /* =========================================================================
