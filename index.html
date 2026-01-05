@@ -533,6 +533,19 @@
           </label>
           <input id="nearest-max-depth-input" type="number" value="2" min="0" step="1" style="width:120px">
         </div>
+
+        <div class="row" style="margin-top:8px">
+          <label for="topology-semantics-select"
+                title="Whether BFS/adjacency/neighbor-based operations use the step-start snapshot or the live graph during the step.">
+            Topology semantics:
+          </label>
+
+          <select id="topology-semantics-select" style="width:180px">
+            <option value="snapshot">snapshot (CA-like)</option>
+            <option value="live">live (legacy)</option>
+          </select>
+        </div>
+
        
         <div class="row" style="margin-top:8px">
           <label><input type="checkbox" id="orphan-cleanup-checkbox"> Auto-dissolve detached subgraphs</label>

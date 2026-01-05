@@ -10,6 +10,7 @@ machine:
     connect_all: false    # false = choose 1; true = connect to all at minimal distance
   rng_seed: 42            # optional; if missing, engine will pick a default
   maintain_single_component: true
+  topology_semantics: live # legacy
 
 init_graph:
   nodes:

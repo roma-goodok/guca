@@ -13,7 +13,7 @@ import * as d3 from 'd3';
 import {
   GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState,
   RuleItem, OperationCondition, Operation, OperationKindEnum,
-  MachineCfg, TranscriptionWay, CountCompare
+  MachineCfg, TranscriptionWay, CountCompare, TopologySemantics
 } from './gum';
 
 import {
@@ -56,6 +56,7 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
     tie_breaker: 'stable',
     connect_all: false,
   },
+  topology_semantics: 'snapshot' as TopologySemantics,
   maintain_single_component: true,
   reseed_isolated_A: true,
 };
@@ -431,6 +432,14 @@ nearestMaxDepthInput?.addEventListener('input', onNearestDepthUiChanged);
 nearestMaxDepthInput?.addEventListener('change', onNearestDepthUiChanged);
 
 const resetColorsBtn = document.getElementById('reset-colors-button') as HTMLButtonElement | null;
+
+const topologySemanticsSel =
+  document.getElementById('topology-semantics-select') as HTMLSelectElement | null;
+
+topologySemanticsSel?.addEventListener('change', () => {
+  syncMachineSettingsFromUi();
+});
+
 
 
 /* =========================================================================
@@ -1202,6 +1211,9 @@ function buildMachineBlockFromRuntime(): any {
   if (ns) {
     base.nearest_search = { ...base.nearest_search, ...ns };
   }
+
+  base.topology_semantics =
+    (gumMachine as any).getTopologySemantics?.() ?? (base.topology_semantics ?? 'snapshot');
 
   return base;
 }
@@ -2195,6 +2207,14 @@ function syncMachineSettingsFromUi() {
     (gumMachine as any).setMaintainSingleComponent?.(on);
     machineBlock.maintain_single_component = on;
   }
+
+  if (topologySemanticsSel) {
+    const raw = String(topologySemanticsSel.value || 'snapshot');
+    const next = (raw === 'live' || raw === 'snapshot') ? raw : 'snapshot';
+    (gumMachine as any).setTopologySemantics?.(next);
+    machineBlock.topology_semantics = next;
+  }
+
 }
 
 
@@ -2204,6 +2224,11 @@ function refreshMachineSettingsInputs() {
   if (nearestMaxDepthInput) {
     const ns = (gumMachine as any).getNearestSearchCfg?.();
     nearestMaxDepthInput.value = String(ns?.max_depth ?? 2);
+  }
+
+  if (topologySemanticsSel) {
+    const v = (gumMachine as any).getTopologySemantics?.() ?? 'snapshot';
+    topologySemanticsSel.value = (v === 'live' || v === 'snapshot') ? v : 'snapshot';
   }
 }
 
@@ -2327,6 +2352,8 @@ resetColorsBtn?.addEventListener('click', () => {
   update();
   showToast('Colors reset to default.');
 });
+
+
 
 
 

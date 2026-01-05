@@ -8,6 +8,10 @@ import { Graph } from 'graphlib';
 export type CountCompare = 'range' | 'exact';
 export type TranscriptionWay = 'resettable' | 'continuable';
 
+// - snapshot: use step-start topology for BFS / adjacency / neighbor-based ops (order-independent, CA-like)
+// - live:     use the current on-the-fly topology (legacy behavior)
+export type TopologySemantics = 'live' | 'snapshot';
+
 export interface NearestSearchCfg {
   max_depth: number;
   tie_breaker: 'stable' | 'random' | 'by_id' | 'by_creation';
@@ -29,6 +33,10 @@ export interface MachineCfg {
   max_steps: number;
   rng_seed?: number;
   nearest_search: NearestSearchCfg;
+
+  // NEW
+  topology_semantics?: TopologySemantics;
+
   maintain_single_component?: boolean;
   orphan_cleanup?: OrphanCleanupCfg;
   reseed_isolated_A?: boolean;
@@ -88,7 +96,7 @@ export class OperationCondition {
     public currentState: NodeState,
     public priorState: NodeState = NodeState.Ignored,
     public allConnectionsCount_GE: number = -1,
-    public allConnectionsCount_LE: number = -1,    
+    public allConnectionsCount_LE: number = -1,
     public parentsCount_GE: number = -1,
     public parentsCount_LE: number = -1,
     // NodeState.Ignored means "any" (count all connections).
@@ -156,7 +164,6 @@ export class GUMNode {
   public getSavedCurrentState(): NodeState {
     return this.savedCurrentState;
   }
-  
 }
 
 export class GUMGraph {
@@ -175,7 +182,7 @@ export class GUMGraph {
 
   addNode(node: GUMNode) {
     this.graph.setNode(node.id.toString(), node);
-    if (node.id >= this.nextId) this.nextId = node.id + 1;  // NEW
+    if (node.id >= this.nextId) this.nextId = node.id + 1; // keep allocator monotonic
   }
 
   addEdge(source: GUMNode, target: GUMNode) {
@@ -188,8 +195,8 @@ export class GUMGraph {
   removeEdge(source: GUMNode, target: GUMNode) {
     if (this.graph.hasEdge(source.id.toString(), target.id.toString())) {
       this.graph.removeEdge(source.id.toString(), target.id.toString());
-      source.connectionsCount--;
-      target.connectionsCount--;
+      source.connectionsCount = Math.max(0, source.connectionsCount - 1);
+      target.connectionsCount = Math.max(0, target.connectionsCount - 1);
     }
   }
 
@@ -205,11 +212,18 @@ export class GUMGraph {
   }
 
   removeMarkedNodes() {
-    this.getNodes().forEach(node => {
-      if (node.markedAsDeleted) {
-        this.graph.removeNode(node.id.toString());
+    // IMPORTANT: graphlib removes incident edges automatically, but we also maintain
+    // GUMNode.connectionsCount for UI. Keep it in sync.
+    const doomed = this.getNodes().filter(n => n.markedAsDeleted);
+
+    for (const n of doomed) {
+      const nbIds = (this.graph.neighbors(n.id.toString()) || []) as string[];
+      for (const nbId of nbIds) {
+        const nb = this.graph.node(nbId) as GUMNode | undefined;
+        if (nb) nb.connectionsCount = Math.max(0, (nb.connectionsCount ?? 0) - 1);
       }
-    });
+      this.graph.removeNode(n.id.toString());
+    }
   }
 
   areNodesConnected(node1: GUMNode, node2: GUMNode): boolean {
@@ -243,7 +257,6 @@ export class GUMGraph {
     }
     return comps;
   }
-
 }
 
 // ----------------- Graph Unfolding Machine -----------------
@@ -257,6 +270,11 @@ export class GraphUnfoldingMachine {
   private iterations = 0;
   private rng: RNG;
 
+  // Step-start topology snapshot
+  // Used only when cfg.topology_semantics === 'snapshot'.
+  private topoSnapshotNeighbors: Map<number, number[]> = new Map();
+  private topoSnapshotAdj: Map<number, Set<number>> = new Map();
+
   constructor(private graph: GUMGraph, private cfg: MachineCfg) {
     this.ruleTable = new RuleTable();
     this.rng = new RNG(cfg?.rng_seed);
@@ -266,7 +284,6 @@ export class GraphUnfoldingMachine {
       this.graph.addNode(seed);
     }
 
-
     if (this.cfg.maintain_single_component === undefined) {
       (this.cfg as any).maintain_single_component = true;
     }
@@ -274,11 +291,16 @@ export class GraphUnfoldingMachine {
     if ((this.cfg as any).reseed_isolated_A === undefined) {
       (this.cfg as any).reseed_isolated_A = true;
     }
+
+    // NEW default
+    if ((this.cfg as any).topology_semantics === undefined) {
+      (this.cfg as any).topology_semantics = 'snapshot' as TopologySemantics;
+    }
   }
 
   public setMaxSteps(n: number) {
     (this as any).cfg.max_steps = Number.isFinite(n) ? Math.trunc(n) : this.getMaxSteps();
-  }  
+  }
 
   public enforceSingleComponentIfEnabled(): void {
     if (!this.cfg.maintain_single_component) return;
@@ -307,7 +329,6 @@ export class GraphUnfoldingMachine {
     this.graph.removeMarkedNodes();
   }
 
-
   public reachedMaxSteps(): boolean {
     return this.cfg.max_steps >= 0 && this.iterations >= this.cfg.max_steps;
   }
@@ -319,7 +340,7 @@ export class GraphUnfoldingMachine {
   public getOrphanCleanup(): OrphanCleanupCfg | undefined {
     return (this as any).cfg?.orphan_cleanup;
   }
-  
+
   public setOrphanCleanup(cfg: OrphanCleanupCfg) {
     (this.cfg as any).orphan_cleanup = cfg;
   }
@@ -340,6 +361,20 @@ export class GraphUnfoldingMachine {
     (this.cfg as any).reseed_isolated_A = !!on;
   }
 
+  // NEW: topology semantics
+  public getTopologySemantics(): TopologySemantics {
+    const v = (this.cfg as any).topology_semantics;
+    return (v === 'live' || v === 'snapshot') ? v : 'snapshot';
+  }
+
+  public setTopologySemantics(v: TopologySemantics) {
+    const next = (v === 'live' || v === 'snapshot') ? v : 'snapshot';
+    (this.cfg as any).topology_semantics = next;
+  }
+
+  private useSnapshotTopology(): boolean {
+    return this.getTopologySemantics() === 'snapshot';
+  }
 
   clearRuleTable() {
     this.ruleTable.clear();
@@ -375,8 +410,7 @@ export class GraphUnfoldingMachine {
     (this.cfg.nearest_search as any).max_depth = v;
   }
 
-
- private snapshotAllNodes() {
+  private snapshotAllNodes() {
     const nodes = this.graph.getNodes();
 
     // Pass 1: freeze state/parents and capture snapshot neighbor ids
@@ -386,9 +420,19 @@ export class GraphUnfoldingMachine {
       n.saveCurrentState();
       n.savedParents = n.parentsCount;
 
-      const nbs = this.graph.getNeighbors(n);
-      neighborIdsByNode.set(n.id, nbs.map(nb => nb.id));
+      const nbs = this.graph.getNeighbors(n)
+        .map(nb => nb.id)
+        .sort((a, b) => a - b);
+      neighborIdsByNode.set(n.id, nbs);
     }
+
+    // Store step-start topology snapshot (used when topology_semantics === 'snapshot')
+    this.topoSnapshotNeighbors = neighborIdsByNode;
+    const adj = new Map<number, Set<number>>();
+    for (const [id, nbs] of neighborIdsByNode) {
+      adj.set(id, new Set(nbs));
+    }
+    this.topoSnapshotAdj = adj;
 
     // Pass 2: compute degree + per-state neighbor counts from the snapshot
     for (const n of nodes) {
@@ -434,13 +478,13 @@ export class GraphUnfoldingMachine {
       for (let i = lo; i < hi; i++) {
         const it = items[i];
         if (!it.isEnabled) continue;
-        const c = it.condition;        
+        const c = it.condition;
         const currentOk = c.currentState === node.getSavedCurrentState() || c.currentState === NodeState.Ignored;
         const priorOk = c.priorState === NodeState.Ignored || c.priorState === node.priorState;
         const connCount = this.getSavedConnectionsCount(node, c.allConnectionsWithState ?? NodeState.Ignored);
         const connOk = this.matchInts(connCount, c.allConnectionsCount_GE, c.allConnectionsCount_LE);
         const parOk = this.matchInts(node.savedParents, c.parentsCount_GE, c.parentsCount_LE);
-        
+
         if (currentOk && priorOk && connOk && parOk) return it;
       }
       return null;
@@ -449,9 +493,44 @@ export class GraphUnfoldingMachine {
     return scan(start, items.length) ?? scan(0, start);
   }
 
+  private topoNeighborIds(id: number): number[] {
+    if (this.useSnapshotTopology()) {
+      return this.topoSnapshotNeighbors.get(id) ?? [];
+    }
+    const n = this.graph.getNodeById(id);
+    if (!n) return [];
+    return this.graph.getNeighbors(n)
+      .map(nb => nb.id)
+      .sort((a, b) => a - b);
+  }
+
+  private topoAreConnectedIds(aId: number, bId: number): boolean {
+    if (this.useSnapshotTopology()) {
+      return this.topoSnapshotAdj.get(aId)?.has(bId) ?? false;
+    }
+    const a = this.graph.getNodeById(aId);
+    const b = this.graph.getNodeById(bId);
+    if (!a || !b) return false;
+    return this.graph.areNodesConnected(a, b);
+  }
+
+  private safeAddEdgeById(aId: number, bId: number): void {
+    if (aId === bId) return;
+    const a = this.graph.getNodeById(aId);
+    const b = this.graph.getNodeById(bId);
+    if (!a || !b) return;
+    if (a.markedAsDeleted || b.markedAsDeleted) return;
+    this.graph.addEdge(a, b);
+  }
+
   private eligibleForNearest(u: GUMNode, v: GUMNode, required: NodeState): boolean {
     if (u === v) return false;
-    if (this.graph.areNodesConnected(u, v)) return false;
+    if (u.markedAsDeleted || v.markedAsDeleted) return false;
+
+    // IMPORTANT: adjacency check depends on topology semantics.
+    if (this.topoAreConnectedIds(u.id, v.id)) return false;
+
+    // Ignore newborns (created in this step)
     if (v.markedNew) return false;
 
     // Python parity: operand "any" (Ignored) or "Unknown" => no state filter
@@ -470,44 +549,49 @@ export class GraphUnfoldingMachine {
     const maxD = this.cfg.nearest_search.max_depth;
     if (!Number.isFinite(maxD) || maxD <= 0) return; // nothing to search
 
-    const q: Array<{ n: GUMNode; d: number }> = [{ n: node, d: 0 }];
-    const visited = new Set<GUMNode>([node]);
+    const q: Array<{ id: number; d: number }> = [{ id: node.id, d: 0 }];
+    const visited = new Set<number>([node.id]);
     let foundDepth: number | null = null;
-    const found: GUMNode[] = [];
+    const found: number[] = [];
 
     while (q.length) {
-      const { n, d } = q.shift()!;
+      const { id, d } = q.shift()!;
       if (foundDepth !== null && d > foundDepth) break;
 
-      if (d > 0 && d <= maxD && this.eligibleForNearest(node, n, state)) {
-        foundDepth = d; found.push(n); continue;
+      const cur = this.graph.getNodeById(id);
+      if (!cur) continue;
+
+      if (d > 0 && d <= maxD && this.eligibleForNearest(node, cur, state)) {
+        foundDepth = d;
+        found.push(id);
+        continue;
       }
 
       if (d < maxD) {
-        const nbs = this.graph.getEdges()
-          .filter(e => e.source === n || e.target === n)
-          .map(e => e.source === n ? e.target : e.source)
-          .filter(x => !visited.has(x))
-          .sort((a, b) => a.id - b.id);
-        nbs.forEach(nb => { visited.add(nb); q.push({ n: nb, d: d + 1 }); });
+        const nbIds = this.topoNeighborIds(id);
+        for (const nbId of nbIds) {
+          if (visited.has(nbId)) continue;
+          visited.add(nbId);
+          q.push({ id: nbId, d: d + 1 });
+        }
       }
     }
 
     if (found.length === 0) return;
 
     if (this.cfg.nearest_search.connect_all) {
-      found.forEach(v => this.graph.addEdge(node, v));
+      found.forEach(vId => this.safeAddEdgeById(node.id, vId));
       return;
     }
 
-    let pick: GUMNode;
+    let pickId: number;
     switch (this.cfg.nearest_search.tie_breaker) {
-      case 'random': pick = this.rng.choice(found); break;
-      default:       pick = found.slice().sort((a, b) => a.id - b.id)[0];
+      case 'random': pickId = this.rng.choice(found); break;
+      default:       pickId = found.slice().sort((a, b) => a - b)[0];
     }
-    this.graph.addEdge(node, pick);
-  }
 
+    this.safeAddEdgeById(node.id, pickId);
+  }
 
   private performOperation(node: GUMNode, operation: Operation) {
     switch (operation.kind) {
@@ -516,7 +600,7 @@ export class GraphUnfoldingMachine {
         break;
       case OperationKindEnum.GiveBirthConnected:
         this.giveBirthConnected(node, operation.operandNodeState);
-        break;      
+        break;
       case OperationKindEnum.DisconnectFrom:
         this.disconnectFrom(node, operation.operandNodeState);
         break;
@@ -560,22 +644,23 @@ export class GraphUnfoldingMachine {
 
   private disconnectFrom(node: GUMNode, state: NodeState) {
     // Remove edges from `node` to any neighbor whose *saved* state equals `state`.
-    const edgesToRemove = this.graph.getEdges().filter(edge => {
-      const other =
-        edge.source === node ? edge.target :
-        edge.target === node ? edge.source : null;
-      if (!other) return false;
-      if (other.markedNew) return false; // ignore newborns this step
+    // IMPORTANT: neighbor selection depends on topology semantics.
+    const nbIds = this.topoNeighborIds(node.id);
+
+    for (const nbId of nbIds) {
+      const other = this.graph.getNodeById(nbId);
+      if (!other) continue;
+      if (other.markedNew) continue; // ignore newborns this step
+
+      // Do not disconnect to already-dead nodes (they will be removed anyway)
+      if (other.markedAsDeleted) continue;
 
       const saved = (other.getSavedCurrentState?.() ?? other.state);
-      return saved === state;
-    });
-
-    edgesToRemove.forEach(edge => {
-      this.graph.removeEdge(edge.source, edge.target);
-    });
+      if (saved === state) {
+        this.graph.removeEdge(node, other);
+      }
+    }
   }
-
 
   private tryToConnectWith(node: GUMNode, state: NodeState) {
     const isWildcard =
@@ -583,21 +668,23 @@ export class GraphUnfoldingMachine {
 
     for (const other of this.graph.getNodes()) {
       if (other.id === node.id) continue;
-      if (this.graph.areNodesConnected(node, other)) continue;
       if (other.markedNew) continue;
+      if (other.markedAsDeleted) continue;
+
+      // IMPORTANT: adjacency check depends on topology semantics.
+      if (this.topoAreConnectedIds(node.id, other.id)) {
+        // In snapshot mode this means "already connected at step start".
+        // In live mode this means "already connected now".
+        continue;
+      }
 
       const saved = (other.getSavedCurrentState?.() ?? other.state);
       if (isWildcard || saved === state) {
-        this.graph.addEdge(node, other);
+        this.safeAddEdgeById(node.id, other.id);
       }
     }
   }
 
-
-
-  // Inside cleanupOrphansIfEnabled(), replace the fade block:
-
- 
   private cleanupOrphansIfEnabled(): void {
     const oc = this.cfg.orphan_cleanup;
     if (!oc?.enabled) return;
@@ -629,8 +716,8 @@ export class GraphUnfoldingMachine {
       others: oc.thresholds?.others ?? 10,
     };
     const F = {
-      size1: oc.fadeStarts?.size1 ?? (T.size1 - 2),   // 3
-      size2: oc.fadeStarts?.size2 ?? (T.size2 - 2),   // 5
+      size1: oc.fadeStarts?.size1 ?? (T.size1 - 2), // 3
+      size2: oc.fadeStarts?.size2 ?? (T.size2 - 2), // 5
       others: oc.fadeStarts?.others ?? (T.others - 2) // 8
     };
 
@@ -655,7 +742,7 @@ export class GraphUnfoldingMachine {
           n.fade = Math.min(1, k / denom);
         } else {
           n.fade = 0;
-        }        
+        }
       }
     });
   }
@@ -669,7 +756,7 @@ export class GraphUnfoldingMachine {
     if (maintain) return;
 
     const oc = this.cfg.orphan_cleanup;
-    if (oc?.enabled) return;  // only active when Auto-dissolve is OFF
+    if (oc?.enabled) return; // only active when Auto-dissolve is OFF
 
     const comps = this.graph.getConnectedComponents();
     if (!comps.length) return;
@@ -680,17 +767,15 @@ export class GraphUnfoldingMachine {
       const n = comp[0];
       if (n.state !== NodeState.A) continue;
 
-      // NEW: reseed *once* — only if it previously had parents
+      // reseed *once* — only if it previously had parents
       if (n.parentsCount <= 0) continue;
 
       n.parentsCount = 0;
-      n.priorState   = NodeState.Unknown;
-      n.orphanAge    = 0;
-      n.fade         = 0;
+      n.priorState = NodeState.Unknown;
+      n.orphanAge = 0;
+      n.fade = 0;
     }
   }
-
-
 
   runOneStep(): boolean {
     this.snapshotAllNodes();
@@ -698,7 +783,6 @@ export class GraphUnfoldingMachine {
 
     let didAnything = false;
     const nodesNow = this.graph.getNodes().slice().sort((a, b) => a.id - b.id);
-
 
     for (const node of nodesNow) {
       if (node.markedAsDeleted) continue;
@@ -719,7 +803,7 @@ export class GraphUnfoldingMachine {
     this.iterations++;
     this.cleanupOrphansIfEnabled();
     this.graph.removeMarkedNodes();
-    this.reseedIsolatedANodesIfEnabled(); 
+    this.reseedIsolatedANodesIfEnabled();
     this.enforceSingleComponentIfEnabled();
     return didAnything;
   }

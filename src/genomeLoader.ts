@@ -2,7 +2,7 @@
 import {
     GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState,
     MachineCfg, TranscriptionWay, CountCompare,
-    OperationCondition, Operation
+    OperationCondition, Operation, TopologySemantics,
   } from './gum';
   import { mapNodeState, mapOperationKind } from './utils';
   
@@ -128,6 +128,7 @@ import {
       max_vertices: Number(machineBlock?.max_vertices ?? 2000),
       max_steps: Number(machineBlock?.max_steps ?? 120),
       rng_seed: machineBlock?.rng_seed,
+      topology_semantics: (machineBlock?.topology_semantics ?? 'snapshot') as TopologySemantics,
       nearest_search: {
         max_depth: Number(machineBlock?.nearest_search?.max_depth ?? 2),
         tie_breaker: (machineBlock?.nearest_search?.tie_breaker ?? 'stable'),

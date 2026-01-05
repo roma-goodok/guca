@@ -9,6 +9,7 @@ machine:
     tie_breaker: stable   # stable | random | by_id | by_creation (default: stable)
     connect_all: false    # false = choose 1; true = connect to all at minimal distance 
   maintain_single_component: true
+  topology_semantics: live # legacy
 init_graph:
   nodes:
     - {state: A }

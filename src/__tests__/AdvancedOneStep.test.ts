@@ -130,11 +130,13 @@ test('advanced one-step (continuable + connect_all nearest + pre-seeded graph)',
     rng_seed: 42,
     nearest_search: { max_depth: 2, tie_breaker: 'stable', connect_all: true },
     maintain_single_component: false,
+    topology_semantics: 'live',
     orphan_cleanup: {
       enabled: true,
       thresholds: { size1: 10, size2: 14, others: 20 },
       fadeStarts: { size1: 3, size2: 5, others: 8 },
     },
+
   } as any;
 
   const m = new GraphUnfoldingMachine(g, mc);
