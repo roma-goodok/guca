@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 ## Project Snapshot
 - Project: **GUCA (Graph Unfolding Cellular Automata)** interactive visualization.
@@ -25,7 +25,9 @@ Avoid overly enthusiastic wording.
 
 ## Runbook
 - Install deps: `npm ci` (fallback: `npm install`)
+- Typecheck: `npm run typecheck`
 - Test: `npm test`
+- Full check: `npm run check`
 - Build: `npm run build`
 - Serve locally: `npm run start` (default `http://127.0.0.1:8080`)
 

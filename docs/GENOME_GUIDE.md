@@ -61,7 +61,7 @@ meta:
 
 ### Top-level keys
 - `machine`: engine config and extra runtime knobs
-- `init_graph`: initial nodes (edges are not currently exposed in the YAML format)
+- `init_graph`: initial nodes and optional undirected edges
 - `rules`: ordered list of `{ condition, op }`
 - `meta.activity_scheme` (optional): keeps only selected rules (useful for “introns”)
 
@@ -89,6 +89,7 @@ machine:
   max_vertices: 2000              # 0 = unlimited
   max_steps: 120                  # -1 = unlimited (UI autoplay)
   rng_seed: 123                   # used only when tie_breaker: random
+  topology_semantics: snapshot     # snapshot | live
 
   nearest_search:
     max_depth: 2                  # BFS depth limit
@@ -128,6 +129,11 @@ Used by the `TryToConnectWithNearest` operation:
   - `stable/by_id/by_creation`: lowest node id
   - `random`: RNG choice (`rng_seed`)
 
+### `topology_semantics`
+Controls which topology neighbor-based operations see during one simulation step:
+- `snapshot` (default): use the graph topology from the start of the step. This is more CA-like and order-independent.
+- `live`: use the graph topology as it changes during the step. This preserves behavior for some legacy genomes.
+
 ### `maintain_single_component`
 When enabled, the machine keeps only one connected component:
 - It chooses the component that contains the “oldest” node (lowest `parentsCount`), tie‑breaking by node id.
@@ -137,6 +143,8 @@ This is very useful to prevent the graph from splitting into multiple drifting i
 ### `orphan_cleanup` (Auto-dissolve detached subgraphs)
 If enabled (and `maintain_single_component` is false), detached components gradually “fade” and are deleted.
 The fade is purely visual; deletion happens when the component’s nodes exceed the configured age threshold.
+
+Loader default is `{ enabled: false }`. The interactive UI applies its own fallback enabled cleanup settings when a genome omits the `orphan_cleanup` block, so include this block explicitly when you need portable behavior.
 
 ### `reseed_isolated_A`
 If enabled, and only when:
@@ -297,4 +305,3 @@ Upload this YAML, press **Start**, and watch the “organism” grow.
   - enable **Maintain a single component**, or
   - enable **Auto-dissolve detached subgraphs**.
 - Use **⤓ Export** to save the exact genome + current settings after tweaking.
-

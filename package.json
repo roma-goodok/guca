@@ -4,6 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test",
     "build": "webpack --config webpack.config.js",
     "start": "http-server -c-1"
   },
@@ -15,7 +17,8 @@
     "3d-force-graph": "^1.79.0",
     "d3": "^7.9.0",
     "graphlib": "^2.1.8",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "three": "^0.181.1"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",

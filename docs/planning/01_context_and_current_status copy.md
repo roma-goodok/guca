@@ -1,12 +1,12 @@
 # Project Description
-VOGUE: Visualization of Ontogeny in Graph Unfolding Evolution
+GUCA: Graph Unfolding Cellular Automata
 
 
 ## Project Vision
-The purpose of the VOGUE project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) driven by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.
+The purpose of the GUCA project is to create an interactive web application for animated visualization of graph unfolding cellular automata (ontogeny) driven by a "program" calculated by a genetic algorithm, along with graph manipulation commands. Users should be able to interact with the graph, add and remove vertices and edges, and visualize the changes in real-time. The graph layout will be updated using a force-directed algorithm that can be extended to 3D.
 
 ## Main Idea
-The main idea behind VOGUE is to provide an interactive platform for visualizing the ontogeny of graph unfolding cellular automata based on a "program" calculated by a genetic algorithm. Users will be able to manipulate the graph and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata.
+The main idea behind GUCA is to provide an interactive platform for visualizing the ontogeny of graph unfolding cellular automata based on a "program" calculated by a genetic algorithm. Users will be able to manipulate the graph and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata.
 
 ## Requirements
 - Animated visualization of graph unfolding cellular automata based on a genetic algorithm.

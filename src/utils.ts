@@ -165,12 +165,22 @@ export function mapOperationKind(kind: string): OperationKindEnum {
  * @returns The corresponding NodeState enum value.
  */
 
-export function mapNodeState(state: string): NodeState {
-    if (state === 'any') return NodeState.Ignored;
-    if (state === 'Unknown') return NodeState.Unknown;
-    return NodeState[state as keyof typeof NodeState];
+export function isNodeStateValue(value: unknown): value is NodeState {
+    return typeof value === 'number'
+        && Number.isInteger(value)
+        && typeof (NodeState as any)[value] === 'string';
 }
-  
+
+export function mapNodeState(state: string): NodeState {
+    const token = String(state).trim();
+    if (token === 'any') return NodeState.Ignored;
+    if (token === 'Unknown') return NodeState.Unknown;
+
+    const mapped = NodeState[token as keyof typeof NodeState];
+    if (typeof mapped === 'number') return mapped as NodeState;
+
+    throw new Error(`Unknown node state: ${state}`);
+}
 
 export function getNodeDisplayText(state: NodeState, id: number, debug: boolean): string {
     let letter = '';
@@ -299,32 +309,20 @@ export function nodeStateLetter(s: NodeState): string {
   }
   
 export function describeRuleHuman(item: RuleItem): string {
-const c = item.condition, o = item.operation;
-const cur = nodeStateLetter(c.currentState);
-const prior = nodeStateLetter(c.priorState);
-const parts: string[] = [];
-const connWith = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
-const cPrefix = (connWith !== 'any') ? `c(${connWith})` : 'c';
-
-// degree/parents ranges
-const deg =
-    (c.allConnectionsCount_GE >= 0 ? `${cPrefix}≥${c.allConnectionsCount_GE}` : "") +
-    (c.allConnectionsCount_LE >= 0 ? `${(c.allConnectionsCount_GE>=0) ? "," : ""}${cPrefix}≤${c.allConnectionsCount_LE}` : "");
-const par =
-    (c.parentsCount_GE >= 0 ? `p≥${c.parentsCount_GE}` : "") +
-    (c.parentsCount_LE >= 0 ? `${(c.parentsCount_GE>=0) ? "," : ""}p≤${c.parentsCount_LE}` : "");
-
-if (deg) parts.push(deg);
-if (par) parts.push(par);
-
-const cond =
-    `if current=${cur}` +
-    (c.priorState !== NodeState.Ignored ? ` & prior=${prior}` : "") +
-    (parts.length ? ` & ${parts.join(" & ")}` : "");
-
-const opState = nodeStateLetter(o.operandNodeState);
-let act = "";
-switch (o.kind) {
+  const c = item.condition, o = item.operation;
+  const cur = nodeStateLetter(c.currentState);
+  const prior = nodeStateLetter(c.priorState);
+  const bits: string[] = [];
+  const connWith = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
+  const cPrefix = (connWith !== 'any') ? `c(${connWith})` : 'c';
+  if (c.allConnectionsCount_GE >= 0) bits.push(`${cPrefix}≥${c.allConnectionsCount_GE}`);
+  if (c.allConnectionsCount_LE >= 0) bits.push(`${cPrefix}≤${c.allConnectionsCount_LE}`);
+  if (c.parentsCount_GE >= 0) bits.push(`p≥${c.parentsCount_GE}`);
+  if (c.parentsCount_LE >= 0) bits.push(`p≤${c.parentsCount_LE}`);
+  const cond = `if current=${cur}${c.priorState !== NodeState.Ignored ? ` & prior=${prior}` : ''}${bits.length ? ` & ${bits.join(' & ')}` : ''}`;
+  const opState = nodeStateLetter(o.operandNodeState);
+  let act = "";
+  switch (o.kind) {
     case OperationKindEnum.TurnToState: act = `turn to ${opState}`; break;
     case OperationKindEnum.GiveBirthConnected: act = `give birth to ${opState} (connected)`; break;
     case OperationKindEnum.GiveBirth: act = `give birth to ${opState}`; break;
@@ -333,8 +331,8 @@ switch (o.kind) {
     case OperationKindEnum.DisconnectFrom: act = `disconnect from ${opState}`; break;
     case OperationKindEnum.Die: act = `die`; break;
     default: act = `do operation`;
-}
-return `${act} ${cond}`;
+  }
+  return `${act} ${cond}`;
 }
 
 // Quantify structural change between two graph snapshots (for sound intensity).
@@ -361,5 +359,3 @@ export function computeGraphChangeMagnitude(
 
   return { changed: true, magnitude };
 }
-
-  

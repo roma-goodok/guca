@@ -1,3 +1,6 @@
-npx jest --silent
-npx webpack --config webpack.config.js
-npx http-server -c-1 
+#!/usr/bin/env sh
+set -eu
+
+npm run check
+npm run build
+npm run start

@@ -1,6 +1,6 @@
-# INSTALL.md — VOGUE (Graph Unfolding Cellular Automata — Frontend)
+# INSTALL.md — GUCA (Graph Unfolding Cellular Automata — Frontend)
 
-This guide helps you set up a fresh development environment on **macOS** (Intel or Apple Silicon) for the **vogue** project.
+This guide helps you set up a fresh development environment on **macOS** (Intel or Apple Silicon) for the **GUCA** project.
 
 > TL;DR  
 > ```bash
@@ -18,9 +18,9 @@ This guide helps you set up a fresh development environment on **macOS** (Intel 
 > git clone https://github.com/roma-goodok/guca.git
 > cd guca
 > npm ci || npm install
-> npx jest --silent
-> npx webpack --config webpack.config.js
-> npx http-server -c-1
+> npm run check
+> npm run build
+> npm run start
 > ```
 > Then open **http://127.0.0.1:8080** in your browser.
 
@@ -109,13 +109,22 @@ npm ci || npm install
 
 ### 5.1 Run the test suite
 ```bash
-# Quiet mode, same as repo's run.sh
-npx jest --silent
+npm test
 ```
 
-### 5.2 Build the bundle
+### 5.2 Run type checks
 ```bash
-npx webpack --config webpack.config.js
+npm run typecheck
+```
+
+### 5.3 Run the standard validation suite
+```bash
+npm run check
+```
+
+### 5.4 Build the bundle
+```bash
+npm run build
 ```
 
 The built artifact will be placed in `dist/bundle.js`.
@@ -126,9 +135,9 @@ The built artifact will be placed in `dist/bundle.js`.
 
 For quick local preview (no framework needed):
 ```bash
-npx http-server -c-1
+npm run start
 ```
-Open **http://127.0.0.1:8080** and you should see the VOGUE UI.
+Open **http://127.0.0.1:8080** and you should see the GUCA UI.
 
 > `-c-1` disables caching so edits appear immediately on refresh.
 
@@ -144,26 +153,9 @@ Open **http://127.0.0.1:8080** and you should see the VOGUE UI.
 
 ---
 
-## 8) Optional: `code2prompt` helpers
+## 8) Agent Workflows
 
-The repo includes helper scripts in `code2prompt/`. You can either install the CLI globally:
-
-```bash
-npm i -g code2prompt
-```
-
-or run ad‑hoc:
-
-```bash
-npx code2prompt --help
-```
-
-Then:
-```bash
-bash code2prompt/fix_bug.sh
-bash code2prompt/new_features.sh
-bash code2prompt/refactor.sh
-```
+Use `AGENTS.md` as the source of truth for AI-agent context, runbook, and commit behavior. Older prompt-bundling helpers have been removed.
 
 ---
 
@@ -205,9 +197,9 @@ brew reinstall python@3.12  # if a package needs python
 
 ## 10) Scripts you can copy‑paste
 
-**Run everything (tests → build → serve)**
+**Run everything (checks -> build -> serve)**
 ```bash
-npx jest --silent && npx webpack --config webpack.config.js && npx http-server -c-1
+npm run check && npm run build && npm run start
 ```
 
 **Clean install and build**

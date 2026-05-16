@@ -1,57 +1,60 @@
-# Graph Unfolding Cellular Automata (GUCA) Interactive Demonstration Project
-  
-[GUCA Interactive Demonstration](https://roma-goodok.github.io/guca)
+# GUCA Interactive Visualization
 
-## Video intro (6 min)
+[Live demo](https://roma-goodok.github.io/guca)
 
-[![GUCA intro video](https://img.youtube.com/vi/Y01hXneYZ2w/hqdefault.jpg)](https://youtu.be/Y01hXneYZ2w?utm_source=github&utm_medium=referral&utm_campaign=guca_intro)
+GUCA (Graph Unfolding Cellular Automata) is a browser-based simulator for graph cellular automata genomes. A genome is an ordered rule table that mutates an undirected graph over time: nodes can change state, create children, connect to nearby nodes, disconnect, or die.
 
-## Create your own organism
-
-See: [docs/GENOME_GUIDE.md](docs/GENOME_GUIDE.md)
-
-
-## Main Idea
-
-The web visualization of graph unfolding cellular automata (GUCA) showcases a "gene" of the graph, which is a program of primitive operations (add node, connect nodes, change node status by conditions), created manually or as a result of a genetic algorithm. Users can manipulate the graph by adding, removing vertices and edges, and observe the unfolding process in real-time, providing a unique and engaging way to explore and analyze cellular automata. This project demonstrates genetic programming over graphs and artificial life, particularly morphogenesis.
+The app is built with TypeScript, Webpack, Jest, D3, `graphlib`, and `3d-force-graph`.
 
 <p align="center">
   <img src="preview.png" width="512">
 </p>
-  
-## Requirements  
-  
-1. Animated visualization of graph unfolding cellular automata based on a genetic algorithm.  
-2. Interactive graph visualization with real-time updates.  
-3. Support for adding, removing, and updating vertices and edges.  
-4. Implementation of a force-directed layout algorithm, extendable to 3D.  
-5. A virtual "knife" mouse tool for cutting edges interactively.  
-6. Smooth and responsive user experience.  
-  
-## Selected Frameworks  
-  
-- **Frontend**: JavaScript/TypeScript with Three.js  
-  - Motivation: Three.js is a powerful 3D visualization library that leverages WebGL for creating advanced graphics. It is suitable for implementing a custom force-directed algorithm and provides the necessary tools for creating interactive 3D graph visualizations.  
 
-## Links
+## Use The App
 
-###  "Living Graphs" — Growing Graph Unfolding Cellular Automata (GUCA) with Examples in Silverlight (2010)
-Article (RUS): [https://habr.com/en/articles/107387](https://habr.com/en/articles/107387)  
+- Built-in genome YAML files live in `data/genoms/`.
+- The genome format is documented in [docs/GENOME_GUIDE.md](docs/GENOME_GUIDE.md).
+- The UI can load built-in genomes, upload YAML/JSON genomes, edit rules, export the current genome, and share genomes through URL hashes.
 
-The concept of 'Living Graphs' utilizes cellular automata to model the self-assembly and evolution of graph structures.   
+## Local Development
 
-"Living Graphs" leverage the principles of cellular automata to simulate the evolution and self-organization of graph structures, contributing to the field of Artificial Life. The GUCA model operates by applying simple, context-specific rules to nodes within a graph. This method facilitates the emergence of complex structures from minimal initial conditions, mirroring biological growth and development. The article showcases several examples, illustrating the potential of GUCA in diverse fields such as robotics, computer networks, and artificial intelligence, while highlighting the model's modularity, regeneration, and adaptability.
+```bash
+npm ci
+npm run start
+```
 
+Open `http://127.0.0.1:8080`.
 
-###  Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction  
-Blaise Agüera Arcas† Jyrki Alakuijala James Evans Ben Laurie Alexander Mordvintsev Eyvind Niklasson† Ettore Randazzo† Luca Versari  
+Common checks:
 
-Paper: [https://arxiv.org/pdf/2406.19108v2](https://arxiv.org/pdf/2406.19108v2)  
-Code: [https://github.com/paradigms-of-intelligence/cubff](https://github.com/paradigms-of-intelligence/cubff)  
+```bash
+npm run typecheck
+npm test
+npm run check
+npm run build
+```
 
-## Automating the Search for Artificial Life with Foundation Models  
+`npm run check` runs TypeScript type checking and Jest. `npm run build` writes the browser bundle to `dist/bundle.js`.
 
-Paper: [https://arxiv.org/pdf/2412.17799v1](https://arxiv.org/pdf/2412.17799v1)  
-Code: [https://github.com/sakanaai/asal](https://github.com/sakanaai/asal)  
+## Architecture Map
 
-The paper introduces ASAL (Automated Search for Artificial Life), an automated search method using foundation models to discover and analyze artificial life simulations.
+- `src/gum.ts`: core Graph Unfolding Machine, graph model, rule execution, topology semantics, cleanup behavior.
+- `src/genomeLoader.ts`: YAML/JSON genome parsing and defaults.
+- `src/main.ts`: browser entry point, DOM wiring, 2D D3 view, simulation loop, genome import/export.
+- `src/graph3d.ts`, `src/graphData.ts`: 3D graph rendering and data adaptation.
+- `src/ruleEditor.ts`, `src/nodeInspector.ts`: interactive rule and node inspection tools.
+- `src/utils.ts`, `src/edgeGradients.ts`, `src/viewport.ts`, `src/responsive.ts`: shared UI and rendering helpers.
+- `src/__tests__/`: Jest regression tests for core behavior, loaders, rendering helpers, sharing, and UI-adjacent pure helpers.
+
+## Artifact Policy
+
+`dist/bundle.js` is currently tracked as the static browser artifact used by the hosted demo flow. Do not rebuild and commit `dist/bundle.js` as incidental cleanup; update it only when intentionally publishing a frontend change.
+
+## Agent Notes
+
+Project-specific AI-agent guidance lives in [AGENTS.md](AGENTS.md). The old prompt-bundling workflow has been removed; agents should inspect the repo directly and use the documented runbook.
+
+## Background
+
+- Original "Living Graphs" article: [habr.com/en/articles/107387](https://habr.com/en/articles/107387)
+- Related artificial life work: [Computational Life](https://arxiv.org/pdf/2406.19108v2), [ASAL](https://arxiv.org/pdf/2412.17799v1)

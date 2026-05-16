@@ -1,5 +1,4 @@
 // src/__tests__/AdvancedOneStep.test.ts
-import yaml from 'js-yaml';
 import {
   GraphUnfoldingMachine, GUMGraph, GUMNode, NodeState,
   MachineCfg, OperationCondition, Operation
@@ -145,10 +144,7 @@ test('advanced one-step (continuable + connect_all nearest + pre-seeded graph)',
   // Exactly one step
   m.runOneStep();
 
-  // Summary + YAML output (visible in Jest logs)
   const result = summarize(g);
-  // eslint-disable-next-line no-console
-  console.log(yaml.dump(result, { lineWidth: 130 }));
 
   const edgesAfter: Array<[number, number]> = result.graph_summary.edge_list as any;
 

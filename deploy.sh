@@ -1,4 +1,16 @@
 #!/bin/bash
+set -euo pipefail
+
+cat <<'EOF'
+WARNING: deploy.sh performs branch checkouts, merges, commits, and pushes.
+It is a manual release helper, not a normal validation command and not an
+AI-agent runbook step.
+EOF
+
+if [[ "${GUCA_ALLOW_MANUAL_DEPLOY:-}" != "1" ]]; then
+  echo "Refusing to run. Set GUCA_ALLOW_MANUAL_DEPLOY=1 only for an intentional manual release."
+  exit 1
+fi
 
 # Step 1: Checkout to main branch and merge dev
 git checkout main

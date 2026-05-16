@@ -2,7 +2,6 @@
 import ForceGraph3D, { ForceGraph3DInstance } from '3d-force-graph';
 import { GUMGraph, GUMNode, NodeState } from './gum';
 import { edgeColorByStates, getVertexRenderColor } from './utils';
-import { buildGraphDataFromGum } from './graphData';
 import * as THREE from 'three';
 
 

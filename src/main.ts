@@ -12,17 +12,17 @@
 import * as d3 from 'd3';
 import {
   GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState,
-  RuleItem, OperationCondition, Operation, OperationKindEnum,
+  RuleItem, OperationKindEnum,
   MachineCfg, TranscriptionWay, CountCompare, TopologySemantics
 } from './gum';
 
 import {
-  mapOperationKind, mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
+  mapOperationKindToString, getVertexRenderColor, getVertexRenderTextColor,
   mapNodeState, getNodeDisplayText, mapGUMNodeToNode, convertToShortForm,
   Node, Link, edgeColorByStates, PALETTE16,
   getAllStateColorOverrides, setStateColorOverride,
   replaceStateColorOverrides, getStateColorOverride, stateToPaletteIndex,
-  computeGraphChangeMagnitude,
+  computeGraphChangeMagnitude, describeRuleHuman, nodeStateLetter,
 } from './utils';
 
 
@@ -482,12 +482,11 @@ const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
 
 const svgDefs = svg.append('defs');
 
-const edgeGradientCache = new Map<
-  string,
-  d3.Selection<SVGLinearGradientElement, unknown, null, undefined>
->();
+type EdgeGradientSelection = d3.Selection<SVGLinearGradientElement, unknown, HTMLElement, any>;
 
-function getOrCreateEdgeGradient(id: string) {
+const edgeGradientCache = new Map<string, EdgeGradientSelection>();
+
+function getOrCreateEdgeGradient(id: string): EdgeGradientSelection {
   let g = edgeGradientCache.get(id);
   if (g) return g;
 
@@ -660,40 +659,6 @@ function opKindColor(kind: OperationKindEnum): string {
     case OperationKindEnum.Die:                    return '#e5e7eb';
     default:                                       return '#e5e7eb';
   }
-}
-
-function nodeStateLetter(s: NodeState): string {
-  if (s === NodeState.Unknown) return "Unknown";
-  if (s === NodeState.Ignored) return "any";
-  if (s >= NodeState.A && s <= NodeState.Z) return String.fromCharCode(64 + s);
-  return String(s);
-}
-
-function describeRuleHuman(item: RuleItem): string {
-  const c = item.condition, o = item.operation;
-  const cur = nodeStateLetter(c.currentState);
-  const prior = nodeStateLetter(c.priorState);
-  const bits: string[] = [];
-  const connWith = nodeStateLetter((c as any).allConnectionsWithState ?? NodeState.Ignored);
-  const cPrefix = (connWith !== 'any') ? `c(${connWith})` : 'c';
-  if (c.allConnectionsCount_GE >= 0) bits.push(`${cPrefix}≥${c.allConnectionsCount_GE}`);
-  if (c.allConnectionsCount_LE >= 0) bits.push(`${cPrefix}≤${c.allConnectionsCount_LE}`);
-  if (c.parentsCount_GE >= 0)        bits.push(`p≥${c.parentsCount_GE}`);
-  if (c.parentsCount_LE >= 0)        bits.push(`p≤${c.parentsCount_LE}`);
-  const cond = `if current=${cur}${c.priorState!==NodeState.Ignored?` & prior=${prior}`:''}${bits.length?` & ${bits.join(' & ')}`:''}`;
-  const opS = nodeStateLetter(o.operandNodeState);
-  let act = '';
-  switch (o.kind) {
-    case OperationKindEnum.TurnToState:            act = `turn to ${opS}`; break;
-    case OperationKindEnum.GiveBirthConnected:     act = `give birth to ${opS} (connected)`; break;
-    case OperationKindEnum.GiveBirth:              act = `give birth to ${opS}`; break;
-    case OperationKindEnum.TryToConnectWithNearest:act = `connect to nearest ${opS}`; break;
-    case OperationKindEnum.TryToConnectWith:       act = `connect to all ${opS}`; break;
-    case OperationKindEnum.DisconnectFrom:         act = `disconnect from ${opS}`; break;
-    case OperationKindEnum.Die:                    act = `die`; break;
-    default:                                       act = `do operation`;
-  }
-  return `${act} ${cond}`;
 }
 
 function mixWithBlack(cssColor: string, t: number): string {

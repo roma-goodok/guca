@@ -4,8 +4,6 @@ node_modules/
 # Build outputs  
 #dist/
 
-code2prompt/output.txt
-
 scripts/*.yaml
   
 # TypeScript compiled files  

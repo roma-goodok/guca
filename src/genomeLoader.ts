@@ -1,13 +1,17 @@
 // src/genomeLoader.ts
-import {
+  import {
     GUMGraph, GUMNode, GraphUnfoldingMachine, NodeState,
     MachineCfg, TranscriptionWay, CountCompare,
     OperationCondition, Operation, TopologySemantics,
   } from './gum';
-  import { mapNodeState, mapOperationKind } from './utils';
+  import { isNodeStateValue, mapNodeState, mapOperationKind } from './utils';
   
   function toNodeStateFlex(v: any): NodeState {
-    return typeof v === 'number' ? (v as NodeState) : mapNodeState(String(v ?? 'Unknown'));
+    if (typeof v === 'number') {
+      if (isNodeStateValue(v)) return v;
+      throw new Error(`Unknown numeric node state: ${v}`);
+    }
+    return mapNodeState(String(v ?? 'Unknown'));
   }
   
   function parseActivityScheme(s: string): Set<number> {
@@ -163,7 +167,7 @@ import {
         const o = r?.op ?? r?.operation ?? {};
         const cond = new OperationCondition(
         toNodeStateFlex(c.current),
-        mapNodeState(String(c.prior ?? 'any')),
+        toNodeStateFlex(c.prior ?? 'any'),
         Number(c.conn_ge ?? c.allConnectionsCount_GE ?? -1),
         Number(c.conn_le ?? c.allConnectionsCount_LE ?? -1),
         Number(c.parents_ge ?? c.parentsCount_GE ?? -1),        

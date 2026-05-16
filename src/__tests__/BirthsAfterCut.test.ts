@@ -1,4 +1,3 @@
-import yaml from 'js-yaml';
 import { GraphUnfoldingMachine, GUMGraph, GUMNode, NodeState, MachineCfg, OperationCondition, Operation } from '../gum';
 import { mapNodeState, mapOperationKind } from '../utils';
 
@@ -40,9 +39,6 @@ test('GiveBirthConnected-only genome: after a cut, next step only adds one edge 
   m.runOneStep(); // step 1
   m.runOneStep(); // step 2
   m.runOneStep(); // step 3
-
-  const beforeCutNodes = g.getNodes().length;
-  const beforeCutEdges = g.getEdges().length;
 
   // Cut: remove one leaf edge (if any); then enforce single component to mimic the UI behavior
   const anyEdge = g.getEdges()[g.getEdges().length - 1];
