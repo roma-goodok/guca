@@ -267,6 +267,7 @@
 
     /* Links & edges */
     .link{vector-effect: non-scaling-stroke; stroke-width:2; stroke-linecap:round}
+    .face-fill{pointer-events:none; stroke:none}
 
     /* Advanced collapsers */
     details.block summary{
@@ -481,6 +482,18 @@
           </button>
         </div>
       </div>
+
+      <details class="block" id="visualization-block">
+        <summary>Visualization</summary>
+        <div class="row" style="margin:6px 0">
+          <label><input type="checkbox" id="face-fill-checkbox"> Fill faces</label>
+        </div>
+        <div class="row" style="margin:6px 0">
+          <label for="face-fill-opacity">Face opacity:</label>
+          <input type="range" id="face-fill-opacity" min="0" max="0.8" step="0.05" value="0.25">
+          <span id="face-fill-opacity-value">0.25</span>
+        </div>
+      </details>
 
       <div class="control-group">
         <h4>Graph Constraints</h4>

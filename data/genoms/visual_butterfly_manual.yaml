@@ -1,0 +1,237 @@
+# Manual visual-target prototype: rule-based butterfly-like graph.
+# Starts from one A node and unfolds through GUM rules only.
+# Web-compatible planar-wing version: two planar wing sheets on a compact body ladder.
+# State map: H body, K head, B final wing; U/V body rails; M/N left/right wing mesh.
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 300
+  max_steps: 126
+  topology_semantics: live
+  nearest_search:
+    max_depth: 3
+    tie_breaker: stable
+    connect_all: false
+  rng_seed: 42
+
+init_graph:
+  nodes:
+    - {state: A}
+
+rules:
+# Seed and central body spine. C is transient; H is final body.
+- condition: {current: A, prior: Unknown, conn_ge: 0, conn_le: 0, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: S}
+- condition: {current: A, prior: A}
+  op: {kind: TurnToState, operand: C}
+- condition: {current: S, prior: Unknown, parents_ge: 1, parents_le: 4}
+  op: {kind: GiveBirthConnected, operand: S}
+- condition: {current: S, prior: S}
+  op: {kind: TurnToState, operand: C}
+- condition: {current: S, prior: Unknown, parents_ge: 5}
+  op: {kind: TurnToState, operand: C}
+
+# Head: compact, planar five-leaf K fan.
+- condition: {current: C, prior: A, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: K}
+- condition: {current: C, prior: C, conn_with_state: K, conn_ge: 1, conn_le: 1, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: K}
+- condition: {current: C, prior: C, conn_with_state: K, conn_ge: 2, conn_le: 2, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: K}
+- condition: {current: C, prior: C, conn_with_state: K, conn_ge: 3, conn_le: 3, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: K}
+- condition: {current: C, prior: C, conn_with_state: K, conn_ge: 4, conn_le: 4, parents_ge: 0, parents_le: 0}
+  op: {kind: GiveBirthConnected, operand: K}
+- condition: {current: C, prior: C, conn_with_state: K, conn_ge: 5, parents_ge: 0, parents_le: 0}
+  op: {kind: TurnToState, operand: H}
+
+# Compact body ladder. Central rung 3 emits all wing roots.
+- condition: {current: C, prior: S, parents_ge: 1, parents_le: 1}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 1, parents_le: 1}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 1, parents_le: 1}
+  op: {kind: TurnToState, operand: H}
+
+- condition: {current: C, prior: S, parents_ge: 2, parents_le: 2}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 2, parents_le: 2}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 2, parents_le: 2}
+  op: {kind: TurnToState, operand: H}
+
+- condition: {current: C, prior: S, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: D}
+- condition: {current: C, prior: C, conn_with_state: D, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: E}
+- condition: {current: C, prior: C, conn_with_state: E, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: F}
+- condition: {current: C, prior: C, conn_with_state: F, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: G}
+- condition: {current: C, prior: C, conn_with_state: G, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: I}
+- condition: {current: C, prior: C, conn_with_state: I, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: J}
+- condition: {current: C, prior: C, conn_with_state: J, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: L}
+- condition: {current: C, prior: C, conn_with_state: L, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: O}
+- condition: {current: C, prior: C, conn_with_state: O, conn_ge: 1, parents_ge: 3, parents_le: 3}
+  op: {kind: TurnToState, operand: H}
+
+- condition: {current: C, prior: S, parents_ge: 4, parents_le: 4}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 4, parents_le: 4}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 4, parents_le: 4}
+  op: {kind: TurnToState, operand: H}
+
+- condition: {current: C, prior: S, parents_ge: 5, parents_le: 5}
+  op: {kind: GiveBirthConnected, operand: U}
+- condition: {current: C, prior: C, conn_with_state: U, conn_ge: 1, parents_ge: 5, parents_le: 5}
+  op: {kind: GiveBirthConnected, operand: V}
+- condition: {current: C, prior: C, conn_with_state: V, conn_ge: 1, parents_ge: 5, parents_le: 5}
+  op: {kind: TurnToState, operand: H}
+
+# Body rails connect along each side, then settle into H.
+- condition: {current: U, prior: Unknown}
+  op: {kind: TryToConnectWithNearest, operand: U}
+- condition: {current: U, prior: U}
+  op: {kind: TurnToState, operand: H}
+- condition: {current: V, prior: Unknown}
+  op: {kind: TryToConnectWithNearest, operand: V}
+- condition: {current: V, prior: V}
+  op: {kind: TurnToState, operand: H}
+
+# Wing ribs. M/N nearest pass creates sparse planar cross-bracing within each side.
+- condition: {current: D, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: P}
+- condition: {current: D, prior: D}
+  op: {kind: GiveBirthConnected, operand: P}
+- condition: {current: D, prior: D}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: P, prior: Unknown, parents_ge: 4}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: P, prior: Unknown, parents_ge: 0, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: P}
+- condition: {current: P, prior: P}
+  op: {kind: TurnToState, operand: M}
+
+- condition: {current: E, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: R}
+- condition: {current: E, prior: E}
+  op: {kind: GiveBirthConnected, operand: R}
+- condition: {current: E, prior: E}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: R, prior: Unknown, parents_ge: 7}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: R, prior: Unknown, parents_ge: 0, parents_le: 6}
+  op: {kind: GiveBirthConnected, operand: R}
+- condition: {current: R, prior: R}
+  op: {kind: TurnToState, operand: M}
+
+- condition: {current: F, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: T}
+- condition: {current: F, prior: F}
+  op: {kind: GiveBirthConnected, operand: T}
+- condition: {current: F, prior: F}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: T, prior: Unknown, parents_ge: 8}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: T, prior: Unknown, parents_ge: 0, parents_le: 7}
+  op: {kind: GiveBirthConnected, operand: T}
+- condition: {current: T, prior: T}
+  op: {kind: TurnToState, operand: M}
+
+- condition: {current: G, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: W}
+- condition: {current: G, prior: G}
+  op: {kind: GiveBirthConnected, operand: W}
+- condition: {current: G, prior: G}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: W, prior: Unknown, parents_ge: 6}
+  op: {kind: TurnToState, operand: M}
+- condition: {current: W, prior: Unknown, parents_ge: 0, parents_le: 5}
+  op: {kind: GiveBirthConnected, operand: W}
+- condition: {current: W, prior: W}
+  op: {kind: TurnToState, operand: M}
+
+- condition: {current: I, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: X}
+- condition: {current: I, prior: I}
+  op: {kind: GiveBirthConnected, operand: X}
+- condition: {current: I, prior: I}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: X, prior: Unknown, parents_ge: 4}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: X, prior: Unknown, parents_ge: 0, parents_le: 3}
+  op: {kind: GiveBirthConnected, operand: X}
+- condition: {current: X, prior: X}
+  op: {kind: TurnToState, operand: N}
+
+- condition: {current: J, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: Y}
+- condition: {current: J, prior: J}
+  op: {kind: GiveBirthConnected, operand: Y}
+- condition: {current: J, prior: J}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Y, prior: Unknown, parents_ge: 7}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Y, prior: Unknown, parents_ge: 0, parents_le: 6}
+  op: {kind: GiveBirthConnected, operand: Y}
+- condition: {current: Y, prior: Y}
+  op: {kind: TurnToState, operand: N}
+
+- condition: {current: L, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: Z}
+- condition: {current: L, prior: L}
+  op: {kind: GiveBirthConnected, operand: Z}
+- condition: {current: L, prior: L}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Z, prior: Unknown, parents_ge: 8}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Z, prior: Unknown, parents_ge: 0, parents_le: 7}
+  op: {kind: GiveBirthConnected, operand: Z}
+- condition: {current: Z, prior: Z}
+  op: {kind: TurnToState, operand: N}
+
+- condition: {current: O, prior: Unknown}
+  op: {kind: GiveBirthConnected, operand: Q}
+- condition: {current: O, prior: O}
+  op: {kind: GiveBirthConnected, operand: Q}
+- condition: {current: O, prior: O}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Q, prior: Unknown, parents_ge: 6}
+  op: {kind: TurnToState, operand: N}
+- condition: {current: Q, prior: Unknown, parents_ge: 0, parents_le: 5}
+  op: {kind: GiveBirthConnected, operand: Q}
+- condition: {current: Q, prior: Q}
+  op: {kind: TurnToState, operand: N}
+
+# Sparse local mesh and final wing state.
+- condition: {current: M, prior: any}
+  op: {kind: TryToConnectWithNearest, operand: M}
+- condition: {current: M, prior: M}
+  op: {kind: TurnToState, operand: B}
+- condition: {current: N, prior: any}
+  op: {kind: TryToConnectWithNearest, operand: N}
+- condition: {current: N, prior: N}
+  op: {kind: TurnToState, operand: B}
+
+expected:
+  steps: 126
+  nodes: 71
+  edges: 124
+  states_count:
+    B: 48
+    H: 18
+    K: 5

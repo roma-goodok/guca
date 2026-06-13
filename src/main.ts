@@ -35,6 +35,7 @@ import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
 import { createRuleEditorController } from './ruleEditor';
 import { formatNodeInspectorText } from './nodeInspector';
 import { edgeGradientId, shouldUseGradientEdge } from './edgeGradients';
+import { DetectedFace, detectFaces } from './faceDetection';
 
 
 
@@ -67,6 +68,9 @@ const SLOW_MS = 500;                          // slow mode tick ms
 const AUTO_MAX_FILL = 0.5;                    // auto camera max fill
 const CAMERA_MA_WINDOW = 25;                  // smooth camera EMA window
 const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1);
+const FACE_FILL_DEFAULT_OPACITY = 0.25;
+const FACE_FILL_MAX_CYCLE_LENGTH = 6;
+const FACE_FILL_MAX_FACES = 2000;
 
 // Persist user-selected per-state colors between sessions
 const COLOR_OVERRIDES_STORAGE_KEY = 'guca_state_color_overrides_v1';
@@ -156,6 +160,8 @@ let viewMode: ViewMode = '2d';
 
 let showAllRules = false;
 let lastLoadedConfig: any = null;
+let faceFillEnabled = false;
+let faceFillOpacity = FACE_FILL_DEFAULT_OPACITY;
 
 let isSimulationRunning = false;
 let simulationInterval: any;
@@ -394,6 +400,35 @@ gradientEdgesChk?.addEventListener('change', () => {
 });
 
 
+const faceFillChk = document.getElementById('face-fill-checkbox') as HTMLInputElement | null;
+const faceFillOpacityInput = document.getElementById('face-fill-opacity') as HTMLInputElement | null;
+const faceFillOpacityValue = document.getElementById('face-fill-opacity-value') as HTMLSpanElement | null;
+
+faceFillEnabled = faceFillChk ? !!faceFillChk.checked : false;
+if (faceFillOpacityInput) {
+  const parsed = Number(faceFillOpacityInput.value);
+  faceFillOpacity = Number.isFinite(parsed) ? parsed : FACE_FILL_DEFAULT_OPACITY;
+}
+if (faceFillOpacityValue) faceFillOpacityValue.textContent = faceFillOpacity.toFixed(2);
+
+function applyFaceFillControls() {
+  graph3D.setFaceFill?.(faceFillEnabled, faceFillOpacity);
+  update();
+}
+
+faceFillChk?.addEventListener('change', () => {
+  faceFillEnabled = !!faceFillChk.checked;
+  applyFaceFillControls();
+});
+
+faceFillOpacityInput?.addEventListener('input', () => {
+  const parsed = Number(faceFillOpacityInput.value);
+  faceFillOpacity = Number.isFinite(parsed) ? parsed : FACE_FILL_DEFAULT_OPACITY;
+  if (faceFillOpacityValue) faceFillOpacityValue.textContent = faceFillOpacity.toFixed(2);
+  applyFaceFillControls();
+});
+
+
 const autoCenterChk = document.getElementById('auto-center-checkbox') as HTMLInputElement | null;
 const autoScaleChk  = document.getElementById('auto-scale-checkbox')  as HTMLInputElement | null;
 
@@ -462,6 +497,9 @@ const zoomOverlay = svg.append("rect")
 
 // Graph layer drawn above the overlay so nodes are draggable.
 const graphGroup = svg.append("g");
+const faceLayer = graphGroup.append("g").attr("class", "face-layer");
+const linkLayer = graphGroup.append("g").attr("class", "link-layer");
+const nodeLayer = graphGroup.append("g").attr("class", "node-layer");
 
 const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
   .scaleExtent([0.01, 10])
@@ -850,6 +888,8 @@ const simulation = d3.forceSimulation<Node, Link>()
 
 let nodes: Node[] = [{ id: 1, x: width / 2, y: height / 2, state: NodeState.A }];
 let links: Link[] = [];
+let detectedFaces: DetectedFace[] = [];
+let renderNodeById = new Map<number, Node>(nodes.map(n => [n.id, n]));
 
 /* =========================================================================
    8) GUM GRAPH + MACHINE (core engine)
@@ -916,6 +956,7 @@ const YAML_CATALOG = [
   { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },    
   { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml' },
   { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml' },
+  { name: 'LLM Manual Butterfly', path: 'data/genoms/visual_butterfly_manual.yaml' },
   { name: 'Hexagon replicator', path: 'data/genoms/hexagon_replicator.yaml' },  
   { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
   { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
@@ -1277,6 +1318,7 @@ function setViewMode(mode: ViewMode) {
 
     graph3D.ensure(threeContainer);
     graph3D.setGradientEdges?.(gradientEdgesEnabled);
+    graph3D.setFaceFill?.(faceFillEnabled, faceFillOpacity);
     graph3D.resize();
     graph3D.syncFromGum(true);  // includes cooldown + zoomToFit
     graph3D.resume();
@@ -1539,6 +1581,37 @@ function updateLinkPaint(el: SVGLineElement, d: Link, p: { x1: number; y1: numbe
   el.setAttribute('stroke', `url(#${gid})`);
 }
 
+function facePoints(face: DetectedFace): string {
+  const points: string[] = [];
+  for (const id of face.nodeIds) {
+    const node = renderNodeById.get(id);
+    if (typeof node?.x !== 'number' || typeof node.y !== 'number') continue;
+    points.push(`${node.x},${node.y}`);
+  }
+  return points.length >= 3 ? points.join(' ') : '';
+}
+
+function render2DFaces() {
+  const face = faceLayer.selectAll<SVGPolygonElement, DetectedFace>(".face-fill")
+    .data(faceFillEnabled ? detectedFaces : [], d => d.id);
+
+  face.exit().remove();
+
+  const faceEnter = face.enter().append("polygon")
+    .attr("class", "face-fill");
+
+  faceEnter.merge(face)
+    .attr("fill", d => d.color)
+    .attr("fill-opacity", faceFillOpacity)
+    .attr("points", d => facePoints(d));
+}
+
+function update2DFaceGeometry() {
+  if (!faceFillEnabled) return;
+  faceLayer.selectAll<SVGPolygonElement, DetectedFace>(".face-fill")
+    .attr("points", d => facePoints(d));
+}
+
 
 function update() {
   const gumNodes = gumGraph.getNodes();
@@ -1569,9 +1642,17 @@ function update() {
     return { source: sourceNode, target: targetNode };
   });
 
+  renderNodeById = new Map<number, Node>(nodes.map(node => [node.id, node]));
+  detectedFaces = faceFillEnabled
+    ? detectFaces(nodes, links, {
+        maxCycleLength: FACE_FILL_MAX_CYCLE_LENGTH,
+        maxFaces: FACE_FILL_MAX_FACES,
+      })
+    : [];
+  render2DFaces();
 
   // NOTE: use a stable undirected key so edge identity doesn't flip
-  const link = graphGroup.selectAll<SVGLineElement, Link>(".link")    
+  const link = linkLayer.selectAll<SVGLineElement, Link>(".link")
     .data(links, d => `${(d.source as Node).id}-${(d.target as Node).id}`);
 
 
@@ -1619,7 +1700,7 @@ function update() {
 
   link.exit().remove();
 
-  const nodeSel = graphGroup.selectAll<SVGGElement, Node>(".node")
+  const nodeSel = nodeLayer.selectAll<SVGGElement, Node>(".node")
     .data(nodes, d => d.id.toString());
 
   const nodeEnter = nodeSel.enter().append("g")
@@ -1701,6 +1782,7 @@ function update() {
       updateLinkPaint(el, d, p);
     });
 
+    update2DFaceGeometry();
   });
 
   simulation.force<d3.ForceLink<Node, Link>>("link")!.links(links);

@@ -2,8 +2,12 @@
 import ForceGraph3D, { ForceGraph3DInstance } from '3d-force-graph';
 import { GUMGraph, GUMNode, NodeState } from './gum';
 import { edgeColorByStates, getVertexRenderColor } from './utils';
+import { DetectedFace, detectFaces } from './faceDetection';
 import * as THREE from 'three';
 
+const FACE_FILL_MAX_CYCLE_LENGTH = 6;
+const FACE_FILL_MAX_FACES = 2000;
+const FACE_FILL_DEFAULT_OPACITY = 0.25;
 
 export interface Graph3DController {
   ensure(container: HTMLElement): void;
@@ -14,6 +18,7 @@ export interface Graph3DController {
   destroy(): void;
   onNodeHover(handler: (node?: GUMNode) => void): void;
   setGradientEdges(on: boolean): void;
+  setFaceFill(enabled: boolean, opacity: number): void;
 }
 
 
@@ -31,6 +36,11 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   let fg: ForceGraph3DInstance | null = null;
   let containerEl: HTMLElement | null = null;
   let hoverHandler: ((node?: GUMNode) => void) | null = null;
+  let faceFillEnabled = false;
+  let faceFillOpacity = FACE_FILL_DEFAULT_OPACITY;
+  let faceGroup: THREE.Group | null = null;
+  let currentFaces: DetectedFace[] = [];
+  const faceMeshes = new Map<string, THREE.Mesh>();
 
   // Persistent data object (same reference for incremental updates)
   const data: { nodes: InternalNode[]; links: InternalLink[] } = {
@@ -43,7 +53,7 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
     containerEl = container;
 
     if (!fg) {
-      fg = new ForceGraph3D(containerEl)
+      const nextFg = new ForceGraph3D(containerEl)
         .backgroundColor('#000000')
         .showNavInfo(true)
         .linkOpacity(1)
@@ -80,21 +90,35 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
           }
           const gNode = gumGraph.getNodeById(Number(n.id));
           hoverHandler(gNode ?? undefined);
+        })
+        .onEngineTick(() => {
+          update3DFaceGeometry();
         });
+      fg = nextFg;
 
       apply3DLinkRendering(false);
+      ensureFaceGroup();
       // Initial empty data; positions will be filled once we sync
-      fg.graphData(data);
-      fg.cooldownTicks(120);      
+      nextFg.graphData(data);
+      nextFg.cooldownTicks(120);
 
     }
 
+    ensureFaceGroup();
     resize();
   }
 
   function setGradientEdges(on: boolean) {
     gradientEdgesEnabled = !!on;
     apply3DLinkRendering(true);
+  }
+
+  function setFaceFill(enabled: boolean, opacity: number) {
+    faceFillEnabled = !!enabled;
+    faceFillOpacity = Number.isFinite(opacity)
+      ? Math.max(0, Math.min(0.8, opacity))
+      : FACE_FILL_DEFAULT_OPACITY;
+    sync3DFaces();
   }
 
 
@@ -196,6 +220,7 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
 
     // Apply incremental update
     fg.graphData(data);
+    sync3DFaces();
 
     if (triggerZoomFit) {
       fg.cooldownTicks(120);
@@ -219,6 +244,9 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   }
 
   function destroy() {
+    clearFaceMeshes();
+    if (faceGroup?.parent) faceGroup.parent.remove(faceGroup);
+    faceGroup = null;
     if (fg && typeof (fg as any)._destructor === 'function') {
       (fg as any)._destructor();
     }
@@ -230,6 +258,142 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
   }
 
   let gradientEdgesEnabled = true;
+
+  function ensureFaceGroup() {
+    if (!fg) return;
+    if (!faceGroup) {
+      faceGroup = new THREE.Group();
+      faceGroup.name = 'guca-face-fill';
+      faceGroup.visible = faceFillEnabled;
+      fg.scene().add(faceGroup);
+    }
+  }
+
+  function disposeFaceMesh(mesh: THREE.Mesh) {
+    mesh.geometry.dispose();
+    const material = mesh.material;
+    if (Array.isArray(material)) {
+      material.forEach(m => m.dispose());
+    } else {
+      material.dispose();
+    }
+  }
+
+  function clearFaceMeshes() {
+    if (faceGroup) {
+      for (const mesh of faceMeshes.values()) faceGroup.remove(mesh);
+    }
+    for (const mesh of faceMeshes.values()) disposeFaceMesh(mesh);
+    faceMeshes.clear();
+    currentFaces = [];
+  }
+
+  function faceTriangleIndices(vertexCount: number): number[] {
+    const indices: number[] = [];
+    for (let i = 1; i < vertexCount - 1; i++) {
+      indices.push(0, i, i + 1);
+    }
+    return indices;
+  }
+
+  function createFaceMesh(face: DetectedFace): THREE.Mesh {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(new Float32Array(face.nodeIds.length * 3), 3)
+    );
+    geometry.setIndex(faceTriangleIndices(face.nodeIds.length));
+
+    const material = new THREE.MeshBasicMaterial({
+      color: face.color,
+      transparent: true,
+      opacity: faceFillOpacity,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = `face-fill:${face.id}`;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -10;
+    return mesh;
+  }
+
+  function updateFaceMeshMaterial(mesh: THREE.Mesh, face: DetectedFace) {
+    const material = mesh.material;
+    if (Array.isArray(material)) return;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.color.set(face.color);
+      material.opacity = faceFillOpacity;
+      material.needsUpdate = true;
+    }
+  }
+
+  function sync3DFaces() {
+    if (!fg) return;
+    ensureFaceGroup();
+
+    if (!faceGroup) return;
+
+    if (!faceFillEnabled) {
+      clearFaceMeshes();
+      faceGroup.visible = false;
+      return;
+    }
+
+    currentFaces = detectFaces(data.nodes, data.links, {
+      maxCycleLength: FACE_FILL_MAX_CYCLE_LENGTH,
+      maxFaces: FACE_FILL_MAX_FACES,
+    });
+
+    const needed = new Set(currentFaces.map(face => face.id));
+    for (const [id, mesh] of faceMeshes) {
+      if (!needed.has(id)) {
+        faceGroup.remove(mesh);
+        disposeFaceMesh(mesh);
+        faceMeshes.delete(id);
+      }
+    }
+
+    for (const face of currentFaces) {
+      let mesh = faceMeshes.get(face.id);
+      if (!mesh) {
+        mesh = createFaceMesh(face);
+        faceMeshes.set(face.id, mesh);
+        faceGroup.add(mesh);
+      } else {
+        updateFaceMeshMaterial(mesh, face);
+      }
+    }
+
+    faceGroup.visible = currentFaces.length > 0;
+    update3DFaceGeometry();
+  }
+
+  function update3DFaceGeometry() {
+    if (!faceFillEnabled || !currentFaces.length) return;
+
+    for (const face of currentFaces) {
+      const mesh = faceMeshes.get(face.id);
+      if (!mesh) continue;
+
+      const position = mesh.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+      if (!position) continue;
+
+      for (let i = 0; i < face.nodeIds.length; i++) {
+        const node = nodeById.get(face.nodeIds[i]);
+        position.setXYZ(
+          i,
+          typeof node?.x === 'number' ? node.x : 0,
+          typeof node?.y === 'number' ? node.y : 0,
+          typeof node?.z === 'number' ? node.z : 0
+        );
+      }
+
+      position.needsUpdate = true;
+      mesh.geometry.computeBoundingSphere();
+    }
+  }
 
   function apply3DLinkRendering(refresh: boolean) {
     if (!fg) return;
@@ -324,6 +488,7 @@ export function createGraph3DController(gumGraph: GUMGraph): Graph3DController {
     resume,
     destroy,
     onNodeHover,
-    setGradientEdges
+    setGradientEdges,
+    setFaceFill,
   };
 }
