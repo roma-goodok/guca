@@ -2,739 +2,386 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Graph Unfolding Cellular Automata — Demo</title>
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-  <style>
-    :root{
-      --panel-w: 420px;
-      --bg-dark:#101113;
-      --bg-panel:#f6f7f9;
-      --border:#d8dbe2;
-      --accent:#0ea5e9;
-      --ok:#16a34a;
-      --muted:#6b7280;
-      --tile-shadow: 0 0 0 1px rgba(0,0,0,.15) inset;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; height:100vh; display:flex; flex-direction:column;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
-      color:#0b0c0e; background:#fff;
-    }
-
-    /* Always respect the hidden attribute (prevents accidental overrides) */
-    [hidden] { display: none !important; }
-
-    /* Header (collapsible About) */
-    header{border-bottom:1px solid var(--border); background:#fff}
-    header .wrap{max-width:1400px; margin:0 auto; padding:8px 12px}
-    details.about{margin:0 auto; max-width:1400px; padding:6px 12px}
-    details.about summary{
-      list-style:none; cursor:pointer; user-select:none; outline:none;
-      font-weight:600; display:flex; gap:10px; align-items:center;
-    }
-    details.about summary::-webkit-details-marker{display:none}
-    .about-body{color:#222; margin-top:6px; line-height:1.45}
-    .about-body p{margin:.4rem 0}
-    .pill{display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border:1px solid var(--border); border-radius:999px; font-size:.85rem; background:#fff}
-    .about-row{display:flex; align-items:center; gap:8px; max-width:1400px; margin:0 auto; padding:0 12px;}
-
-
-    /* Main split layout */
-    #main{flex:1; min-height:0; display:flex;}
-    #canvas-container{
-      flex:1; min-width:0; display:flex; align-items:center; justify-content:center;
-      background:#000; border-right:1px solid var(--border); position:relative;
-    }
-    
-    #three-container {
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:stretch;
-      justify-content:stretch;
-      z-index:0;           /* canvas under overlays */
-    }
-
-    /* hidden is already globally styled; keep consistent behavior */
-    #three-container[hidden] {
-      display:none !important;
-    }
-
-    svg{width:100%; height:100%; background:#000;}
-
-    #ui-panel{
-      width:var(--panel-w); min-width:280px; max-width:50vw;
-      background:var(--bg-panel); padding:10px; display:flex; flex-direction:column; gap:10px;
-      overflow:auto;
-    }
-    h4{margin:8px 0 6px 0}
-
-    .control-group{background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px}
-    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    .toggle-group{display:flex; gap:6px}
-    .toggle-btn{
-      border:1px solid #cfd5dd; background:#fff; border-radius:6px; padding:6px 10px; cursor:pointer;
-    }
-    .toggle-btn.active{background:#111827; color:#fff; border-color:#111827}
-
-    /* Rules → gene tiles */
-    #rules-section .board{
-      display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow:auto;
-      background:#fff; border:1px solid var(--border); padding:8px; border-radius:8px;
-    }
-    .gene-tile{
-      width:44px; height:28px;
-      display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
-      border-radius:6px; box-shadow:var(--tile-shadow); position:relative;
-      border:2px solid transparent;
-      cursor:pointer;
-    }
-    /* .gene-tile span{
-      display:block; width:100%; height:100%;
-      pointer-events: none;
-    } */
-    .gene-tile.active{
-      /* existing glow kept */
-      box-shadow:0 0 10px rgba(34,197,94,.75), var(--tile-shadow);
-      border-color:#22c55e;
-      border-width:3px;
-    }
-    .gene-tile.disabled{
-      filter:grayscale(100%) brightness(.85);
-      opacity:.8;
-      border-color:#9ca3af;
-      border-style:dashed;
-    }
-    .gene-tile.disabled span{
-      filter:grayscale(100%) brightness(.85);
-    }
-    .gene-tile:hover{
-      outline:2px solid var(--accent);
-      outline-offset:2px;
-    }
-    /* Add-rule tile */
-    .gene-tile.add-tile{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:800;
-      font-size:20px;
-      background:#fff;
-      border:2px dashed var(--border);
-      color:var(--muted);
-      box-shadow:none;
-    }
-    .gene-tile.add-tile:hover{
-      outline:2px solid var(--accent);
-      outline-offset:2px;
-    }
-
-    /* Modal (rule editor) */
-    body.modal-open{ overflow:hidden; }
-    .modal{
-      position:fixed; inset:0;
-      width:100vw;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:1000;
-
-      /* Keep dialog fully visible on phones with notches / system bars */
-      padding:
-        calc(12px + env(safe-area-inset-top, 0px))
-        calc(12px + env(safe-area-inset-right, 0px))
-        calc(12px + env(safe-area-inset-bottom, 0px))
-        calc(12px + env(safe-area-inset-left, 0px));
-    }
-
-    /* Prefer visual viewport units when available (mobile browser UI safe) */
-    @supports (height: 100dvh) {
-      .modal{
-        width:100dvw;
-        height:100dvh;
-      }
-    }
-
-    /* Backdrop must cover the whole viewport even if .modal has padding */
-    .modal-backdrop{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.55);
-    }
-
-    .modal-dialog{
-      position:relative;
-      width:min(440px, 100%);
-      max-height:100%;
-      overflow:auto;
-      background:#fff;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:10px;
-      box-shadow:0 20px 60px rgba(0,0,0,0.35);
-    }
-
-    .modal-header{
-      display:flex; align-items:flex-start; justify-content:space-between;
-      gap:8px;
-      padding:6px 2px 8px;
-      border-bottom:1px solid var(--border);
-    }
-    .modal-title{ font-weight:700; }
-    .modal-subtitle{ font-size:.85rem; color:var(--muted); margin-top:2px; }
-    .modal-body{ padding:10px 2px; }
-    .modal-footer{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap; /* important when dialog is narrower */
-      padding:10px 2px 2px;
-      border-top:1px solid var(--border);
-    }
-    .modal-footer-left{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      margin-right:auto; /* pushes right side group */
-    }
-    .modal-footer-right{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .modal-sep{ border:none; border-top:1px solid var(--border); margin:10px 0; }
-
-    /* Shrink the (now short-labeled) operation kind select */
-    #rule-editor-op-kind{
-      width: 190px;
-      max-width: 100%;
-    }
-
-    /* Rule editor: very small integer inputs for Conn ≥ / Conn ≤ */
-    .rule-int-tiny{
-      width: 70px; /* ~3x narrower than the old 92px */
-      appearance: textfield;
-    }
-    .rule-int-tiny::-webkit-outer-spin-button,
-    .rule-int-tiny::-webkit-inner-spin-button{
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    /* Toast */
-    #toast{
-      position:fixed;
-      left:50%;
-      bottom:16px;
-      transform:translateX(-50%);
-      background:rgba(17,24,39,0.95);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:999px;
-      font-size:.95rem;
-      z-index:1100;
-      box-shadow:0 10px 30px rgba(0,0,0,0.35);
-    }
-
-    /* Palette grid (debug) */
-    .palette-grid{
-      display:grid;
-      grid-template-columns:repeat(4, minmax(0,1fr));
-      gap:8px;
-    }
-    .palette-chip{
-      height:32px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      box-shadow:var(--tile-shadow);
-    }
-
-
-    .legend{font-size:.85rem; color:#374151; display:flex; gap:8px; flex-wrap:wrap}
-
-    /* Footer status bar */
-    footer{
-      height:34px; background:var(--bg-dark); color:#e5e7eb;
-      display:flex; align-items:center; justify-content:space-between; padding:0 12px;
-      border-top:1px solid #0b0c0f; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    }
-    footer .left, footer .right{display:flex; align-items:center; gap:10px}
-
-    /* Links & edges */
-    .link{vector-effect: non-scaling-stroke; stroke-width:2; stroke-linecap:round}
-    .face-fill{pointer-events:none; stroke:none}
-
-    /* Advanced collapsers */
-    details.block summary{
-      cursor:pointer; user-select:none; font-weight:600; color:#111827; list-style:none; outline:none;
-    }
-    details.block summary::-webkit-details-marker{display:none}
-    details.block{border:1px solid var(--border); background:#fff; border-radius:8px; padding:8px 10px}
-
-    /* Form bits */
-    select, input[type="number"]{padding:6px 8px; border:1px solid #cfd5dd; border-radius:6px; background:#fff}
-    label{color:#111827}
-
-    /* --- Responsive toggles -------------------------------------------------- */
-    body.mobile-basic header,
-    body.mobile-basic #ui-panel,
-    body.mobile-basic #advanced-block,
-    body.mobile-basic #palette-block,
-    body.mobile-basic #gene-inspector,
-    body.mobile-basic #rules-section .board + div,  /* hide "Show more" button row */
-    body.mobile-basic #download-yaml-button,
-    body.mobile-basic #gene-upload {
-      display: none !important;
-    }
-
-    body.mobile-basic footer {
-      /* Keep status bar or hide if you prefer: */
-      display:none;
-    }
-
-    /* Mobile overlay toolbar (default: hidden) */
-    #mobile-toolbar {
-      position: absolute;
-      top: env(safe-area-inset-top, 8px);
-      left: env(safe-area-inset-left, 8px);
-      right: env(safe-area-inset-right, 8px);
-      bottom: auto;
-      display: none;
-      gap: 8px;
-      align-items: center;  
-      justify-content: flex-start;
-      padding: 8px;
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(6px);
-      border-radius: 12px;
-      z-index: 10;
-    }
-
-    /* Rules strip on the black canvas (default: hidden) */
-    #rules-overlay {
-      position: absolute;
-      left: env(safe-area-inset-left, 8px);
-      right: env(safe-area-inset-right, 8px);
-      top: calc(env(safe-area-inset-top, 8px) + 56px);
-      bottom: auto;
-      display: none;
-      gap: 6px;
-      align-items: center;
-      padding: 8px;
-      background: rgba(0,0,0,0.42);
-      border-radius: 10px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      flex-wrap: wrap;              /* allow 2+ rows of tiles */
-      justify-content: flex-start;
-      max-width: 540px;             /* ~10 tiles per row at 48px + gaps */
-      max-height: 96px;             /* roughly 2 rows of tiles */
-      z-index: 9;
-    }
-
-
-    /* Only show overlays when body has the mobile flag */
-    body.mobile-basic #mobile-toolbar,
-    body.mobile-basic #rules-overlay {
-      display: flex;                /* was block; keep flex layout */
-    }
-    
-    #mobile-toolbar button,
-    #mobile-toolbar select {
-      font-size: 16px;
-      padding: 6px 10px;
-      border: 1px solid #cfd5dd;
-      border-radius: 8px;
-      background: #fff;
-    }
-    #mobile-toolbar select {
-      flex: 1 1 240px;   /* take remaining space */
-      min-width: 180px;  /* avoid ultra-tiny dropdown */
-      max-width: 100%;
-    }
-
-
-    
-    #mobile-toolbar button.toggle-active {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
-    }
-
-
-    /* Shrink tiles slightly in overlay, keep look&feel */
-    /* #rules-overlay .gene-tile {
-      transform: scale(0.95);
-      transform-origin: center;
-      border-width: 2px;
-      cursor: pointer;
-    } */
-
-    #rules-overlay .gene-tile { width: 48px; height: 30px; border-radius: 6px; }
-    #rules-overlay::-webkit-scrollbar { height: 6px; }
-    #rules-overlay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 4px; }
-
-    /* Node inspector overlay (debug): bottom-right on the black canvas */
-    #node-inspector-overlay{
-      position:absolute;
-      right:12px;
-      bottom:12px;
-      max-width:min(420px, 65vw);
-
-      padding:8px 10px;
-      border-radius:10px;
-      border:0px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.35);
-
-      color: rgba(128,128,128,0.5);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: 12px;
-      line-height: 1.25;
-      white-space: pre-line;
-
-      pointer-events:none;
-      z-index: 8; /* under mobile toolbar (10) and rules overlay (9) */
-    }
-
-    /* respect safe-area on mobile */
-    body.mobile-basic #node-inspector-overlay{
-      right: env(safe-area-inset-right, 8px);
-      bottom: env(safe-area-inset-bottom, 8px);
-    }
-
-    
-  </style>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/layout.css" />
+  <link rel="stylesheet" href="styles/components.css" />
 </head>
-<body class="mobile-basic">
-  <header>
-    <div class="about-row">
-      <details class="about">
-        <summary>ℹ️ About this demo</summary>
-        <div class="about-body">
-          <p>“Genes” are change-tables for a Graph Unfolding Machine (GUM). Each step snapshots node states and applies the first matching rule. The demo lets you load YAML genomes, watch growth, and use a ✂️ <b>Scissors</b> tool to cut edges.</p>
-          <p>Tip: wheel zoom works in both tools; drag nodes when the 🖐️ <b>Move</b> tool is active.</p>
-        </div>
-      </details>
-      <a class="pill" href="https://github.com/roma-goodok/guca" target="_blank" rel="noopener">
-        GitHub: roma-goodok/guca
-      </a>
+<body>
+  <header class="site-header">
+    <div class="site-header-row">
+      <div class="brand-lockup" aria-label="GUCA — graph unfolding cellular automata">
+        <span class="brand-name">GUCA</span>
+        <span class="brand-description">graph unfolding cellular automata</span>
+      </div>
+
+      <nav class="header-nav" aria-label="Project">
+        <button
+          id="about-toggle-button"
+          class="header-action"
+          type="button"
+          aria-expanded="false"
+          aria-controls="about-panel"
+        >
+          About
+        </button>
+        <a class="header-link" href="https://github.com/roma-goodok/guca" target="_blank" rel="noopener">
+          GitHub
+        </a>
+      </nav>
     </div>
 
+    <section id="about-panel" class="about-panel" aria-label="About GUCA" hidden>
+      <p>GUCA is an environment for experimenting with genes and evolution, built on simple rules. You can run an existing genome, modify it, or create your own from scratch. Every gene can be edited, and you can observe its effects as the simulation unfolds.</p>
+    </section>
   </header>
 
-  <div id="main">
-    <div id="canvas-container">
-      <div id="three-container" hidden></div>
-      <svg></svg>
-        <div id="mobile-toolbar" aria-label="Mobile controls" hidden>
-        <button id="mobile-play">▶︎</button>
-        <button id="mobile-reset">⟲</button>
-        <button id="mobile-slow">🐢</button>
-        <button id="mobile-view-toggle" class="toggle-active" title="Switch to 3D view">2D</button>
-        <button id="mobile-share" title="Copy a shareable link">🔗</button>
-        <select id="gene-select-mobile" title="Genome"></select>
-      </div>
-      <div id="rules-overlay" hidden></div>
-      <div id="node-inspector-overlay" hidden></div>
-    </div>
-
-    <aside id="ui-panel">
-      <div class="control-group">
-        <label for="gene-select"><b>Genome (YAML)</b></label>
-        <div class="row">
-          <select id="gene-select" style="flex:1"></select>
-          <button id="download-yaml-button" class="toggle-btn" title="Export current genome">⤓ Export</button>
-          <button id="share-genome-button" class="toggle-btn" title="Copy a shareable link">🔗 Share</button>
+  <main id="main">
+    <aside id="ui-panel" aria-label="Genome controls">
+      <section class="sidebar-section organism-section">
+        <div class="sidebar-heading-row">
+          <h2 class="sidebar-heading">Organism</h2>
+          <button id="new-genome-button" class="sidebar-add-button" type="button" aria-label="Create a new genome" title="Create a new genome">+</button>
         </div>
-        <div class="row" style="margin-top:6px">
-          <label for="gene-upload">Upload:</label>
-          <input id="gene-upload" type="file"
-                 accept=".yaml,.yml,.json,application/x-yaml,text/yaml,application/json"/>
-        </div>
-      </div>
-
-      <div class="control-group">
-      <h4>Tools</h4>
-      <div class="toggle-group">
-        <button id="tool-move-button" class="toggle-btn active" title="Move / pan / drag nodes">🖐️ Move</button>
-        <button id="tool-scissors-button" class="toggle-btn" title="Cut edges while dragging">✂️ Scissors</button>
-        <button id="slowdown-button" class="toggle-btn" title="Toggle slow mode">🐢 Slow down</button>
-        <button id="sound-toggle-button" class="toggle-btn active" title="Toggle mechanical ticking sound">
-          🔈 Sound
-        </button>
-      </div>
-    </div>
-
-
-      <div class="control-group">
-        <h4>View</h4>
-        <div class="toggle-group">
-          <button id="view-2d-button" class="toggle-btn active" title="Standard 2D view">
-            2D
+        <div id="organism-picker" class="organism-picker">
+          <span id="organism-picker-label" class="visually-hidden">Choose organism</span>
+          <button
+            id="organism-picker-trigger"
+            class="organism-picker-trigger"
+            type="button"
+            aria-expanded="false"
+            aria-controls="organism-picker-menu"
+            aria-labelledby="organism-picker-label organism-picker-value"
+          >
+            <span id="organism-picker-value">Dumbbell</span>
+            <span class="organism-picker-chevron" aria-hidden="true">›</span>
           </button>
-          <button id="view-3d-button" class="toggle-btn" title="Experimental 3D view">
-            3D (beta)
-          </button>
+          <div
+            id="organism-picker-menu"
+            class="organism-picker-menu"
+            aria-label="Organism categories"
+            hidden
+          ></div>
+          <select id="gene-select" aria-hidden="true" tabindex="-1"></select>
         </div>
-      </div>
+      </section>
 
-      <details class="block" id="visualization-block">
-        <summary>Visualization</summary>
-        <div class="row" style="margin:6px 0">
-          <label><input type="checkbox" id="face-fill-checkbox"> Fill faces</label>
-        </div>
-        <div class="row" style="margin:6px 0">
-          <label for="face-fill-opacity">Face opacity:</label>
-          <input type="range" id="face-fill-opacity" min="0" max="0.8" step="0.05" value="0.25">
-          <span id="face-fill-opacity-value">0.25</span>
-        </div>
-      </details>
-
-      <div class="control-group">
-        <h4>Graph Constraints</h4>
-        <label><input type="checkbox" id="maintain-single-component" checked> Maintain a single component</label>
-        <div style="margin-top:6px"></div>
-        <label><input type="checkbox" id="auto-center-checkbox" checked> Smooth auto‑center</label>
-        <label><input type="checkbox" id="auto-scale-checkbox" checked> Smooth auto‑scale</label>
-      </div>
-
-      <div id="rules-section" class="control-group">
-        <h4>Rules (Genes)</h4>
+      <section id="rules-section" class="sidebar-section genome-section">
+        <h2 class="sidebar-heading">Genome</h2>
+        <div id="genome-count" class="genome-count" aria-live="polite">Loading genes…</div>
         <div class="board" id="rule-board"></div>
-        <div style="margin-top:6px">
-          <button id="toggle-rules-btn" class="toggle-btn" style="display:none">Show more</button>
+        <div class="rule-list-actions">
+          <button id="toggle-rules-btn" class="text-button initially-hidden" type="button">Show more</button>
         </div>
-        <div id="gene-inspector" class="control-group" style="margin-top:6px">
-          <h4>Gene Inspector</h4>
-          <div id="gene-inspector-body" style="font-size:.9rem; color:#374151">
-            Hover a rule tile to see its description. Click a tile to enable/disable that rule.
+
+        <div class="genome-file-actions" aria-label="Genome file actions">
+          <button id="download-yaml-button" class="icon-button" type="button" title="Download current genome" aria-label="Download current genome">
+            <img class="button-icon" src="media/website/icons/download.svg" alt="" aria-hidden="true" />
+          </button>
+          <label class="icon-button upload-button" for="gene-upload" title="Upload a genome" aria-label="Upload a genome">
+            <img class="button-icon" src="media/website/icons/upload.svg" alt="" aria-hidden="true" />
+          </label>
+          <input
+            id="gene-upload"
+            class="visually-hidden-input"
+            type="file"
+            accept=".yaml,.yml,.json,application/x-yaml,text/yaml,application/json"
+          />
+          <button id="share-genome-button" class="icon-button share-button" type="button" title="Copy a shareable link" aria-label="Copy a shareable link">
+            <img class="button-icon" src="media/website/icons/share.svg" alt="" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div id="gene-inspector" class="gene-inspector">
+          <h3>Gene Inspector</h3>
+          <div id="gene-inspector-body">
+            Hover a gene to see its description. Click a gene to edit it.
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="control-group">
-        <div class="row">
-          <button id="pause-resume-button">Start</button>
-          <button id="next-step-button">Next step</button>
-          <button id="reset-button">Reset</button>
-        </div>
-      </div>
+      <details class="advanced-shell">
+        <summary>Advanced <span aria-hidden="true">›</span></summary>
+        <div class="advanced-content">
+          <details class="block advanced-subgroup" id="visualization-block">
+            <summary>Appearance</summary>
+            <div class="advanced-subgroup-content">
+              <div class="form-row">
+                <label><input type="checkbox" id="face-fill-checkbox" /> Fill faces</label>
+              </div>
+              <div class="form-row">
+                <label for="face-fill-opacity">Face opacity</label>
+                <input type="range" id="face-fill-opacity" min="0" max="0.8" step="0.05" value="0.25" />
+                <span id="face-fill-opacity-value">0.25</span>
+              </div>
+              <div class="form-row">
+                <label for="gradient-edges-checkbox">Gradient edges</label>
+                <input type="checkbox" id="gradient-edges-checkbox" checked />
+              </div>
+              <section class="appearance-palette" aria-labelledby="color-palette-heading">
+                <h4 id="color-palette-heading" class="advanced-subheading">Color palette</h4>
+                <div id="palette-grid" class="palette-grid" title="Hover a swatch to see its index and color name"></div>
+                <button id="reset-colors-button" class="secondary-button" type="button" title="Reset palette colors to default">
+                  Reset colors
+                </button>
+              </section>
+            </div>
+          </details>
 
-      <details class="block" id="settings-block">
-        <summary>⚙️ Machine settings</summary>
-        <div class="row" style="margin-top:6px">
-          <label for="max-steps-input">Max iterations:</label>
-          <input id="max-steps-input" type="number" value="120" min="-1" step="1" style="width:120px">
-          <small>(-1 = unlimited)</small>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <label for="max-vertices-input" title="Maximum number of nodes allowed. 0 = unlimited.">
-            Max vertices:
-          </label>
-          <input id="max-vertices-input" type="number" value="200" min="0" step="1" style="width:120px">
-          <small title="0 means unlimited">(0 = unlimited)</small>
-        </div>
+          <details class="block advanced-subgroup" id="graph-behaviour-block">
+            <summary>Graph behaviour</summary>
+            <div class="advanced-subgroup-content">
+              <label><input type="checkbox" id="maintain-single-component" /> Maintain a single component</label>
+              <label><input type="checkbox" id="auto-center-checkbox" checked /> Smooth auto-center</label>
+              <label><input type="checkbox" id="auto-scale-checkbox" checked /> Smooth auto-scale</label>
+            </div>
+          </details>
 
-        <div class="row" style="margin-top:8px">
-          <label for="nearest-max-depth-input" title="BFS depth limit for TryToConnectWithNearest. 0 disables nearest search.">
-            Nearest search max depth:
-          </label>
-          <input id="nearest-max-depth-input" type="number" value="2" min="0" step="1" style="width:120px">
-        </div>
+          <details class="block advanced-subgroup" id="settings-block">
+            <summary>Simulation</summary>
+            <div class="advanced-subgroup-content">
+              <div class="form-row">
+                <label for="max-steps-input">Maximum iterations</label>
+                <input id="max-steps-input" type="number" value="120" min="-1" step="1" />
+                <small>-1 = unlimited</small>
+              </div>
+              <div class="form-row">
+                <label for="max-vertices-input" title="Maximum number of nodes allowed. 0 = unlimited.">Maximum vertices</label>
+                <input id="max-vertices-input" type="number" value="200" min="0" step="1" />
+                <small>0 = unlimited</small>
+              </div>
+              <div class="form-row">
+                <label for="simulation-interval">Iteration interval</label>
+                <input type="range" id="simulation-interval" min="50" max="2000" value="100" />
+                <span><span id="simulation-interval-value">100</span> ms</span>
+              </div>
+              <div class="form-row">
+                <label for="nearest-max-depth-input">Nearest search depth</label>
+                <input id="nearest-max-depth-input" type="number" value="2" min="0" step="1" />
+              </div>
+              <div class="form-row">
+                <label for="topology-semantics-select">Topology semantics</label>
+                <select id="topology-semantics-select">
+                  <option value="snapshot">snapshot (CA-like)</option>
+                  <option value="live">live (legacy)</option>
+                </select>
+              </div>
+              <label><input type="checkbox" id="orphan-cleanup-checkbox" /> Auto-dissolve detached subgraphs</label>
+              <label><input type="checkbox" id="reseed-isolated-a-checkbox" checked /> Reseed isolated A nodes as new roots</label>
+            </div>
+          </details>
 
-        <div class="row" style="margin-top:8px">
-          <label for="topology-semantics-select"
-                title="Whether BFS/adjacency/neighbor-based operations use the step-start snapshot or the live graph during the step.">
-            Topology semantics:
-          </label>
+          <details class="block advanced-subgroup" id="advanced-block">
+            <summary>Dev tools</summary>
+            <div class="advanced-subgroup-content">
+              <div class="form-row">
+                <label for="display-options">Display</label>
+                <select id="display-options">
+                  <option value="edges">Edges</option>
+                  <option value="nodes">Nodes</option>
+                  <option value="both" selected>Nodes &amp; edges</option>
+                </select>
+              </div>
+              <div class="control-buttons">
+                <button id="connect-button" type="button">Connect</button>
+                <label for="source-node">Source</label>
+                <select id="source-node"></select>
+                <label for="target-node">Target</label>
+                <select id="target-node"></select>
+              </div>
+              <div class="control-buttons">
+                <button id="add-node-button" type="button">Add node</button>
+                <label for="node-state">State</label>
+                <select id="node-state"></select>
+              </div>
+              <div class="control-buttons">
+                <button id="remove-node-button" type="button">Remove node</button>
+                <label for="remove-node-id">Node ID</label>
+                <select id="remove-node-id"></select>
+              </div>
+              <div class="control-buttons">
+                <button id="change-node-state-button" type="button">Change node state</button>
+                <label for="change-node-id">Node</label>
+                <select id="change-node-id"></select>
+                <label for="change-node-state">State</label>
+                <select id="change-node-state"></select>
+              </div>
+              <div class="control-buttons">
+                <button id="disconnect-button" type="button">Disconnect</button>
+                <label for="disconnect-source-node">Source</label>
+                <select id="disconnect-source-node"></select>
+                <label for="disconnect-target-node">Target</label>
+                <select id="disconnect-target-node"></select>
+              </div>
+              <div class="control-buttons">
+                <button id="connect-nearest-button" type="button">Connect nearest</button>
+                <label for="connect-nearest-node">Node</label>
+                <select id="connect-nearest-node"></select>
+                <label for="connect-nearest-state">State</label>
+                <select id="connect-nearest-state"></select>
+              </div>
+            </div>
+          </details>
 
-          <select id="topology-semantics-select" style="width:180px">
-            <option value="snapshot">snapshot (CA-like)</option>
-            <option value="live">live (legacy)</option>
-          </select>
+          <button id="sound-toggle-button" class="secondary-button" type="button" title="Toggle mechanical ticking sound">
+            Sound
+          </button>
         </div>
-
-       
-        <div class="row" style="margin-top:8px">
-          <label><input type="checkbox" id="orphan-cleanup-checkbox"> Auto-dissolve detached subgraphs</label>
-        </div>
-        <div class="row" style="margin-top:6px">
-        <label>
-          <input type="checkbox" id="reseed-isolated-a-checkbox" checked>
-          Reseed isolated A nodes as new roots
-        </label>
-      </div>
-      </details>
-
-      <details class="block" id="advanced-block">
-        <summary>🧪 Advanced (debug)</summary>
-        <div class="row" style="margin:6px 0">
-          <label for="display-options">Display:</label>
-          <select id="display-options">
-            <option value="edges">Edges</option>
-            <option value="nodes">Nodes</option>
-            <option value="both">Nodes & edges</option>
-          </select>
-          <div class="row" style="margin:6px 0">
-            <label for="gradient-edges-checkbox">Gradient edges:</label>
-            <input type="checkbox" id="gradient-edges-checkbox" checked>
-            <small style="color:var(--muted)">(on/off)</small>
-          </div>
-          <div class="row" style="margin:6px 0">
-            <button id="reset-colors-button" class="toggle-btn" title="Reset palette colors to default">
-              🎨 Reset colors
-            </button>
-          </div>
-        </div>
-        <div class="row" style="margin:6px 0">
-          <label for="simulation-interval">Interval (ms):</label>
-          <input type="range" id="simulation-interval" min="50" max="2000" value="100">
-          <span id="simulation-interval-value">100</span> ms
-        </div>
-
-        <div class="control-buttons">
-          <button id="connect-button">Connect</button>
-          <label for="source-node">Source:</label>
-          <select id="source-node"></select>
-          <label for="target-node">Target:</label>
-          <select id="target-node"></select>
-        </div>
-        <div class="control-buttons">
-          <button id="add-node-button">Add Node</button>
-          <label for="node-state">State:</label>
-          <select id="node-state"></select>
-        </div>
-        <div class="control-buttons">
-          <button id="remove-node-button">Remove Node</button>
-          <label for="remove-node-id">Node ID:</label>
-          <select id="remove-node-id"></select>
-        </div>
-        <div class="control-buttons">
-          <button id="change-node-state-button">Change Node State</button>
-          <label for="change-node-id">Node:</label>
-          <select id="change-node-id"></select>
-          <label for="change-node-state">State:</label>
-          <select id="change-node-state"></select>
-        </div>
-        <div class="control-buttons">
-          <button id="disconnect-button">Disconnect</button>
-          <label for="disconnect-source-node">Source:</label>
-          <select id="disconnect-source-node"></select>
-          <label for="disconnect-target-node">Target:</label>
-          <select id="disconnect-target-node"></select>
-        </div>
-        <div class="control-buttons">
-          <button id="connect-nearest-button">Connect Nearest</button>
-          <label for="connect-nearest-node">Node:</label>
-          <select id="connect-nearest-node"></select>
-          <label for="connect-nearest-state">State:</label>
-          <select id="connect-nearest-state"></select>
-        </div>
-      </details>
-
-      <details class="block" id="palette-block">  <!-- no 'open' attribute = collapsed default -->
-        <summary role="button" tabindex="0">🎨 Color palette (debug)</summary>
-        <div id="palette-grid" class="palette-grid"
-            title="Hover a swatch to see its index and color name"></div>
       </details>
     </aside>
-  </div>
 
-  <footer>
-    <div class="left">
-      <span id="status-info">Nodes: 0 | Edges: 0 | Iterations: 0</span>
-    </div>
-    <div class="right">
-      <span class="pill">Zoom: wheel • Pan: drag (Move)</span>
-    </div>
-  </footer>
+    <section class="workspace" aria-label="Simulation workspace">
+      <div id="canvas-container">
+        <div id="three-container" hidden></div>
+        <svg aria-label="Graph simulation"></svg>
+        <div id="mobile-toolbar" aria-label="Mobile controls" hidden>
+          <button id="mobile-play" class="mobile-icon-button mobile-play-button" type="button" data-state="start" aria-label="Start">
+            <img class="button-icon play-state-icon" src="media/website/icons/play.svg" alt="" aria-hidden="true" />
+            <img class="button-icon pause-state-icon" src="media/website/icons/pause.svg" alt="" aria-hidden="true" />
+          </button>
+          <button id="mobile-reset" class="mobile-icon-button" type="button" title="Reset simulation" aria-label="Reset simulation">
+            <img class="button-icon" src="media/website/icons/restart.svg" alt="" aria-hidden="true" />
+          </button>
+          <button id="mobile-slow" type="button" title="Change simulation speed">1×</button>
+          <button id="mobile-view-toggle" class="toggle-active" type="button" title="Switch to 3D view">2D</button>
+          <button id="mobile-share" class="mobile-icon-button" type="button" title="Copy a shareable link" aria-label="Copy a shareable link">
+            <img class="button-icon" src="media/website/icons/share.svg" alt="" aria-hidden="true" />
+          </button>
+          <select id="gene-select-mobile" title="Genome"></select>
+        </div>
+        <div id="rules-overlay" hidden></div>
+        <div id="node-inspector-overlay" hidden></div>
+        <div class="simulation-status">
+          <span id="status-info">Iteration 0 · 1 node · 0 edges</span>
+        </div>
+      </div>
 
-    <div id="rule-editor-modal" class="modal" hidden>
-    <div class="modal-backdrop" data-close="1"></div>
+      <footer class="simulation-toolbar" aria-label="Simulation controls">
+        <div class="toolbar-group transport-controls">
+          <button id="reset-button" class="toolbar-button reset-button" type="button" title="Reset simulation" aria-label="Reset simulation">
+            <img class="button-icon" src="media/website/icons/restart.svg" alt="" aria-hidden="true" />
+          </button>
+          <button id="pause-resume-button" class="toolbar-button play-button" type="button" data-state="start" aria-label="Start simulation">
+            <img class="button-icon play-state-icon" src="media/website/icons/play.svg" alt="" aria-hidden="true" />
+            <img class="button-icon pause-state-icon" src="media/website/icons/pause.svg" alt="" aria-hidden="true" />
+          </button>
+          <button id="next-step-button" class="toolbar-button step-button" type="button" title="Run one step" aria-label="Run one step">
+            <img class="button-icon" src="media/website/icons/next-step.svg" alt="" aria-hidden="true" />
+          </button>
+        </div>
 
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rule-editor-title">
+        <div class="toolbar-group speed-controls">
+          <span class="toolbar-label">speed</span>
+          <button id="slowdown-button" class="segmented-button" type="button" title="Change simulation speed">1×</button>
+        </div>
+
+        <div class="toolbar-group segmented-control graph-tools-control" aria-label="Graph tools">
+          <button id="tool-move-button" class="segment active" type="button" title="Move, pan, or drag nodes">move</button>
+          <button id="tool-scissors-button" class="segment" type="button" title="Cut edges while dragging">cut</button>
+        </div>
+
+        <div class="toolbar-group segmented-control view-control" aria-label="View">
+          <button id="view-2d-button" class="segment active" type="button" title="Standard 2D view" aria-pressed="true">2D</button>
+          <button id="view-3d-button" class="segment" type="button" title="3D view" aria-pressed="false">3D</button>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <div id="rule-editor-modal" class="modal" hidden>
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" aria-describedby="rule-editor-subtitle">
       <div class="modal-header">
         <div>
-          <div id="rule-editor-title" class="modal-title">Edit rule</div>
+          <div id="rule-editor-title" class="modal-title">Edit gene</div>
           <div id="rule-editor-subtitle" class="modal-subtitle"></div>
         </div>
-        <button id="rule-editor-close" class="toggle-btn" title="Close">✕</button>
+        <div class="modal-header-actions">
+          <label class="rule-editor-enabled-toggle">
+            <input type="checkbox" id="rule-editor-enabled" checked />
+            <span class="rule-editor-switch" aria-hidden="true"></span>
+            <span>Enabled</span>
+          </label>
+          <button id="rule-editor-close" class="modal-close-button" type="button" title="Close" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
       </div>
 
       <div class="modal-body">
-        <div class="row">
-          <label><input type="checkbox" id="rule-editor-enabled" checked> Enabled</label>
-        </div>
+        <section class="rule-editor-section" aria-labelledby="rule-editor-condition-heading">
+          <h4 id="rule-editor-condition-heading">Condition</h4>
 
-        <hr class="modal-sep">
+          <div class="rule-editor-line rule-editor-state-line">
+            <label for="rule-editor-current">Current state:</label>
+            <span class="rule-editor-bracket-control">
+              <select id="rule-editor-current"></select>
+            </span>
+            <label for="rule-editor-prior">Prior state:</label>
+            <span class="rule-editor-bracket-control">
+              <select id="rule-editor-prior"></select>
+            </span>
+          </div>
 
-        <h4 style="margin:0 0 6px 0">Condition</h4>
-        <div class="row">
-          <label>Current:</label>
-          <select id="rule-editor-current"></select>
-          <label>Prior:</label>
-          <select id="rule-editor-prior"></select>
-        </div>
-        
-        <div class="row" style="margin-top:6px">          
-          <label>Conns ≥</label>
-          <input id="rule-editor-conn-ge" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
-          <label>≤</label>
-          <input id="rule-editor-conn-le" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
-          <label>with:</label>
-          <select id="rule-editor-conn-with-state"></select>
-        </div>
+          <div class="rule-editor-line">
+            <label for="rule-editor-conn-ge">Connections:</label>
+            <span class="rule-editor-bracket-control rule-editor-range-control">
+              <input id="rule-editor-conn-ge" class="rule-int-tiny" type="number" step="1" placeholder="from" aria-label="Minimum connections" />
+              <span class="rule-editor-range-divider" aria-hidden="true">;</span>
+              <input id="rule-editor-conn-le" class="rule-int-tiny" type="number" step="1" placeholder="to" aria-label="Maximum connections" />
+            </span>
+            <label for="rule-editor-conn-with-state">with</label>
+            <span class="rule-editor-bracket-control">
+              <select id="rule-editor-conn-with-state"></select>
+            </span>
+          </div>
 
-        <div class="row" style="margin-top:6px">
-          <label>Parents ≥</label>
-          <input id="rule-editor-par-ge" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
-          <label>≤</label>
-          <input id="rule-editor-par-le" class="rule-int-tiny" type="number" step="1" placeholder="(ignore)">
-        </div>
+          <div class="rule-editor-line">
+            <label for="rule-editor-par-ge">Parents:</label>
+            <span class="rule-editor-bracket-control rule-editor-range-control">
+              <input id="rule-editor-par-ge" class="rule-int-tiny" type="number" step="1" placeholder="from" aria-label="Minimum parents" />
+              <span class="rule-editor-range-divider" aria-hidden="true">;</span>
+              <input id="rule-editor-par-le" class="rule-int-tiny" type="number" step="1" placeholder="to" aria-label="Maximum parents" />
+            </span>
+          </div>
+        </section>
 
-        <hr class="modal-sep">
+        <section class="rule-editor-section" aria-labelledby="rule-editor-operation-heading">
+          <h4 id="rule-editor-operation-heading">Operation</h4>
+          <div class="rule-editor-line rule-editor-operation-line">
+            <span class="rule-editor-bracket-control rule-editor-operation-control">
+              <select id="rule-editor-op-kind" aria-label="Operation"></select>
+            </span>
+            <label id="rule-editor-op-operand-label" for="rule-editor-op-operand">node with state</label>
+            <span id="rule-editor-op-operand-control" class="rule-editor-bracket-control">
+              <select id="rule-editor-op-operand"></select>
+            </span>
+          </div>
+        </section>
 
-        <h4 style="margin:0 0 6px 0">Operation</h4>
-        <div class="row">
-          <label>Kind:</label>
-          <select id="rule-editor-op-kind"></select>
-        </div>
-
-        <div class="row" style="margin-top:6px">
-          <label>Operand:</label>
-          <select id="rule-editor-op-operand"></select>
-          <small id="rule-editor-op-hint" style="color:var(--muted)"></small>
-        </div>
-
-        <div id="rule-editor-error" style="color:#b91c1c;font-size:.9rem;margin-top:8px" hidden></div>
+        <div id="rule-editor-error" hidden></div>
       </div>
 
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="rule-editor-remove" class="toggle-btn" title="Remove this rule">🗑 Remove</button>
-          <button id="rule-editor-clone" class="toggle-btn" title="Clone this rule">⎘ Clone</button>
+          <button id="rule-editor-remove" class="secondary-button" type="button" title="Delete this gene">Delete</button>
+          <button id="rule-editor-clone" class="secondary-button" type="button" title="Clone this gene">Clone</button>
         </div>
-
         <div class="modal-footer-right">
-          <div class="row" style="gap:6px">
-            <label id="rule-editor-insert-label" style="font-size:.85rem;color:var(--muted)">Insert at:</label>
-            <input id="rule-editor-insert-index" type="number" min="1" step="1" style="width:78px">
+          <div class="rule-editor-insert-control">
+            <label id="rule-editor-insert-label" for="rule-editor-insert-index">Insert at:</label>
+            <span class="rule-editor-bracket-control">
+              <input id="rule-editor-insert-index" class="rule-index-input" type="number" min="1" step="1" />
+            </span>
           </div>
-
-          <button id="rule-editor-cancel" class="toggle-btn">Cancel</button>
-          <button id="rule-editor-save" class="toggle-btn" style="background:#111827;color:#fff;border-color:#111827">
-            Save
-          </button>
+          <button id="rule-editor-save" class="primary-button" type="button">Save</button>
         </div>
       </div>
-
     </div>
-    
   </div>
 
   <div id="toast" hidden></div>

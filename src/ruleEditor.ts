@@ -1,12 +1,15 @@
 // src/ruleEditor.ts
 import { NodeState, OperationKindEnum, RuleItem } from './gum';
 import { mapOperationKindToString } from './utils';
+import { getEditedGenomeLabel } from './genomePicker';
+import { reorderRules } from './ruleReorder';
 
 export type RuleEditorMode = 'add' | 'edit';
 
 export interface RuleEditorController {
   open(mode: RuleEditorMode, index?: number): void;
   close(): void;
+  reorder(fromIndex: number, toIndex: number): Promise<boolean>;
 }
 
 /** Pure helper (safe to import in Jest / Node) */
@@ -20,11 +23,28 @@ export function getRuleEditorUiLabels(
 export function getRuleEditorOpKindOptions(): Array<{ kind: OperationKindEnum; label: string }> {
   return [
     { kind: OperationKindEnum.TurnToState,             label: 'Turn to state' },
-    { kind: OperationKindEnum.GiveBirthConnected,      label: 'Birth (connected)' },
-    { kind: OperationKindEnum.TryToConnectWithNearest, label: 'Connect nearest' },
+    { kind: OperationKindEnum.GiveBirthConnected,      label: 'Give birth connected' },
+    { kind: OperationKindEnum.TryToConnectWithNearest, label: 'Connect to nearest' },
     { kind: OperationKindEnum.DisconnectFrom,          label: 'Disconnect from' },
     { kind: OperationKindEnum.Die,                     label: 'Die' },
   ];
+}
+
+export function getRuleEditorOperandUi(kind: string): {
+  showLabel: boolean;
+  showOperand: boolean;
+} {
+  if (kind === 'Die') {
+    return {
+      showLabel: false,
+      showOperand: false,
+    };
+  }
+
+  return {
+    showLabel: kind !== 'TurnToState',
+    showOperand: true,
+  };
 }
 
 export interface RuleEditorDeps {
@@ -46,7 +66,9 @@ export interface RuleEditorDeps {
   getBaseGenomeLabel(): string;
 
   setCustomGenomeCache(cfg: any | null): void;
+  setNewGenomeCache(cfg: any | null): void;
   syncGenomeSelects(value: string): void;
+  setGenomeSelectLabel(value: string, label: string): void;
   genomeSelectValues: { CUSTOM: string; NEW: string };
 
   applyGenomeConfig(cfg: any, labelForSelect: string | null): Promise<void>;
@@ -114,8 +136,9 @@ type DomRefs = {
   parLeInput: HTMLInputElement;
 
   opKindSel: HTMLSelectElement;
+  opOperandLabel: HTMLLabelElement;
+  opOperandControl: HTMLSpanElement;
   opOperandSel: HTMLSelectElement;
-  opHint: HTMLSpanElement;
 
   insertIndexInput: HTMLInputElement;
   insertLabelEl: HTMLLabelElement | null;
@@ -124,7 +147,6 @@ type DomRefs = {
 
   removeBtn: HTMLButtonElement;
   cloneBtn: HTMLButtonElement;
-  cancelBtn: HTMLButtonElement;
   saveBtn: HTMLButtonElement;
   closeBtn: HTMLButtonElement;
 };
@@ -153,8 +175,9 @@ function dom(): DomRefs {
     parLeInput: mustGetEl<HTMLInputElement>('rule-editor-par-le'),
 
     opKindSel: mustGetEl<HTMLSelectElement>('rule-editor-op-kind'),
+    opOperandLabel: mustGetEl<HTMLLabelElement>('rule-editor-op-operand-label'),
+    opOperandControl: mustGetEl<HTMLSpanElement>('rule-editor-op-operand-control'),
     opOperandSel: mustGetEl<HTMLSelectElement>('rule-editor-op-operand'),
-    opHint: mustGetEl<HTMLSpanElement>('rule-editor-op-hint'),
 
     insertIndexInput: mustGetEl<HTMLInputElement>('rule-editor-insert-index'),
     insertLabelEl: (document.getElementById('rule-editor-insert-label') as HTMLLabelElement | null),
@@ -163,7 +186,6 @@ function dom(): DomRefs {
 
     removeBtn: mustGetEl<HTMLButtonElement>('rule-editor-remove'),
     cloneBtn: mustGetEl<HTMLButtonElement>('rule-editor-clone'),
-    cancelBtn: mustGetEl<HTMLButtonElement>('rule-editor-cancel'),
     saveBtn: mustGetEl<HTMLButtonElement>('rule-editor-save'),
     closeBtn: mustGetEl<HTMLButtonElement>('rule-editor-close'),
   };
@@ -174,11 +196,17 @@ function dom(): DomRefs {
 // -------------------- controller --------------------
 
 export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorController {
+  const noopController: RuleEditorController = {
+    open: () => {},
+    close: () => {},
+    reorder: async () => false,
+  };
+
   // If called in a non-DOM environment, return no-op controller.
-  if (!hasDom()) return { open: () => {}, close: () => {} };
+  if (!hasDom()) return noopController;
 
   // If the modal does not exist in DOM, no-op (keeps app working).
-  if (!document.getElementById('rule-editor-modal')) return { open: () => {}, close: () => {} };
+  if (!document.getElementById('rule-editor-modal')) return noopController;
 
   let editorState: { mode: RuleEditorMode; index: number } | null = null;
   let selectsReady = false;
@@ -236,9 +264,10 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
   function updateOperandUi() {
     const d = dom();
     const kind = String(d.opKindSel.value);
-    const hasOperand = kind !== 'Die';
-    d.opOperandSel.disabled = !hasOperand;
-    d.opHint.textContent = hasOperand ? '' : 'No operand for Die.';
+    const ui = getRuleEditorOperandUi(kind);
+    d.opOperandLabel.hidden = !ui.showLabel;
+    d.opOperandControl.hidden = !ui.showOperand;
+    d.opOperandSel.disabled = !ui.showOperand;
   }
 
  function applyModeLabels(mode: RuleEditorMode) {
@@ -313,16 +342,19 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
 
     deps.clearShareHashIfPresent();
 
-    const shouldCustom = deps.getCurrentGenomeSource() !== 'new';
-    const label = shouldCustom ? `Edited: ${deps.getBaseGenomeLabel()}` : null;
+    const genomeSource = deps.getCurrentGenomeSource();
+    const isNewGenome = genomeSource === 'new';
+    const editedLabel = getEditedGenomeLabel(genomeSource, deps.getBaseGenomeLabel());
 
-    await deps.applyGenomeConfig(nextCfg, label);
+    await deps.applyGenomeConfig(nextCfg, isNewGenome ? null : editedLabel);
 
-    if (shouldCustom) {
+    if (isNewGenome) {
+      deps.setNewGenomeCache(deepClone(deps.getLastLoadedConfig()));
+      deps.setGenomeSelectLabel(deps.genomeSelectValues.NEW, editedLabel);
+      deps.syncGenomeSelects(deps.genomeSelectValues.NEW);
+    } else {
       deps.setCustomGenomeCache(deepClone(deps.getLastLoadedConfig()));
       deps.syncGenomeSelects(deps.genomeSelectValues.CUSTOM);
-    } else {
-      deps.syncGenomeSelects(deps.genomeSelectValues.NEW);
     }
 
     deps.showToast('Rule table updated — simulation reset.');
@@ -336,6 +368,24 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     showError(null);
   }
 
+  async function reorder(fromIndex: number, toIndex: number): Promise<boolean> {
+    const rules = deps.exportRulesFromMachine();
+    if (
+      !Number.isInteger(fromIndex) ||
+      !Number.isInteger(toIndex) ||
+      fromIndex < 0 ||
+      fromIndex >= rules.length ||
+      toIndex < 0 ||
+      toIndex >= rules.length ||
+      fromIndex === toIndex
+    ) {
+      return false;
+    }
+
+    await commitRuleTable(reorderRules(rules, fromIndex, toIndex));
+    return true;
+  }
+
   function wireOnce() {
     if (wired) return;
     wired = true;
@@ -343,13 +393,6 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     const d = dom();
 
     d.closeBtn.addEventListener('click', close);
-    d.cancelBtn.addEventListener('click', close);
-
-    // backdrop click closes (your HTML uses data-close="1" on backdrop)
-    d.modal.addEventListener('click', (e) => {
-      const t = e.target as HTMLElement;
-      if (t?.dataset?.close === '1') close();
-    });
 
     // ESC closes
     document.addEventListener('keydown', (e) => {
@@ -426,10 +469,9 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     const count = deps.getRuleItems().length;
     const startTok = deps.getStartStateToken();
 
-    d.title.textContent = (mode === 'add') ? 'Add rule' : `Edit rule #${index + 1}`;
-    d.subtitle.textContent = (mode === 'add')
-      ? 'Adding will rebuild the machine and reset the graph.'
-      : 'Saving, cloning, or removing will rebuild the machine and reset the graph.';
+    d.modal.dataset.editorMode = mode;
+    d.title.textContent = (mode === 'add') ? 'New gene' : `Edit gene #${index + 1}`;
+    d.subtitle.textContent = '';
 
     // Buttons visibility
     d.removeBtn.hidden = (mode === 'add');
@@ -493,5 +535,5 @@ export function createRuleEditorController(deps: RuleEditorDeps): RuleEditorCont
     requestAnimationFrame(() => d.currentSel.focus());
   }
 
-  return { open, close };
+  return { open, close, reorder };
 }

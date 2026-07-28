@@ -33,9 +33,27 @@ import { shouldUseMobileBasic } from './responsive';
 import { createGraph3DController } from './graph3d';
 import { encodeGenomeToUrlToken, parseGenomeFromUrlHash } from './shareGenome';
 import { createRuleEditorController } from './ruleEditor';
+import {
+  CUSTOM_GENOME_CATEGORY,
+  getGenomePickerCategories,
+} from './genomePicker';
 import { formatNodeInspectorText } from './nodeInspector';
 import { edgeGradientId, shouldUseGradientEdge } from './edgeGradients';
 import { DetectedFace, detectFaces } from './faceDetection';
+import {
+  DEFAULT_DISPLAY_OPTION,
+  DEFAULT_MAINTAIN_SINGLE_COMPONENT,
+  DEFAULT_ORPHAN_CLEANUP_ENABLED,
+  DEFAULT_PLAYBACK_SPEED,
+  GraphTool,
+  GraphViewMode,
+  PlaybackSpeed,
+  nextPlaybackSpeed,
+  playbackIntervalMs,
+  toolAfterClick,
+  toolForView,
+  viewAfterClick,
+} from './p0UiBehavior';
 
 
 
@@ -58,13 +76,13 @@ const DEFAULT_MACHINE_CFG: MachineCfg = {
     connect_all: false,
   },
   topology_semantics: 'snapshot' as TopologySemantics,
-  maintain_single_component: true,
+  maintain_single_component: DEFAULT_MAINTAIN_SINGLE_COMPONENT,
+  orphan_cleanup: { enabled: DEFAULT_ORPHAN_CLEANUP_ENABLED },
   reseed_isolated_A: true,
 };
 
 const config = { debug: false };              // simple UI verbosity flag
 const FAST_MS_DEFAULT = 200;                  // default fast tick ms
-const SLOW_MS = 500;                          // slow mode tick ms
 const AUTO_MAX_FILL = 0.5;                    // auto camera max fill
 const CAMERA_MA_WINDOW = 25;                  // smooth camera EMA window
 const CAMERA_ALPHA = 2 / (CAMERA_MA_WINDOW + 1);
@@ -153,9 +171,8 @@ function applyPaletteSlotColor(idx: number, cssColor: string) {
    2) STATE (runtime, UI toggles, misc)
    ========================================================================= */
 
-type Tool = 'move' | 'scissors';
-
-type ViewMode = '2d' | '3d';
+type Tool = GraphTool;
+type ViewMode = GraphViewMode;
 let viewMode: ViewMode = '2d';
 
 let showAllRules = false;
@@ -166,7 +183,7 @@ let faceFillOpacity = FACE_FILL_DEFAULT_OPACITY;
 let isSimulationRunning = false;
 let simulationInterval: any;
 
-let slowMode = false;
+let playbackSpeed: PlaybackSpeed = DEFAULT_PLAYBACK_SPEED;
 let fastMs = FAST_MS_DEFAULT;
 
 let currentTool: Tool = 'move';
@@ -186,8 +203,10 @@ const FIT_PARAMS = {
   defaultK: 1,
 };
 
+const EMPTY_GENOME_PATH = 'data/genoms/empty.yaml';
+
 const GENOME_SELECT_VALUES = {
-  NEW: '__new__',
+  NEW: EMPTY_GENOME_PATH,
   CUSTOM: '__custom__',
 } as const;
 
@@ -198,6 +217,9 @@ let currentGenomeSource: GenomeSource = 'catalog';
 let baseGenomeLabel = 'Genome';
 
 let customGenomeCache: any | null = null;
+let customGenomeSource: GenomeSource = 'custom';
+let customGenomeBaseLabel = 'Custom';
+let newGenomeCache: any | null = null;
 let syncingGenomeSelect = false;
 
 
@@ -344,12 +366,43 @@ function handleGraphCountsPotentiallyChanged(reason: TickReason) {
 
 const pauseResumeButton = document.getElementById('pause-resume-button') as HTMLButtonElement;
 const resetBtn          = document.getElementById('reset-button') as HTMLButtonElement | null;
+const aboutToggleButton = document.getElementById('about-toggle-button') as HTMLButtonElement | null;
+const aboutPanel        = document.getElementById('about-panel') as HTMLElement | null;
+
+function setAboutPanelOpen(open: boolean) {
+  if (!aboutToggleButton || !aboutPanel) return;
+  aboutPanel.hidden = !open;
+  aboutToggleButton.setAttribute('aria-expanded', String(open));
+
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
+}
+
+aboutToggleButton?.addEventListener('click', () => {
+  setAboutPanelOpen(aboutToggleButton.getAttribute('aria-expanded') !== 'true');
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && aboutToggleButton?.getAttribute('aria-expanded') === 'true') {
+    setAboutPanelOpen(false);
+    aboutToggleButton.focus();
+  }
+});
+
+type SimulationButtonState = 'start' | 'running' | 'resume';
+
+function setSimulationButtonState(state: SimulationButtonState) {
+  const label = state === 'running' ? 'Pause' : state === 'resume' ? 'Resume' : 'Start';
+  pauseResumeButton.dataset.state = state;
+  pauseResumeButton.setAttribute('aria-label', `${label} simulation`);
+  pauseResumeButton.title = `${label} simulation`;
+}
 
 resetBtn?.addEventListener('click', () => {
   clearInterval(simulationInterval);
   isSimulationRunning = false;
-  pauseResumeButton.textContent = 'Start';
-  pauseResumeButton.style.backgroundColor = 'lightgreen';
+  setSimulationButtonState('start');
   setControlsEnabled(true);
 
   if (lastLoadedConfig) {
@@ -366,6 +419,7 @@ resetBtn?.addEventListener('click', () => {
 
 const btnMove      = document.getElementById('tool-move-button') as HTMLButtonElement | null;
 const btnScissors  = document.getElementById('tool-scissors-button') as HTMLButtonElement | null;
+const graphToolsControl = document.querySelector('.graph-tools-control') as HTMLElement | null;
 const slowBtn      = document.getElementById('slowdown-button') as HTMLButtonElement | null;
 
 const view2dBtn = document.getElementById('view-2d-button') as HTMLButtonElement | null;
@@ -735,38 +789,197 @@ function buildRuleTilesHTML(items: RuleItem[], cap: number): string {
   return tiles + addTile;
 }
 
+type RuleTileDragState = {
+  pointerId: number;
+  tile: HTMLDivElement;
+  fromIndex: number;
+  startX: number;
+  startY: number;
+  dragging: boolean;
+};
+
+const wiredRuleTileReorderContainers = new WeakSet<HTMLDivElement>();
+const RULE_TILE_SHIFT_DURATION_MS = 180;
+
+function animateRuleTileMutation(
+  container: HTMLDivElement,
+  mutate: () => void
+): Animation[] {
+  const tiles = Array.from(container.querySelectorAll<HTMLDivElement>('.gene-tile'));
+  const previousRects = new Map(
+    tiles.map(tile => [tile, tile.getBoundingClientRect()] as const)
+  );
+
+  // Capture the current visual position before replacing an in-flight FLIP animation.
+  tiles.forEach(tile => tile.getAnimations().forEach(animation => animation.cancel()));
+  mutate();
+
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return [];
+
+  return tiles.flatMap(tile => {
+    const previous = previousRects.get(tile);
+    if (!previous) return [];
+
+    const current = tile.getBoundingClientRect();
+    const offsetX = previous.left - current.left;
+    const offsetY = previous.top - current.top;
+    if (Math.abs(offsetX) < 0.5 && Math.abs(offsetY) < 0.5) return [];
+
+    return [tile.animate(
+      [
+        { transform: `translate(${offsetX}px, ${offsetY}px)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      {
+        duration: RULE_TILE_SHIFT_DURATION_MS,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      }
+    )];
+  });
+}
+
+function wireRuleTileReordering(container: HTMLDivElement) {
+  if (wiredRuleTileReorderContainers.has(container)) return;
+  wiredRuleTileReorderContainers.add(container);
+
+  let dragState: RuleTileDragState | null = null;
+  let reorderCommitPending = false;
+  const dragThreshold = 5;
+
+  const finishDrag = (event: PointerEvent, cancelled: boolean) => {
+    const state = dragState;
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    dragState = null;
+    state.tile.classList.remove('dragging');
+
+    if (state.tile.hasPointerCapture?.(event.pointerId)) {
+      state.tile.releasePointerCapture(event.pointerId);
+    }
+
+    if (!state.dragging) return;
+
+    state.tile.dataset.suppressClick = '1';
+    if (cancelled) {
+      updateDebugInfo({ forceRulesRebuild: true });
+      return;
+    }
+
+    const orderedTiles = Array.from(
+      container.querySelectorAll<HTMLDivElement>('.gene-tile:not(.add-tile)')
+    );
+    const toIndex = orderedTiles.indexOf(state.tile);
+    if (toIndex < 0 || toIndex === state.fromIndex) return;
+
+    const settlingAnimations = orderedTiles.flatMap(tile => tile.getAnimations());
+    reorderCommitPending = true;
+    void Promise.all(
+      settlingAnimations.map(animation => animation.finished.catch(() => undefined))
+    ).then(() => ruleEditor.reorder(state.fromIndex, toIndex))
+      .finally(() => {
+        reorderCommitPending = false;
+      });
+  };
+
+  container.addEventListener('pointerdown', (event) => {
+    if (reorderCommitPending) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    const target = event.target as Element | null;
+    const tile = target?.closest<HTMLDivElement>('.gene-tile:not(.add-tile)') ?? null;
+    if (!tile || tile.parentElement !== container) return;
+
+    const fromIndex = Number(tile.dataset.idx ?? '-1');
+    if (!Number.isInteger(fromIndex) || fromIndex < 0) return;
+
+    dragState = {
+      pointerId: event.pointerId,
+      tile,
+      fromIndex,
+      startX: event.clientX,
+      startY: event.clientY,
+      dragging: false,
+    };
+    tile.setPointerCapture?.(event.pointerId);
+  });
+
+  container.addEventListener('pointermove', (event) => {
+    const state = dragState;
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    if (!state.dragging) {
+      const distance = Math.hypot(
+        event.clientX - state.startX,
+        event.clientY - state.startY
+      );
+      if (distance < dragThreshold) return;
+
+      state.dragging = true;
+      state.tile.classList.add('dragging');
+    }
+
+    event.preventDefault();
+
+    const hit = document.elementFromPoint(event.clientX, event.clientY);
+    const target = hit?.closest<HTMLDivElement>('.gene-tile') ?? null;
+    if (!target || target === state.tile || target.parentElement !== container) return;
+
+    if (target.classList.contains('add-tile')) {
+      if (state.tile.nextElementSibling === target) return;
+      animateRuleTileMutation(container, () => {
+        container.insertBefore(state.tile, target);
+      });
+      return;
+    }
+
+    const tiles = Array.from(container.querySelectorAll<HTMLDivElement>('.gene-tile'));
+    const sourcePosition = tiles.indexOf(state.tile);
+    const targetPosition = tiles.indexOf(target);
+    animateRuleTileMutation(container, () => {
+      if (sourcePosition < targetPosition) {
+        container.insertBefore(state.tile, target.nextSibling);
+      } else {
+        container.insertBefore(state.tile, target);
+      }
+    });
+  });
+
+  container.addEventListener('pointerup', (event) => finishDrag(event, false));
+  container.addEventListener('pointercancel', (event) => finishDrag(event, true));
+}
+
 
 function syncMobilePlayIcon() {
   const mp = document.getElementById('mobile-play') as HTMLButtonElement | null;
   if (!mp) return;
   if (isSimulationRunning) {
-    mp.textContent = '⏸';
-    mp.style.color = '';
+    mp.dataset.state = 'running';
     mp.setAttribute('aria-label', 'Pause');
     mp.title = 'Pause';
   } else {
-    mp.textContent = '▶︎';
-    mp.style.color = '#16a34a';
+    mp.dataset.state = 'start';
     mp.setAttribute('aria-label', 'Start');
     mp.title = 'Start';
   }
 }
 
 function syncSlowButtonsUI() {
-  // Desktop turtle button
+  const label = `${playbackSpeed}×`;
+  const title = `Simulation speed: ${label}. Click to change speed`;
+
   if (slowBtn) {
-    slowBtn.classList.toggle('active', slowMode);
-    slowBtn.textContent = slowMode ? '🐢 Slow (ON)' : '🐢 Slow';
-    slowBtn.setAttribute('aria-pressed', slowMode ? 'true' : 'false');
-    slowBtn.title = slowMode ? 'Slow mode enabled' : 'Slow mode disabled';
+    slowBtn.classList.remove('active');
+    slowBtn.textContent = label;
+    slowBtn.setAttribute('aria-label', title);
+    slowBtn.title = title;
   }
 
-  // Mobile toolbar turtle button
   const mobileSlow = document.getElementById('mobile-slow') as HTMLButtonElement | null;
   if (mobileSlow) {
-    mobileSlow.classList.toggle('toggle-active', slowMode);
-    mobileSlow.setAttribute('aria-pressed', slowMode ? 'true' : 'false');
-    mobileSlow.title = slowMode ? 'Slow mode enabled' : 'Slow mode disabled';
+    mobileSlow.classList.remove('toggle-active');
+    mobileSlow.textContent = label;
+    mobileSlow.setAttribute('aria-label', title);
+    mobileSlow.title = title;
   }
 }
 
@@ -845,6 +1058,17 @@ function syncGenomeSelects(value: string) {
   if (desktop) desktop.value = value;
   if (mobile) mobile.value = value;
   syncingGenomeSelect = false;
+  syncOrganismPickerUi(value);
+}
+
+function setGenomeSelectLabel(value: string, label: string) {
+  const update = (select: HTMLSelectElement | null) => {
+    const option = Array.from(select?.options ?? []).find(item => item.value === value);
+    if (option) option.text = label;
+  };
+
+  update(document.getElementById('gene-select') as HTMLSelectElement | null);
+  update(document.getElementById('gene-select-mobile') as HTMLSelectElement | null);
 }
 
 function setShareHash(token: string | null) {
@@ -913,7 +1137,7 @@ function pauseSimulationForRuleEditor() {
   if (!isSimulationRunning) return;
   clearInterval(simulationInterval);
   isSimulationRunning = false;
-  pauseResumeButton.textContent = 'Resume';
+  setSimulationButtonState('resume');
   setControlsEnabled(true);
   syncMobilePlayIcon();
 }
@@ -922,6 +1146,15 @@ function stopSimulationLoop() {
   clearInterval(simulationInterval);
   isSimulationRunning = false;
 }
+
+function stopSimulationForGenomeLoad() {
+  stopSimulationLoop();
+  setSimulationButtonState('start');
+  setControlsEnabled(true);
+  syncMobilePlayIcon();
+  setTool('move');
+}
+
 const ruleEditor = createRuleEditorController({
   pauseForEditor: pauseSimulationForRuleEditor,
   stopSimulation: stopSimulationLoop,
@@ -938,7 +1171,9 @@ const ruleEditor = createRuleEditorController({
   getBaseGenomeLabel: () => baseGenomeLabel,
 
   setCustomGenomeCache: (cfg) => { customGenomeCache = cfg; },
+  setNewGenomeCache: (cfg) => { newGenomeCache = cfg; },
   syncGenomeSelects,
+  setGenomeSelectLabel,
   genomeSelectValues: GENOME_SELECT_VALUES,
 
   applyGenomeConfig: applyGenomConfig,
@@ -949,28 +1184,50 @@ const ruleEditor = createRuleEditorController({
    9) GENOME CATALOG / LOADING / EXPORT
    ========================================================================= */
 
-const YAML_CATALOG = [
-  
-  { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml' },
-  { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml' },  
-  { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml' },    
-  { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml' },
-  { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml' },
-  { name: 'LLM Manual Butterfly', path: 'data/genoms/visual_butterfly_manual.yaml' },
-  { name: 'Hexagon replicator', path: 'data/genoms/hexagon_replicator.yaml' },  
-  { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml' },
-  { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml' },  
-  { name: 'fractal-3', path: 'data/genoms/fractal3_genom.yaml' },
-  { name: 'two_wheels', path: 'data/genoms/two_wheels.yaml' },
-  { name: "Conway's 'Life'", path: 'data/genoms/conways_game_of_life.yaml' },
-  { name: "Conway's 'Life' (Cylinder)", path: 'data/genoms/conways_game_of_life_diagonal_cylinder.yaml' },
-  { name: "Conway's 'Life' (Torus)", path: 'data/genoms/conways_game_of_life_torus.yaml' },
-  { name: "Conway's 'Life' + spikes ", path: 'data/genoms/conways_game_of_life_torus_with_spikes.yaml' },
-  { name: "Brians Brain CA + spikes ", path: 'data/genoms/brians_brain_CA_torus_with_spikes.yaml' },
-  { name: "Moving Hole Particle", path: 'data/genoms/moving_hole_particle.yaml' },
-  // { name: "Moving Density Particle", path: 'data/genoms/moving_density_particle.yaml' },
-  { name: 'New (empty)', path: 'data/genoms/empty.yaml' }, 
+const GENOME_CATEGORIES = [
+  'Manual',
+  'Evolution',
+  'Cellular Automata',
+  'LLM',
+] as const;
+
+type GenomeCategory = typeof GENOME_CATEGORIES[number];
+type GenomePickerCategory = GenomeCategory | typeof CUSTOM_GENOME_CATEGORY;
+
+type GenomeCatalogEntry = {
+  name: string;
+  path: string;
+  category: GenomeCategory;
+  showInPicker?: boolean;
+};
+
+const YAML_CATALOG: GenomeCatalogEntry[] = [
+  { name: 'Dumbbell', path: 'data/genoms/dumbbell.yaml', category: 'Manual' },
+  { name: 'Hairy Circle', path: 'data/genoms/hairy_circle_genom.yaml', category: 'Manual' },
+  { name: 'Hex replicator', path: 'data/genoms/hexagon_replicator.yaml', category: 'Manual' },
+  { name: 'Fractal', path: 'data/genoms/fractal3_genom.yaml', category: 'Manual' },
+  { name: 'Two wheels', path: 'data/genoms/two_wheels.yaml', category: 'Manual' },
+  { name: 'Dumbbell and Hairy Circle Hybrid', path: 'data/genoms/dumbbell_and_hairy_circle_hybrid.yaml', category: 'Manual' },
+  { name: 'Strange Figure #1', path: 'data/genoms/strange_figure1_genom.yaml', category: 'Manual' },
+  { name: 'Strange Figure #2', path: 'data/genoms/strange_figure2_genom.yaml', category: 'Manual' },
+
+  { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml', category: 'Evolution' },
+  { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml', category: 'Evolution' },
+
+  { name: "Conway's Life", path: 'data/genoms/conways_game_of_life.yaml', category: 'Cellular Automata' },
+  { name: "Conway's Life (Cylinder)", path: 'data/genoms/conways_game_of_life_diagonal_cylinder.yaml', category: 'Cellular Automata' },
+  { name: "Conway's Life (Torus)", path: 'data/genoms/conways_game_of_life_torus.yaml', category: 'Cellular Automata' },
+  { name: "Conway's Life + spikes", path: 'data/genoms/conways_game_of_life_torus_with_spikes.yaml', category: 'Cellular Automata' },
+  { name: "Brian's Brain + spikes", path: 'data/genoms/brians_brain_CA_torus_with_spikes.yaml', category: 'Cellular Automata' },
+  { name: 'Moving Hole Particle', path: 'data/genoms/moving_hole_particle.yaml', category: 'Cellular Automata' },
+  // { name: 'Moving Density Particle', path: 'data/genoms/moving_density_particle.yaml', category: 'Cellular Automata' },
+
+  { name: 'Butterfly', path: 'data/genoms/visual_butterfly_manual.yaml', category: 'LLM' },
+
+  { name: 'New', path: EMPTY_GENOME_PATH, category: 'Manual', showInPicker: false },
 ];
+
+let syncOrganismPickerUi: (value: string) => void = () => {};
 
 async function fetchYaml(path: string): Promise<any> {
   const txt = await (await fetch(path)).text();
@@ -983,15 +1240,63 @@ async function loadGenesLibrary() {
 
   const mobileSelect = document.getElementById('gene-select-mobile') as HTMLSelectElement | null;
 
+  const ensureCustomGroup = (sel: HTMLSelectElement): HTMLOptGroupElement => {
+    let group = sel.querySelector(
+      `optgroup[data-category="${CUSTOM_GENOME_CATEGORY}"]`
+    ) as HTMLOptGroupElement | null;
+
+    if (!group) {
+      group = document.createElement('optgroup');
+      group.label = CUSTOM_GENOME_CATEGORY;
+      group.dataset.category = CUSTOM_GENOME_CATEGORY;
+      sel.insertBefore(group, sel.firstChild);
+    }
+
+    return group;
+  };
+
+  const revealNewGenomeOption = (sel: HTMLSelectElement | null, label: string) => {
+    if (!sel) return;
+    const option = Array.from(sel.options).find(
+      item => item.value === GENOME_SELECT_VALUES.NEW
+    );
+    if (!option) return;
+
+    option.hidden = false;
+    option.text = label;
+    option.dataset.customKind = 'new';
+    const customGroup = ensureCustomGroup(sel);
+    customGroup.insertBefore(option, customGroup.firstChild);
+  };
+
   const fillCatalogOptions = (sel: HTMLSelectElement | null) => {
     if (!sel) return;
     sel.innerHTML = '';
-    YAML_CATALOG.forEach(({ name, path }) => {
-      const opt = document.createElement('option');
-      opt.value = path;
-      opt.text = name;
-      sel.add(opt);
+    GENOME_CATEGORIES.forEach((category) => {
+      const group = document.createElement('optgroup');
+      group.label = category;
+      group.dataset.category = category;
+      YAML_CATALOG
+        .filter(entry => entry.category === category && entry.showInPicker !== false)
+        .forEach(({ name, path }) => {
+          const opt = document.createElement('option');
+          opt.value = path;
+          opt.text = name;
+          group.appendChild(opt);
+        });
+      sel.appendChild(group);
     });
+
+    YAML_CATALOG
+      .filter(entry => entry.showInPicker === false)
+      .forEach(({ name, path }) => {
+        const opt = document.createElement('option');
+        opt.value = path;
+        opt.text = name;
+        opt.hidden = true;
+        opt.dataset.customKind = 'new';
+        sel.appendChild(opt);
+      });
   };
 
   fillCatalogOptions(geneSelect);
@@ -1000,12 +1305,25 @@ async function loadGenesLibrary() {
   if (mobileSelect) mobileSelect.value = geneSelect.value;
 
   const handleGenomeSelection = async (value: string) => {
+    if (value === GENOME_SELECT_VALUES.NEW) {
+      clearShareHashIfPresent();
+      currentGenomeSource = 'new';
+      baseGenomeLabel = 'New';
+      if (newGenomeCache) {
+        await applyGenomConfig(deepClone(newGenomeCache), null);
+      } else {
+        await loadGenomFromYaml(GENOME_SELECT_VALUES.NEW);
+      }
+      return;
+    }
+
     // "Custom" option (added by upload/share/editor)
     if (value === GENOME_SELECT_VALUES.CUSTOM) {
       // If we have a cached custom genome, restore it instead of fetching a file.
       if (customGenomeCache) {
         clearShareHashIfPresent();
-        currentGenomeSource = 'custom';
+        currentGenomeSource = customGenomeSource;
+        baseGenomeLabel = customGenomeBaseLabel;
         await applyGenomConfig(deepClone(customGenomeCache), null);
       }
       return;
@@ -1017,6 +1335,134 @@ async function loadGenesLibrary() {
     baseGenomeLabel = YAML_CATALOG.find(x => x.path === value)?.name ?? 'Genome';
     await loadGenomFromYaml(value);
   };
+
+  const pickerTrigger = document.getElementById('organism-picker-trigger') as HTMLButtonElement | null;
+  const pickerValue = document.getElementById('organism-picker-value');
+  const pickerMenu = document.getElementById('organism-picker-menu');
+  let openCategory: GenomePickerCategory | null = 'Manual';
+
+  const categoryForValue = (value: string): GenomePickerCategory => {
+    if (
+      value === GENOME_SELECT_VALUES.CUSTOM
+      || value === GENOME_SELECT_VALUES.NEW
+    ) {
+      return CUSTOM_GENOME_CATEGORY;
+    }
+    return YAML_CATALOG.find(entry => entry.path === value)?.category ?? 'Manual';
+  };
+
+  const defaultOpenCategoryForValue = (value: string): GenomePickerCategory =>
+    categoryForValue(value);
+
+  const pickerEntries = (category: GenomePickerCategory): Array<{ name: string; path: string }> => {
+    if (category === CUSTOM_GENOME_CATEGORY) {
+      const group = geneSelect.querySelector(
+        `optgroup[data-category="${CUSTOM_GENOME_CATEGORY}"]`
+      );
+      return Array.from(group?.querySelectorAll('option') ?? [])
+        .filter(option => !option.hidden)
+        .map(option => ({ name: option.text, path: option.value }));
+    }
+
+    return YAML_CATALOG
+      .filter(entry => entry.category === category && entry.showInPicker !== false)
+      .map(({ name, path }) => ({ name, path }));
+  };
+
+  const renderOrganismPicker = () => {
+    if (!pickerMenu) return;
+    pickerMenu.innerHTML = '';
+    const selectedValue = geneSelect.value;
+    const selectedCategory = categoryForValue(selectedValue);
+
+    const categories = getGenomePickerCategories(
+      GENOME_CATEGORIES,
+      pickerEntries(CUSTOM_GENOME_CATEGORY).length > 0
+    );
+
+    categories.forEach((category) => {
+      const categoryEl = document.createElement('div');
+      categoryEl.className = 'organism-category';
+
+      const categoryButton = document.createElement('button');
+      categoryButton.type = 'button';
+      categoryButton.className = 'organism-category-button';
+      categoryButton.classList.toggle('current-category', category === selectedCategory);
+      categoryButton.setAttribute('aria-expanded', category === openCategory ? 'true' : 'false');
+
+      const categoryLabel = document.createElement('span');
+      categoryLabel.textContent = category;
+      categoryButton.appendChild(categoryLabel);
+
+      const categoryChevron = document.createElement('span');
+      categoryChevron.className = 'organism-category-chevron';
+      categoryChevron.setAttribute('aria-hidden', 'true');
+      categoryChevron.textContent = '›';
+      categoryButton.appendChild(categoryChevron);
+
+      categoryButton.addEventListener('click', () => {
+        openCategory = openCategory === category ? null : category;
+        renderOrganismPicker();
+      });
+      categoryEl.appendChild(categoryButton);
+
+      if (category === openCategory) {
+        const optionsEl = document.createElement('div');
+        optionsEl.className = 'organism-category-options';
+        optionsEl.setAttribute('role', 'group');
+        optionsEl.setAttribute('aria-label', category);
+
+        pickerEntries(category).forEach(({ name, path }) => {
+          const optionButton = document.createElement('button');
+          optionButton.type = 'button';
+          optionButton.className = 'organism-option-button';
+          optionButton.textContent = name;
+          optionButton.dataset.value = path;
+          if (path === selectedValue) optionButton.setAttribute('aria-current', 'true');
+          optionButton.addEventListener('click', () => {
+            syncGenomeSelects(path);
+            setOrganismPickerOpen(false);
+            void handleGenomeSelection(path);
+          });
+          optionsEl.appendChild(optionButton);
+        });
+
+        categoryEl.appendChild(optionsEl);
+      }
+
+      pickerMenu.appendChild(categoryEl);
+    });
+  };
+
+  const setOrganismPickerOpen = (open: boolean) => {
+    if (!pickerTrigger || !pickerMenu) return;
+    pickerTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    pickerMenu.hidden = !open;
+    if (open) {
+      openCategory = defaultOpenCategoryForValue(geneSelect.value);
+      renderOrganismPicker();
+    }
+  };
+
+  syncOrganismPickerUi = (value: string) => {
+    const selectedOption = Array.from(geneSelect.options).find(option => option.value === value);
+    if (pickerValue) pickerValue.textContent = selectedOption?.text ?? 'Choose';
+    openCategory = defaultOpenCategoryForValue(value);
+    renderOrganismPicker();
+  };
+
+  pickerTrigger?.addEventListener('click', () => {
+    setOrganismPickerOpen(pickerTrigger.getAttribute('aria-expanded') !== 'true');
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && pickerTrigger?.getAttribute('aria-expanded') === 'true') {
+      setOrganismPickerOpen(false);
+      pickerTrigger.focus();
+    }
+  });
+
+  syncOrganismPickerUi(geneSelect.value);
 
   const wireSelect = (sel: HTMLSelectElement | null) => {
     if (!sel) return;
@@ -1032,6 +1478,16 @@ async function loadGenesLibrary() {
 
   wireSelect(geneSelect);
   wireSelect(mobileSelect);
+
+  document.getElementById('new-genome-button')?.addEventListener('click', () => {
+    currentGenomeSource = 'new';
+    baseGenomeLabel = 'New';
+    newGenomeCache = null;
+    revealNewGenomeOption(geneSelect, 'New');
+    revealNewGenomeOption(mobileSelect, 'New');
+    syncGenomeSelects(GENOME_SELECT_VALUES.NEW);
+    void loadGenomFromYaml(GENOME_SELECT_VALUES.NEW);
+  });
   
 
   // Mobile toolbar buttons proxy desktop logic (no code duplication)
@@ -1048,7 +1504,7 @@ async function loadGenesLibrary() {
     syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
     showToast('Loaded genome from shared link.');
   } else {
-    await loadGenomFromYaml(geneSelect.value);
+    await handleGenomeSelection(geneSelect.value);
   }
 
 
@@ -1063,10 +1519,14 @@ async function loadGenomFromYaml(path: string) {
 }
 
 async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
+  stopSimulationForGenomeLoad();
   lastLoadedConfig = cfg ? deepClone(cfg) : {};
 
-  (gumMachine as any) = buildMachineFromConfig(cfg, gumGraph, maintainChk?.checked ?? true);
-  gumMachine.setMaxSteps(-1);
+  (gumMachine as any) = buildMachineFromConfig(
+    cfg,
+    gumGraph,
+    DEFAULT_MAINTAIN_SINGLE_COMPONENT
+  );
 
   const ocFromCfg = cfg?.machine?.orphan_cleanup;
 
@@ -1076,9 +1536,9 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
     lastLoadedConfig.machine.orphan_cleanup = deepClone(ocFromCfg);
     // No need to call setOrphanCleanup here: buildMachineFromConfig already wired it into the machine.
   } else {
-    // No orphan_cleanup block in the genome → apply a default runtime config (enabled)
+    // No orphan_cleanup block in the genome → keep detached components visible.
     const fallbackOc = {
-      enabled: true,
+      enabled: DEFAULT_ORPHAN_CLEANUP_ENABLED,
       thresholds: { size1: 5, size2: 7, others: 10 },
       fadeStarts: { size1: 3, size2: 5, others: 8 },
     };
@@ -1102,25 +1562,36 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
   lastLoadedConfig.machine.reseed_isolated_A = reseedActive;  
 
   gumMachine.resetIterations();
-  pauseResumeButton.textContent = 'Start';
-  pauseResumeButton.style.backgroundColor = 'lightgreen';
+  setSimulationButtonState('start');
+  setControlsEnabled(true);
   resetGraph();                // handles zoom+fit
   refreshMaxStepsInput();
   refreshMachineSettingsInputs();
   updateDebugInfo({ forceRulesRebuild: true });
 
-  const sel = document.getElementById('gene-select') as HTMLSelectElement;
   if (labelForSelect) {
     const upsert = (sel: HTMLSelectElement | null) => {
       if (!sel) return;
-      let opt = sel.querySelector('option[data-custom="1"]') as HTMLOptionElement | null;
+      let opt = sel.querySelector(
+        'option[data-custom-kind="cached"]'
+      ) as HTMLOptionElement | null;
       if (!opt) {
         opt = document.createElement('option');
-        opt.setAttribute('data-custom', '1');
-        sel.insertBefore(opt, sel.firstChild);
+        opt.dataset.customKind = 'cached';
       }
       opt.value = GENOME_SELECT_VALUES.CUSTOM;
-      opt.text = `Custom: ${labelForSelect}`;
+      opt.text = labelForSelect;
+      const customGroup = sel.querySelector(
+        `optgroup[data-category="${CUSTOM_GENOME_CATEGORY}"]`
+      ) as HTMLOptGroupElement | null;
+      if (customGroup) customGroup.appendChild(opt);
+      else {
+        const group = document.createElement('optgroup');
+        group.label = CUSTOM_GENOME_CATEGORY;
+        group.dataset.category = CUSTOM_GENOME_CATEGORY;
+        group.appendChild(opt);
+        sel.insertBefore(group, sel.firstChild);
+      }
       sel.selectedIndex = 0;
     };
 
@@ -1128,6 +1599,8 @@ async function applyGenomConfig(cfg: any, labelForSelect: string | null) {
     upsert(document.getElementById('gene-select-mobile') as HTMLSelectElement | null);
 
     customGenomeCache = deepClone(lastLoadedConfig);
+    customGenomeSource = currentGenomeSource;
+    customGenomeBaseLabel = baseGenomeLabel;
     syncGenomeSelects(GENOME_SELECT_VALUES.CUSTOM);
   }
 
@@ -1168,6 +1641,9 @@ if (uploadInput) {
       try { cfg = JSON.parse(text); }
       catch { alert('Unable to parse file. Please upload a valid YAML or JSON genome.'); return; }
     }
+    clearShareHashIfPresent();
+    currentGenomeSource = 'upload';
+    baseGenomeLabel = f.name;
     await applyGenomConfig(cfg, f.name);
     refreshMaxStepsInput();
     updateDebugInfo({ forceRulesRebuild: true });
@@ -1260,26 +1736,59 @@ mobileShareBtn?.addEventListener('click', () => { void copyShareLinkToClipboard(
    ========================================================================= */
 
 function setTool(tool: Tool) {
-  currentTool = tool;
-  btnMove?.classList.toggle('active', tool === 'move');
-  btnScissors?.classList.toggle('active', tool === 'scissors');
-  svg.style('cursor', tool === 'scissors' ? 'crosshair' : 'default');
+  currentTool = toolForView(tool, viewMode);
+  isCutting = false;
+  lastCutPt = null;
+
+  const toolsAreInteractive = viewMode === '2d';
+  const moveIsActive = toolsAreInteractive && currentTool === 'move';
+  const cutIsActive = toolsAreInteractive && currentTool === 'scissors';
+
+  btnMove?.classList.toggle('active', moveIsActive);
+  btnMove?.setAttribute('aria-pressed', String(moveIsActive));
+  btnScissors?.classList.toggle('active', cutIsActive);
+  btnScissors?.setAttribute('aria-pressed', String(cutIsActive));
+  svg.style('cursor', currentTool === 'scissors' ? 'crosshair' : 'default');
   graphGroup.selectAll<SVGGElement, Node>('.node')
-    .style('pointer-events', tool === 'scissors' ? 'none' : 'auto');
-    renderNodeInspector(undefined);
+    .style('pointer-events', currentTool === 'scissors' ? 'none' : 'auto');
+  renderNodeInspector(undefined);
+}
 
-  }
-
-btnMove?.addEventListener('click', () => setTool('move'));
-btnScissors?.addEventListener('click', () => setTool('scissors'));
+btnMove?.addEventListener('click', () => {
+  setTool(toolAfterClick(currentTool, 'move', viewMode));
+});
+btnScissors?.addEventListener('click', () => {
+  setTool(toolAfterClick(currentTool, 'scissors', viewMode));
+});
 setTool('move');
 
 function setViewMode(mode: ViewMode) {
   if (viewMode === mode) return;
   viewMode = mode;
 
+  const cutUnavailable = mode === '3d';
+  graphToolsControl?.classList.toggle('is-3d', cutUnavailable);
+  if (graphToolsControl) {
+    graphToolsControl.hidden = cutUnavailable;
+  }
+  if (btnMove) {
+    btnMove.hidden = cutUnavailable;
+    btnMove.disabled = cutUnavailable;
+    btnMove.title = cutUnavailable
+      ? 'Move is the only tool available in 3D'
+      : 'Move, pan, or drag nodes';
+  }
+  if (btnScissors) {
+    btnScissors.hidden = cutUnavailable;
+    btnScissors.disabled = cutUnavailable;
+    btnScissors.setAttribute('aria-hidden', String(cutUnavailable));
+  }
+  setTool(toolForView(currentTool, mode));
+
   view2dBtn?.classList.toggle('active', mode === '2d');
+  view2dBtn?.setAttribute('aria-pressed', String(mode === '2d'));
   view3dBtn?.classList.toggle('active', mode === '3d');
+  view3dBtn?.setAttribute('aria-pressed', String(mode === '3d'));
 
   if (mobileViewToggleBtn) {
     // Button shows the CURRENT mode
@@ -1325,8 +1834,12 @@ function setViewMode(mode: ViewMode) {
   }
 }
 
-view2dBtn?.addEventListener('click', () => setViewMode('2d'));
-view3dBtn?.addEventListener('click', () => setViewMode('3d'));
+view2dBtn?.addEventListener('click', () => {
+  setViewMode(viewAfterClick(viewMode, '2d'));
+});
+view3dBtn?.addEventListener('click', () => {
+  setViewMode(viewAfterClick(viewMode, '3d'));
+});
 
 mobileViewToggleBtn?.addEventListener('click', () => {
   setViewMode(viewMode === '2d' ? '3d' : '2d');
@@ -1909,24 +2422,18 @@ function renderPaletteGrid() {
 
 
 
-function wireDetailsToggle(detailsId: string) {
-  const det = document.getElementById(detailsId) as HTMLDetailsElement | null;
-  if (!det) return;
-  const summary = det.querySelector('summary');
-  if (!summary) return;
+function wireAdvancedAccordion() {
+  const groups = Array.from(
+    document.querySelectorAll<HTMLDetailsElement>('.advanced-subgroup')
+  );
 
-  summary.addEventListener('click', (e) => {
-    const el = e.target as HTMLElement;
-    if (el.closest('a,button,input,select,textarea,label')) return;
-    e.preventDefault();
-    det.open = !det.open;
-  });
-
-  summary.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      det.open = !det.open;
-    }
+  groups.forEach((group) => {
+    group.addEventListener('toggle', () => {
+      if (!group.open) return;
+      groups.forEach((other) => {
+        if (other !== group) other.open = false;
+      });
+    });
   });
 }
 
@@ -1944,13 +2451,21 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
   }
 
   if (statusInfoElement) {
+    const nodeLabel = nodes.length === 1 ? 'node' : 'nodes';
+    const edgeLabel = links.length === 1 ? 'edge' : 'edges';
     statusInfoElement.textContent =
-      `Nodes: ${nodes.length} | Edges: ${links.length} | Iterations: ${gumMachine.getIterations()}`;
+      `Iteration ${gumMachine.getIterations()} · ${nodes.length} ${nodeLabel} · ${links.length} ${edgeLabel}`;
   }
 
-  const board = document.getElementById('rule-board');
+  const board = document.getElementById('rule-board') as HTMLDivElement | null;
   const toggleBtn = document.getElementById('toggle-rules-btn') as HTMLButtonElement | null;
   const items = gumMachine.getRuleItems();
+  const genomeCount = document.getElementById('genome-count');
+  if (genomeCount) {
+    const enabledCount = items.filter(item => item.isEnabled).length;
+    const ruleLabel = items.length === 1 ? 'rule' : 'rules';
+    genomeCount.textContent = `${items.length} ${ruleLabel} · ${enabledCount} active`;
+  }
   const MAX = 60;
 
 
@@ -1999,11 +2514,16 @@ function updateDebugInfo(opts?: { forceRulesRebuild?: boolean }) {
         });
 
         el.addEventListener('click', () => {
+          if (el.dataset.suppressClick === '1') {
+            delete el.dataset.suppressClick;
+            return;
+          }
           ruleEditor.open('edit', idx);
         });
 
 
       });
+      wireRuleTileReordering(board);
     } else {
       // Lightweight update: keep existing elements & listeners, just update classes/tooltips
       board.querySelectorAll<HTMLDivElement>('.gene-tile').forEach(el => {
@@ -2086,9 +2606,16 @@ function renderRulesOverlay(forceRulesRebuild = true) {
     }
     const idx = Number(el.dataset.idx ?? '-1');
     if (Number.isNaN(idx) || idx < 0) return;    
-    el.onclick = () => ruleEditor.open('edit', idx);
+    el.onclick = () => {
+      if (el.dataset.suppressClick === '1') {
+        delete el.dataset.suppressClick;
+        return;
+      }
+      ruleEditor.open('edit', idx);
+    };
 
   });
+  wireRuleTileReordering(container);
 
 }
 
@@ -2108,7 +2635,9 @@ document.getElementById('display-options')?.addEventListener('change', function 
   const displayOption = (this as HTMLSelectElement).value;
   updateDisplay(displayOption);
 });
-updateDisplay('edges');
+const displayOptions = document.getElementById('display-options') as HTMLSelectElement | null;
+if (displayOptions) displayOptions.value = DEFAULT_DISPLAY_OPTION;
+updateDisplay(DEFAULT_DISPLAY_OPTION);
 
 if (simulationIntervalSlider) {
   simulationIntervalSlider.value = String(FAST_MS_DEFAULT);
@@ -2116,7 +2645,7 @@ if (simulationIntervalSlider) {
   simulationIntervalSlider.addEventListener('input', function () {
     fastMs = parseInt((this as HTMLInputElement).value, 10) || FAST_MS_DEFAULT;
     if (simulationIntervalLabel) simulationIntervalLabel.textContent = String(fastMs);
-    if (isSimulationRunning && !slowMode) {
+    if (isSimulationRunning) {
       clearInterval(simulationInterval);
       simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
     }
@@ -2124,11 +2653,10 @@ if (simulationIntervalSlider) {
 }
 
 function currentIntervalMs() {
-  return slowMode ? SLOW_MS : (fastMs || FAST_MS_DEFAULT);
+  return playbackIntervalMs(fastMs || FAST_MS_DEFAULT, playbackSpeed);
 }
 
-pauseResumeButton.textContent = 'Start';
-pauseResumeButton.style.backgroundColor = 'lightgreen';
+setSimulationButtonState('start');
 
 pauseResumeButton.addEventListener('click', () => {
   isSimulationRunning = !isSimulationRunning;
@@ -2137,26 +2665,33 @@ pauseResumeButton.addEventListener('click', () => {
       tickingSound.setEnabled(true);
     }
     simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
-    pauseResumeButton.textContent = 'Pause';
+    setSimulationButtonState('running');
     setControlsEnabled(false);
   } else {
     clearInterval(simulationInterval);
-    pauseResumeButton.textContent = 'Resume';
+    setSimulationButtonState('resume');
     setControlsEnabled(true);
   }
   syncMobilePlayIcon();
 });
 
 document.getElementById('next-step-button')!.addEventListener('click', () => {
-  if (!isSimulationRunning) {
+  clearInterval(simulationInterval);
+  const canRunStep = !gumMachine.reachedMaxSteps();
+
+  if (canRunStep) {
     isSimulationRunning = true;
     unfoldGraph();
-    isSimulationRunning = false;
   }
+
+  isSimulationRunning = false;
+  setSimulationButtonState(gumMachine.reachedMaxSteps() ? 'start' : 'resume');
+  setControlsEnabled(true);
+  syncMobilePlayIcon();
 });
 
 slowBtn?.addEventListener('click', () => {
-  slowMode = !slowMode;
+  playbackSpeed = nextPlaybackSpeed(playbackSpeed);
   if (isSimulationRunning) {
     clearInterval(simulationInterval);
     simulationInterval = setInterval(unfoldGraph, currentIntervalMs());
@@ -2414,8 +2949,7 @@ function unfoldGraph() {
   if (gumMachine.reachedMaxSteps()) {
     clearInterval(simulationInterval);
     isSimulationRunning = false;
-    pauseResumeButton.textContent = 'Start';
-    pauseResumeButton.style.backgroundColor = 'lightgreen';
+    setSimulationButtonState('start');
     setControlsEnabled(true);
     updateDebugInfo();
     syncMobilePlayIcon();
@@ -2457,11 +2991,8 @@ function resetGraph() {
    15) PALETTE / DETAILS INIT + BOOT
    ========================================================================= */
 
-function renderPaletteOpenCollapsed() {
+function renderPalette() {
   renderPaletteGrid();
-  wireDetailsToggle('palette-block');
-  const det = document.getElementById('palette-block') as HTMLDetailsElement | null;
-  if (det) det.open = true; // keep existing behavior
 }
 
 
@@ -2475,11 +3006,13 @@ function initStateCombos() {
 // Restore any saved per-state colors before we build the initial graph
 loadColorOverridesFromStorage();
 
+wireAdvancedAccordion();
+
 loadGenesLibrary().then(() => {
 
-  setControlsEnabled(false);
+  setControlsEnabled(true);
   refreshMaxStepsInput();
-  renderPaletteOpenCollapsed();
+  renderPalette();
   initStateCombos();
   applyResponsiveMode();
   syncMobilePlayIcon();
