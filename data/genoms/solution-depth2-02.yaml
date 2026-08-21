@@ -1,0 +1,416 @@
+machine:
+  max_steps: 45
+  max_vertices: 100
+  start_state: A
+  transcription: continuable
+  nearest_search:
+    max_depth: 2
+    tie_breaker: stable
+    connect_all: true
+  topology_semantics: snapshot
+init_graph:
+  nodes:
+  - state: A
+rules:
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 1
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: C
+- condition:
+    current: B
+    parents_ge: 1
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: C
+    parents_ge: 1
+    parents_le: 5
+  op:
+    kind: GiveBirthConnected
+    operand: B
+- condition:
+    current: C
+    parents_ge: 1
+  op:
+    kind: TurnToState
+    operand: E
+- condition:
+    current: D
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: GiveBirthConnected
+    operand: F
+- condition:
+    current: D
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TryToConnectWithNearest
+    operand: G
+- condition:
+    current: D
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: DisconnectFrom
+    operand: G
+- condition:
+    current: D
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: E
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: GiveBirthConnected
+    operand: G
+- condition:
+    current: E
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TryToConnectWithNearest
+    operand: F
+- condition:
+    current: E
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: DisconnectFrom
+    operand: F
+- condition:
+    current: E
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: F
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: F
+    conn_with_state: E
+    conn_ge: 1
+  op:
+    kind: TryToConnectWithNearest
+    operand: G
+- condition:
+    current: F
+  op:
+    kind: TurnToState
+    operand: F
+- condition:
+    current: F
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: F
+    conn_with_state: B
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: G
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: G
+    conn_with_state: D
+    conn_ge: 1
+  op:
+    kind: TryToConnectWithNearest
+    operand: F
+- condition:
+    current: G
+  op:
+    kind: TurnToState
+    operand: G
+- condition:
+    current: G
+    conn_with_state: A
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: E
+- condition:
+    current: G
+    conn_with_state: B
+    conn_ge: 1
+  op:
+    kind: TurnToState
+    operand: H
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: D
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: E
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: F
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: G
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: F
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: G
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: F
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: G
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: F
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: G
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: A
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: F
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TryToConnectWith
+    operand: G
+- condition:
+    current: A
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: DisconnectFrom
+    operand: H
+- condition:
+    current: B
+    parents_ge: 0
+    parents_le: 0
+  op:
+    kind: Die

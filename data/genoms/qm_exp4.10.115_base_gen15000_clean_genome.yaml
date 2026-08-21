@@ -1,0 +1,243 @@
+machine:
+  start_state: A
+  transcription: continuable
+  count_compare: range
+  max_vertices: 50
+  max_steps: 45
+  topology_semantics: snapshot
+  nearest_search:
+    max_depth: 2
+    tie_breaker: stable
+    connect_all: true
+  maintain_single_component: false
+init_graph:
+  nodes:
+  - state: A
+rules:
+- condition:
+    current: A
+    prior: A
+    conn_ge: 0
+    conn_le: 11
+    parents_ge: 0
+    parents_le: 8
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: A
+    prior: C
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 0
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: D
+    prior: A
+    conn_ge: 2
+    conn_le: 12
+    parents_ge: 7
+    parents_le: 14
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: A
+    conn_ge: 2
+    conn_le: 10
+    parents_ge: 1
+    parents_le: 11
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: D
+    prior: A
+    conn_ge: 0
+    conn_le: 9
+    parents_ge: 7
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: D
+    prior: A
+    conn_ge: 0
+    conn_le: 1
+    parents_ge: 0
+    parents_le: 7
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: D
+    prior: D
+    conn_ge: 0
+    conn_le: 14
+    parents_ge: 1
+    parents_le: 8
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: D
+    prior: D
+    conn_ge: 0
+    conn_le: 12
+    parents_ge: 0
+    parents_le: 9
+  op:
+    kind: TurnToState
+    operand: B
+- condition:
+    current: B
+    prior: D
+    conn_ge: 3
+    conn_le: 4
+    parents_ge: 0
+    parents_le: 6
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 2
+    conn_le: 5
+    parents_ge: 0
+    parents_le: 12
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: D
+    prior: B
+    conn_ge: 1
+    conn_le: 8
+    parents_ge: 0
+    parents_le: 14
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: C
+    prior: D
+    conn_ge: 1
+    conn_le: 10
+    parents_ge: 0
+    parents_le: 11
+  op:
+    kind: TryToConnectWithNearest
+    operand: A
+- condition:
+    current: B
+    prior: D
+    conn_ge: 1
+    conn_le: 3
+    parents_ge: 0
+    parents_le: 2
+  op:
+    kind: TurnToState
+    operand: D
+- condition:
+    current: A
+    prior: C
+    conn_ge: 1
+    conn_le: 14
+    parents_ge: 0
+    parents_le: 10
+  op:
+    kind: TurnToState
+    operand: C
+- condition:
+    current: B
+    prior: B
+    conn_ge: 1
+    conn_le: 8
+    parents_ge: 3
+    parents_le: 12
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 4
+    conn_le: 8
+    parents_ge: 0
+    parents_le: 7
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: D
+    prior: B
+    conn_ge: 0
+    conn_le: 2
+    parents_ge: 1
+    parents_le: 13
+  op:
+    kind: GiveBirthConnected
+    operand: A
+- condition:
+    current: B
+    prior: B
+    conn_ge: 2
+    conn_le: 5
+    parents_ge: 0
+    parents_le: 12
+  op:
+    kind: DisconnectFrom
+    operand: A
+- condition:
+    current: C
+    prior: C
+    conn_ge: 1
+    conn_le: 9
+    parents_ge: 0
+    parents_le: 2
+  op:
+    kind: TurnToState
+    operand: A
+meta:
+  export:
+    run_id: qm_exp4.10.115
+    hypothesis: qm_exp4.10
+    seed: 115
+    source_domain: quadmesh_phase01
+    source_group: baseline
+    best_island_id: ''
+    artifact_generation: 15000
+    artifact_status: exact
+    source_checkpoint_dir: _logbook/quadmesh_phase01/baseline/qm_exp4.10.115/ga_experiment_20260713_145601/checkpoints/last_15000
+    source_genome_path: _logbook/quadmesh_phase01/baseline/qm_exp4.10.115/ga_experiment_20260713_145601/checkpoints/last_15000/qm_exp4.10.115_genome.yaml
+    rule_export_mode: active_only
+    source_rule_count: 63
+    clean_rule_count: 19
+    inactive_rule_count: 44
+    activity_scheme: 2x1x1x2xxx2xx3x1x5x4xx2x2x2x13xx2x2
+    kept_source_rule_indices:
+    - 2
+    - 4
+    - 6
+    - 9
+    - 10
+    - 11
+    - 14
+    - 15
+    - 19
+    - 21
+    - 27
+    - 32
+    - 33
+    - 36
+    - 39
+    - 42
+    - 56
+    - 57
+    - 60

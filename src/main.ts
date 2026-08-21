@@ -1213,6 +1213,7 @@ const YAML_CATALOG: GenomeCatalogEntry[] = [
 
   { name: 'Triangle Mesh', path: 'data/genoms/exp005_trimesh_genom.yaml', category: 'Evolution' },
   { name: 'Quad Mesh', path: 'data/genoms/quadmesh.yaml', category: 'Evolution' },
+  { name: 'Quad mesh md=2', path: 'data/genoms/qm_exp4.10.115_base_gen15000_clean_genome.yaml', category: 'Evolution' },
 
   { name: "Conway's Life", path: 'data/genoms/conways_game_of_life.yaml', category: 'Cellular Automata' },
   { name: "Conway's Life (Cylinder)", path: 'data/genoms/conways_game_of_life_diagonal_cylinder.yaml', category: 'Cellular Automata' },
@@ -1223,6 +1224,7 @@ const YAML_CATALOG: GenomeCatalogEntry[] = [
   // { name: 'Moving Density Particle', path: 'data/genoms/moving_density_particle.yaml', category: 'Cellular Automata' },
 
   { name: 'Butterfly', path: 'data/genoms/visual_butterfly_manual.yaml', category: 'LLM' },
+  { name: 'Quad mesh', path: 'data/genoms/solution-depth2-02.yaml', category: 'LLM' },
 
   { name: 'New', path: EMPTY_GENOME_PATH, category: 'Manual', showInPicker: false },
 ];
