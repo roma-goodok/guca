@@ -48,7 +48,6 @@ input[type=range]{min-width:0;cursor:pointer}
 .header-nav .header-link[aria-current=page]{color:var(--active);text-decoration:underline;text-underline-offset:4px}
 .header-nav :is(.header-link,.header-action):hover{background:var(--text);color:var(--canvas)}
 .about-panel{width:100%;max-height:min(360px,42dvh);padding:22px 28px 26px;overflow:auto;overscroll-behavior:contain;border-top:1px solid var(--border);color:var(--muted);font-size:clamp(15px,1.3vw,18px);line-height:1.5}
-.about-content h2{margin:0 0 8px;color:var(--text);font-size:20px}
 .about-content p{margin:0 0 8px}
 .about-intro { color: #ccc; }
 .about-content > details > summary { color: var(--text); font-size: 15px; }
@@ -296,11 +295,9 @@ tr[aria-selected=true]{background:#102017}
   </div>
   <section id="about-atlas" class="about-panel" aria-label="About this atlas" hidden>
     <div class="about-content">
-      <h2>About the Organism Atlas</h2>
       <div class="about-intro">
-        <p>The atlas brings together <span id="about-sample">organism forms from GUCA experiments</span>. A form is the pattern of connections in an organism. Explore which forms recur across runs and how the leading form changes over time.</p>
-        <p>Each point represents one form. Its height follows <span id="height-metric">atlas fitness</span>, a score based on the structure of the form. Larger points show forms seen in more runs. The legend explains the ring colors. Horizontal spacing is for layout. An arrow shows a change in the leading form between consecutive saved checkpoints in one run or island. Establishing ancestry requires separate evidence.</p>
-        <p>Select a point to inspect the organism and its scores. Open Details &amp; evidence to see where the form appeared. Use Experiments and the generation range to focus the map.</p>
+        <p>The atlas brings together <span id="about-sample">2,598 organism forms from 576 runs across 9 experiments</span>. Its goal is to show which forms recur across different runs and how the dominant form changes over time.</p>
+        <p>Each dot represents a single form. Its height on the map corresponds to <span id="height-metric">the atlas's fitness</span> (a metric based on form structure). Horizontal distance is used only for layout. Larger dots indicate forms that appear in more runs. Arrows indicate changes in the dominant form between successive stored checkpoints within a single run or island, but parent-child relationships require separate evidence.</p>
       </div>
       <details class="subsection"><summary>Research methods</summary>
         <p id="scope" class="note"></p>
@@ -310,10 +307,6 @@ tr[aria-selected=true]{background:#102017}
         <p class="note">Each arrow’s percentage uses the observed departures from its source form. <code>P(B | departure from A) = count(A → B) / Σ count(A → C), C ≠ A.</code> Repeated departures can come from the same experimental unit. The four q6.35 restarts belong to one declared unit with four separate histories.</p>
         <p class="note">The equalized scale combines 30% normalized raw fitness and 70% normalized mean rank across forms. Equal scores share a height. Filters keep this scale fixed. Axis labels, thresholds and exports use raw fitness.</p>
         <p id="coverage-note" class="note"></p>
-      </details>
-      <details class="subsection"><summary>Downloads &amp; reproducibility</summary>
-        <p class="note">Downloads contain the full dataset.</p>
-        <div class="downloads"><a href="data/topologies.csv" download>Topologies CSV</a><a href="data/transitions.csv" download>All transitions CSV</a><a id="common-download" download hidden>8 shared checkpoints summary</a><a href="data/observations.json" download>Observation evidence</a><a href="data/provenance.json" download>Provenance</a><a href="data/manifest.json" download>Frozen manifest</a><a href="README.md">Reproduction recipe</a></div>
       </details>
     </div>
   </section>
@@ -439,6 +432,21 @@ tr[aria-selected=true]{background:#102017}
         <p id="list-count" class="note" role="status"></p>
         <div id="form-table" class="table-frame"><table><thead><tr><th scope="col">Form</th><th scope="col">Atlas fitness</th><th scope="col">Runs</th></tr></thead><tbody id="node-list"></tbody></table></div>
         <button id="more-topologies" type="button" hidden>Show next 100</button>
+      </div>
+    </details>
+    <details id="downloads-section" class="sidebar-section panel-disclosure" name="atlas-sidebar">
+      <summary>Downloads</summary>
+      <div class="disclosure-body">
+        <p class="note">Downloads contain the full dataset.</p>
+        <div class="downloads">
+          <a href="data/topologies.csv" download>Topologies CSV</a>
+          <a href="data/transitions.csv" download>All transitions CSV</a>
+          <a id="common-download" download hidden>8 shared checkpoints summary</a>
+          <a href="data/observations.json" download>Observation evidence</a>
+          <a href="data/provenance.json" download>Provenance</a>
+          <a href="data/manifest.json" download>Frozen manifest</a>
+          <a href="README.md">Reproduction recipe</a>
+        </div>
       </div>
     </details>
   </aside>
@@ -938,8 +946,9 @@ window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable
   }
   function setOptions(){
     document.title=D.manifest.title||'Quadmesh Organism Atlas';
-    $('height-metric').textContent=fitnessName.toLowerCase();$('fitness-label').textContent=fitnessName;
-    $('about-sample').textContent = `${fmt(D.topologies.length)} organism forms from ${fmt(D.profiles.length)} runs across ${fmt(arms.length)} GUCA experiments`;
+    $('height-metric').textContent = canonicalScore ? "the atlas's fitness" : fitnessName.toLowerCase();
+    $('fitness-label').textContent = fitnessName;
+    $('about-sample').textContent = `${fmt(D.topologies.length)} organism forms from ${fmt(D.profiles.length)} runs across ${fmt(arms.length)} experiments`;
     $('score-contract').hidden=!canonicalScore;
     $('score-contract').textContent = 'Atlas fitness uses bonus-free QuadMesh to score each canonical graph structure. Labels, states and input order leave the score unchanged. The map uses this score for its vertical scale. Each source record keeps its original replay score and the fitness recorded during evolution.';
     for(const field of fields){

@@ -4,7 +4,7 @@
 
 Run `npm start` from the GUCA site repository and open `http://127.0.0.1:8080/atlas/`. For offline use, open `quadmesh-organism-atlas-isl1-post-pl3-v1.html` in the research workspace.
 
-All nine experiments are selected at first load. Organism is open. The other sidebar sections are closed. About contains the map guide, research notes, and downloads.
+All nine experiments are selected at first load. Organism is open. The other sidebar sections are closed. About contains the map guide and research methods. Downloads is the last sidebar section.
 
 The data comes from `esd9-isl1-post-pl3-v1`. The score contract is `atlas-quadmesh-canonical-v1`. The export receipt records the payload hash and form counts.
 
