@@ -1,0 +1,2 @@
+atlas/index.html -diff
+atlas/payload-*/** -diff

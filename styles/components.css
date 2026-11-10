@@ -3,6 +3,7 @@
 .header-action {
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -113,7 +114,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 2px 7px 0;
+  padding: 7px 6px 7px 0;
   font-size: 24px;
   line-height: 1.2;
 }
@@ -125,18 +126,6 @@
 .organism-picker-trigger:hover {
   background: var(--color-text);
   color: var(--color-canvas);
-}
-
-.organism-picker-chevron,
-.organism-category-chevron {
-  flex: 0 0 auto;
-  font-weight: 300;
-  line-height: 1;
-  transition: transform 140ms ease;
-}
-
-.organism-picker-chevron {
-  font-size: 34px;
 }
 
 .organism-picker-trigger[aria-expanded="true"] .organism-picker-chevron,
@@ -158,7 +147,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 2px 4px 28px;
+  padding: 4px 6px 4px 28px;
   font-size: 19px;
   line-height: 1.2;
 }
@@ -171,10 +160,6 @@
 .organism-option-button:hover {
   background: var(--color-text);
   color: var(--color-canvas);
-}
-
-.organism-category-chevron {
-  font-size: 22px;
 }
 
 .organism-category-options {
@@ -385,7 +370,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-right: 2px;
+  padding-right: 6px;
   list-style: none;
   font-size: 25px;
   font-weight: 700;
@@ -400,17 +385,6 @@
 
 .advanced-shell > summary::-webkit-details-marker {
   display: none;
-}
-
-.advanced-shell > summary span {
-  display: inline-block;
-  font-size: 32px;
-  font-weight: 300;
-  transition: transform 150ms ease;
-}
-
-.advanced-shell[open] > summary span {
-  transform: rotate(90deg);
 }
 
 .advanced-content {
@@ -430,7 +404,7 @@ details.block > summary {
   justify-content: space-between;
   gap: 8px;
   margin: 0;
-  padding: 4px 2px 4px 28px;
+  padding: 4px 6px 4px 28px;
   color: var(--color-text);
   font-size: 19px;
   line-height: 1.2;
@@ -447,17 +421,47 @@ details.block > summary::-webkit-details-marker {
   display: none;
 }
 
+.organism-picker-chevron,
+.organism-category-chevron,
+.advanced-shell > summary::after,
 details.block > summary::after {
-  content: "›";
-  flex: 0 0 auto;
-  font-size: 22px;
-  font-weight: 300;
-  line-height: 1;
+  --disclosure-icon-size: 16px;
+  content: '';
+  width: 22px;
+  height: 22px;
+  flex: none;
+  font-size: 0;
+  background-color: currentColor;
+  mask: url("../media/website/icons/disclosure-chevron.svg") center / var(--disclosure-icon-size) no-repeat;
   transition: transform 140ms ease;
+  forced-color-adjust: none;
 }
 
+.organism-picker-chevron,
+.advanced-shell > summary::after {
+  --disclosure-icon-size: 22px;
+}
+
+.advanced-shell[open] > summary::after,
 details.block[open] > summary::after {
   transform: rotate(90deg);
+}
+
+.advanced-shell select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 5.5 8 10.5 13 5.5' fill='none' stroke='%23f6f6f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 8px center;
+  background-size: 14px;
+  background-repeat: no-repeat;
+}
+
+@media (forced-colors: active) {
+  .advanced-shell select {
+    appearance: auto;
+    background-image: none;
+    padding-right: 8px;
+  }
 }
 
 .advanced-subgroup-content {

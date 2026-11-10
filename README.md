@@ -13,6 +13,7 @@ The app is built with TypeScript, Webpack, Jest, D3, `graphlib`, and `3d-force-g
 ## Use The App
 
 - Built-in genome YAML files live in `data/genoms/`.
+- Open **Atlas** in the header to browse saved organism forms and champion changes across nine experiments.
 - The genome format is documented in [docs/GENOME_GUIDE.md](docs/GENOME_GUIDE.md).
 - The UI can load built-in genomes, upload YAML/JSON genomes, edit rules, export the current genome, and share genomes through URL hashes.
 
