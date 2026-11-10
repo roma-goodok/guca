@@ -11,7 +11,12 @@
 body{margin:0;background:var(--canvas);color:var(--text);line-height:1.45;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 button,input,select{font:inherit}
 button,input,select,a,summary,.help-anchor{outline-offset:3px}
-button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible,.help-anchor:focus-visible,canvas:focus-visible{outline:2px solid var(--text)}
+button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,.help-anchor:focus-visible,canvas:focus-visible{outline:2px solid var(--text)}
+select:focus { outline: none; }
+:root:not([data-pointer-input]) select:focus-visible:not(:open) {
+  outline: 2px solid var(--muted);
+  outline-offset: -2px;
+}
 a{color:var(--text);text-underline-offset:3px}
 button{cursor:pointer}
 button,select,input[type=number],input[type=search]{min-width:0;min-height:36px;padding:7px 9px;border:1px solid var(--strong);border-radius:4px;background:var(--canvas);color:var(--text);font-size:14px}
@@ -45,6 +50,9 @@ input[type=range]{min-width:0;cursor:pointer}
 .about-panel{width:100%;max-height:min(360px,42dvh);padding:22px 28px 26px;overflow:auto;overscroll-behavior:contain;border-top:1px solid var(--border);color:var(--muted);font-size:clamp(15px,1.3vw,18px);line-height:1.5}
 .about-content h2{margin:0 0 8px;color:var(--text);font-size:20px}
 .about-content p{margin:0 0 8px}
+.about-intro { color: #ccc; }
+.about-content > details > summary { color: var(--text); font-size: 15px; }
+.about-content details .note { font-size: 14px; }
 .about-content details[open]>summary{margin-bottom:8px}
 #main{flex:1;min-height:0;display:grid;grid-template-columns:var(--panel-w) minmax(0,1fr)}
 #atlas-file-notice{margin:24px 28px}
@@ -57,28 +65,33 @@ h3{font-size:15px;font-weight:400;margin:12px 0}
 .wide-value{grid-template-columns:minmax(0,1fr);gap:6px}
 .checkbox-label{display:flex;align-items:center;gap:8px;font-size:14px;margin:16px 0 4px;cursor:pointer}
 input[type=checkbox]{width:16px;height:16px;margin:0;flex-shrink:0}
-summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-inline-end:6px}
 summary::-webkit-details-marker{display:none}
 summary::after {
+  --disclosure-icon-size: 16px;
   content: '';
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
   flex: none;
   background-color: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.5 3 10.5 8 5.5 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%0A%20%20%3Cpath%20d%3D%22M7.5%203.5H11L16.5%2012%2011%2020.5H7.5L13%2012Z%22%2F%3E%0A%3C%2Fsvg%3E") center / var(--disclosure-icon-size) no-repeat;
+  transition: transform 140ms ease;
   forced-color-adjust: none;
 }
 details[open]>summary:after{transform:rotate(90deg)}
+@media (prefers-reduced-motion: reduce) {
+  summary::after { transition: none; }
+}
 summary:hover{color:#fff}
 .panel-disclosure summary{user-select:none}
-.panel-disclosure>summary{min-height:48px;padding-right:2px;font-size:25px;font-weight:700;line-height:1.05}
-.panel-disclosure>summary::after{width:18px;height:18px}
+.panel-disclosure>summary{min-height:48px;font-size:25px;font-weight:700;line-height:1.05}
+.panel-disclosure>summary::after{--disclosure-icon-size:22px}
 .panel-disclosure>summary .technical{margin-left:auto}
 .subsection{margin-top:14px}
 .subsection>summary{font-size:13px;color:var(--muted);min-height:30px}
 .subsection[open]>summary{color:var(--text)}
 #ui-panel .subsection{margin-top:2px}
-#ui-panel details:not(.panel-disclosure)>summary{position:relative;min-height:31px;margin:0;padding:4px 2px 4px 28px;color:var(--text);font-size:19px;font-weight:400;line-height:1.2}
+#ui-panel details:not(.panel-disclosure)>summary{position:relative;min-height:31px;margin:0;padding:4px 6px 4px 28px;color:var(--text);font-size:19px;font-weight:400;line-height:1.2}
 #ui-panel details>summary:hover{background:var(--text);color:var(--canvas)}
 #ui-panel summary:hover :is(.technical,.incoming,.outgoing){color:inherit}
 .disclosure-body{padding-top:10px}
@@ -162,6 +175,36 @@ th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:
 td button{border:0;min-height:26px;padding:0;font-size:12px;text-decoration:underline}
 tr[aria-selected=true]{background:#102017}
 #coverage-table{min-width:600px}
+#expand-coverage { margin-top: 4px; }
+#coverage-table :is(th,td):nth-child(2) { text-align: left; }
+.coverage-dialog {
+  width: min(1240px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--canvas);
+  color: var(--text);
+}
+.coverage-dialog[open] { display: flex; flex-direction: column; }
+.coverage-dialog::backdrop { background: rgb(0 0 0 / 75%); }
+.coverage-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.coverage-dialog-heading h2 { margin: 0; font-size: 20px; }
+.coverage-dialog .table-frame { min-height: 0; max-height: none; }
+.coverage-dialog #coverage-table { font-size: 14px; }
+.coverage-dialog #coverage-table th {
+  position: sticky;
+  top: 0;
+  background: var(--raised);
+  color: var(--text);
+}
+.coverage-dialog #coverage-table :is(th,td) { padding: 10px 12px; }
 #occurrences{max-height:300px;overflow:auto;margin-top:8px}
 #occurrences button{display:block;width:100%;border:0;border-bottom:1px solid var(--border);border-radius:0;text-align:left;font:11px/1.6 var(--technical);padding:8px 2px;overflow-wrap:anywhere}
 #more-topologies,#more-occurrences{width:100%;margin-top:10px}
@@ -188,38 +231,48 @@ tr[aria-selected=true]{background:#102017}
 .legend>span{white-space:nowrap}
 .swatch{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:baseline}
 .bottom-panel{border-top:1px solid var(--border);padding:12px 24px 9px;background:var(--canvas)}
-.timeline{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;align-items:center;gap:28px}
-.from-control{display:flex;align-items:center;gap:10px;font-size:13px}
-.from-control label,.through-control label{color:var(--muted)}
-.through-control{display:grid;gap:5px}
-.through-control>div{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px}
-.through-control output{font:12px var(--technical);color:var(--text)}
-.through-control input{width:100%;margin:0;height:22px}
-.map-toolbar{display:flex;align-items:center;gap:8px}
-.map-toolbar button{font-size:16px;min-width:34px}
-.map-toolbar #reset{font-size:13px;margin-left:6px;padding-inline:12px}
-#zoom-value{min-width:38px;text-align:center;font:11px var(--technical);color:var(--muted)}
+.timeline { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; }
+.generation-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(14px, 2vw, 32px); }
+.generation-controls h2 { margin: 0; font-size: 20px; font-weight: 400; }
+.generation-range { display: grid; gap: 2px; }
+.generation-bounds { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.from-control { display: flex; align-items: center; gap: 8px; }
+.generation-range output { font-size: 16px; font-variant-numeric: tabular-nums; }
+.generation-range input { width: 100%; height: 22px; margin: 0; }
+.map-toolbar { display: flex; align-items: center; gap: 4px; }
+.map-toolbar button {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+}
+.map-toolbar button:hover { background: var(--text); color: var(--canvas); }
+.map-toolbar #reset { min-width: 36px; margin-left: 6px; }
+#zoom-value { min-width: 54px; text-align: center; color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
 #tooltip{position:fixed;z-index:30;pointer-events:none;width:268px;max-width:calc(100vw - 16px);border:1px solid var(--strong);border-radius:5px;background:#0a0a0af5;color:var(--text);padding:12px}
 .preview-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13px}
 .preview-heading strong{font-weight:400}.preview-heading span{font:11px var(--technical);color:var(--muted)}
 #preview-organism{display:block;width:100%;height:198px}
 #preview-info{margin:0;font:10px/1.6 var(--technical);color:var(--muted)}
-@media(max-width:1100px){:root{--panel-w:320px}.timeline{gap:16px}.bottom-panel{padding-inline:18px}.map-toolbar{gap:4px}#ui-panel{padding-inline:18px}.control:not(.wide-value){grid-template-columns:minmax(0,1fr) minmax(0,142px)}}
+@media(max-width:1100px){:root{--panel-w:320px}.timeline{gap:16px}.bottom-panel{padding-inline:18px}#ui-panel{padding-inline:18px}.control:not(.wide-value){grid-template-columns:minmax(0,1fr) minmax(0,142px)}}
 @media(max-width:1100px){#map-section>.disclosure-body>.control{grid-template-columns:minmax(0,1fr) minmax(0,158px)}}
 @media(max-width:980px){.site-header-row,.about-panel{padding-inline:18px}.brand-description{display:none}}
-@media(max-width:980px){.timeline{grid-template-columns:auto minmax(0,1fr);gap:12px}.map-toolbar{grid-column:1/-1;justify-content:center}.from-control select{max-width:80px}}
+@media(max-width:980px){.timeline{grid-template-columns:minmax(0,1fr);gap:8px}.map-toolbar{justify-content:center}.from-control select{max-width:80px}}
 @media(max-width:760px){
   body{height:auto;min-height:100dvh;overflow:visible}
   .header-nav{gap:20px}
   #main{display:block}
   #ui-panel{border-right:0;border-bottom:1px solid var(--border);overflow:visible}
   .workspace{grid-template-rows:max(380px,62dvh) auto}
-  .timeline{grid-template-columns:auto minmax(0,1fr);gap:12px}
-  .map-toolbar{grid-column:1/-1;justify-content:center}
   .bottom-panel{padding:10px 14px}
   .map-key{top:12px;right:12px;max-width:52%}
   .from-control{font-size:12px}
-  .from-control select{max-width:80px}
+  .generation-controls h2{font-size:16px}
   .preview-heading{font-size:12px}
   #tooltip{width:236px;padding:10px}
   #preview-organism{height:166px}
@@ -243,18 +296,20 @@ tr[aria-selected=true]{background:#102017}
   </div>
   <section id="about-atlas" class="about-panel" aria-label="About this atlas" hidden>
     <div class="about-content">
-      <h2>How to read the map</h2>
-      <p>Each point is one organism form. Its height follows <span id="height-metric">atlas fitness</span>. Larger circles show forms that appear in more runs. The legend explains the ring colors. Horizontal distance does not measure similarity.</p>
-      <p>Each arrow shows a change of champion between consecutive checkpoints in one run or island. Parent-child relationships require separate evidence. If a filter hides a form, the map omits its arrows. The atlas uses saved champions and archive records.</p>
-      <details class="subsection"><summary>Research notes &amp; definitions</summary>
-        <p id="scope" class="note"></p><p id="score-contract" class="note" hidden></p>
-        <p class="note">The data covers a sample of forms. A repeated form can persist between snapshots. Its unseen duration is unknown.</p>
-        <p class="note">Four q6.35 restarts form one declared unit with four separate histories. For each arrow, the source form determines the denominator.</p>
-        <p class="note"><code>P(B | departure from A) = count(A → B) / Σ count(A → C), C ≠ A.</code> A form needs an observed departure to have an outgoing probability. Sampling cadence can hide intermediate forms. Repeated events can come from the same experimental unit.</p>
-        <p class="note">The atlas matches forms by graph structure, including disconnected components. Vertex numbers and states can vary within one form. The default drawing shows one observed example. Source records show their own saved states. The atlas uses individual scores.</p>
-        <p class="note">Equalized height combines 30% normalized raw fitness and 70% normalized mean rank across all topology classes. Equal scores share a height. Filters keep the scale fixed. Axis labels, thresholds and exports use raw fitness.</p>
-        <p class="note">Champion, archive and historical-record roles stay separate. One topology at one run, island and generation counts once, even if multiple sources identify it. Visits restart after a different observed form or a history gap.</p>
-        <p id="coverage-note" class="note"></p><p id="cost-note" class="note"></p>
+      <h2>About the Organism Atlas</h2>
+      <div class="about-intro">
+        <p>The atlas brings together <span id="about-sample">organism forms from GUCA experiments</span>. A form is the pattern of connections in an organism. Explore which forms recur across runs and how the leading form changes over time.</p>
+        <p>Each point represents one form. Its height follows <span id="height-metric">atlas fitness</span>, a score based on the structure of the form. Larger points show forms seen in more runs. The legend explains the ring colors. Horizontal spacing is for layout. An arrow shows a change in the leading form between consecutive saved checkpoints in one run or island. Establishing ancestry requires separate evidence.</p>
+        <p>Select a point to inspect the organism and its scores. Open Details &amp; evidence to see where the form appeared. Use Experiments and the generation range to focus the map.</p>
+      </div>
+      <details class="subsection"><summary>Research methods</summary>
+        <p id="scope" class="note"></p>
+        <p id="score-contract" class="note" hidden></p>
+        <p class="note">The atlas groups forms by graph structure, including disconnected components. Organisms with the same form can have different vertex numbers and states. The default drawing shows one observed example. Each source record shows its own saved states and scores.</p>
+        <p class="note">Saved checkpoints sample a run. A form can persist or change between checkpoints. The atlas counts one appearance per form, run, island and generation, even when several sources identify it. It tracks champion, archive and historical record roles separately. A visit begins after a different observed form or a gap in the history.</p>
+        <p class="note">Each arrow’s percentage uses the observed departures from its source form. <code>P(B | departure from A) = count(A → B) / Σ count(A → C), C ≠ A.</code> Repeated departures can come from the same experimental unit. The four q6.35 restarts belong to one declared unit with four separate histories.</p>
+        <p class="note">The equalized scale combines 30% normalized raw fitness and 70% normalized mean rank across forms. Equal scores share a height. Filters keep this scale fixed. Axis labels, thresholds and exports use raw fitness.</p>
+        <p id="coverage-note" class="note"></p>
       </details>
       <details class="subsection"><summary>Downloads &amp; reproducibility</summary>
         <p class="note">Downloads contain the full dataset.</p>
@@ -337,7 +392,8 @@ tr[aria-selected=true]{background:#102017}
           <p id="sampling-note" class="note"></p>
           <p class="note">Frequencies describe observed forms. They do not rank methods. Equal seed numbers in different hypotheses identify independent runs.</p>
           <p class="note" id="group-context">Mutation: q4.57 is the generic P2000 reference. q4.55 adds activity-aware operators. q4.58 lowers mutation exposure. Architecture: q6.35 keeps four P500 restarts independent. q6.36–q6.40 connect four P500 islands with two random migrants every 500 / 200 / 100 / 50 / 10 generations. q6.38 is the interval reference. All hypotheses use a total population budget of 2000.</p>
-          <div class="table-frame"><table id="coverage-table"><thead><tr><th>Mechanism / hypothesis</th><th>Role / difference</th><th>Units</th><th>Runs</th><th>Histories</th><th>Saved cuts / expected</th></tr></thead><tbody id="coverage-body"></tbody></table></div>
+          <button id="expand-coverage" type="button" aria-haspopup="dialog" aria-controls="coverage-dialog">Expand table</button>
+          <div id="coverage-table-frame" class="table-frame" tabindex="0" aria-label="Experiment coverage table"><table id="coverage-table"><thead><tr><th scope="col">Mechanism / hypothesis</th><th scope="col">Role / difference</th><th scope="col">Units</th><th scope="col">Runs</th><th scope="col">Histories</th><th scope="col">Saved cuts / expected</th></tr></thead><tbody id="coverage-body"></tbody></table></div>
         </div></details>
       </div>
     </details>
@@ -398,14 +454,38 @@ tr[aria-selected=true]{background:#102017}
       </div>
     </div>
     <div class="bottom-panel">
-      <section class="timeline" aria-label="Generation range">
-        <div class="from-control"><label for="start">From</label><select id="start"></select></div>
-        <div class="through-control"><div><label for="end">Through generation</label><output for="end" id="end-value">15,000</output></div><input id="end" type="range" min="500" max="15000" step="500" value="15000"></div>
-        <div class="map-toolbar" aria-label="Map zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-value" aria-label="Zoom level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="reset">Fit map</button></div>
-      </section>
+      <div class="timeline">
+        <section class="generation-controls" aria-labelledby="generation-title">
+          <h2 id="generation-title">Generations</h2>
+          <div class="generation-range">
+            <div class="generation-bounds">
+              <div class="from-control"><label for="start">From</label><select id="start"></select></div>
+              <output for="end" id="end-value" aria-label="Last generation">15,000</output>
+            </div>
+            <input id="end" type="range" min="500" max="15000" step="500" value="15000" aria-label="Through generation">
+          </div>
+        </section>
+        <div class="map-toolbar" role="group" aria-label="Map zoom">
+          <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+          <output id="zoom-value" aria-label="Zoom level">100%</output>
+          <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+          <button id="reset" type="button" aria-label="Fit map" title="Fit map">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="21" height="21"/>
+              <path d="M5.5 9V5.5H9m6 0h3.5V9m0 6v3.5H15m-6 0H5.5V15"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 </main>
+<dialog id="coverage-dialog" class="coverage-dialog" aria-labelledby="coverage-dialog-title">
+  <div class="coverage-dialog-heading">
+    <h2 id="coverage-dialog-title">Experiment coverage</h2>
+    <form method="dialog"><button type="submit" autofocus>Close</button></form>
+  </div>
+</dialog>
 <div id="tooltip" role="tooltip" hidden><div class="preview-heading"><strong id="preview-title"></strong><span id="preview-fitness"></span></div><svg id="preview-organism" viewBox="0 0 320 260" role="img" aria-label="Hovered organism"></svg><p id="preview-info"></p></div>
 <script id="atlas-site-index" type="application/json">{"base":"payload-3a3a54c3ccc790d9","files":{"README.md":"text/markdown;charset=utf-8","checksums.json":"application/json","data/configurations.json":"application/json","data/histories.json":"application/json","data/manifest.json":"application/json","data/observations.json":"application/json","data/original-score-conflicts.json":"application/json","data/overview.json":"application/json","data/profiles.json":"application/json","data/provenance.json":"application/json","data/quadmesh_metric_catalog.csv":"text/csv;charset=utf-8","data/quadmesh_metric_catalog.json":"application/json","data/sampling/all.json":"application/json","data/sampling/common.json":"application/json","data/topologies.csv":"text/csv;charset=utf-8","data/topologies.json":"application/json","data/topology-scores.json":"application/json","data/transition-events.json":"application/json","data/transitions.csv":"text/csv;charset=utf-8","data/transitions.json":"application/json"},"fileCount":14325}</script>
 <script>
@@ -859,8 +939,9 @@ window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable
   function setOptions(){
     document.title=D.manifest.title||'Quadmesh Organism Atlas';
     $('height-metric').textContent=fitnessName.toLowerCase();$('fitness-label').textContent=fitnessName;
+    $('about-sample').textContent = `${fmt(D.topologies.length)} organism forms from ${fmt(D.profiles.length)} runs across ${fmt(arms.length)} GUCA experiments`;
     $('score-contract').hidden=!canonicalScore;
-    $('score-contract').textContent=`Atlas fitness v1 scores an exact canonical topology with bonus-free QuadMesh. It is independent of labels, states and input order. This is a fixed embedding convention, not the fitness used during evolution. Original replay scores and recorded experimental fitness remain available in every source record. Original replay-score variation occurs in ${D.coverage.original_score_conflict_classes} forms.`;
+    $('score-contract').textContent = 'Atlas fitness uses bonus-free QuadMesh to score each canonical graph structure. Labels, states and input order leave the score unchanged. The map uses this score for its vertical scale. Each source record keeps its original replay score and the fitness recorded during evolution.';
     for(const field of fields){
       const values=[...new Set(D.profiles.map(p=>p[field]??'Not applicable'))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
       const filter=$(field),useful=values.length>1;
@@ -871,11 +952,10 @@ window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable
     }
     $('start').innerHTML=D.manifest.generations.map(g=>`<option value="${g}">${fmt(g)}</option>`).join('');
     Object.assign($('end'),{min:state.start,max:state.end,step:state.step,value:state.end});
-    $('scope').textContent=`${arms.length} hypotheses · ${fmt(D.coverage.runs)} physical runs · ${fmt(D.coverage.checkpoints)} saved checkpoints. Four states and maximum genome length 128 are constant. Corrected-v2 mutation; verified post-PL-1 runtime. No legacy-v1 or SPB runs.`;
+    $('scope').textContent = `The dataset uses ${fmt(D.coverage.checkpoints)} saved checkpoints from generation ${fmt(state.start)} to ${fmt(state.end)}. All runs use four states, a maximum genome length of 128, corrected-v2 mutation and the verified post-PL-1 runtime.`;
     if(D.manifest.schema_version!==2){$('scope').textContent=D.manifest.scope;$('group-context').hidden=true;}
     $('hypothesis-choices').innerHTML=arms.map(a=>`<label><input type="checkbox" data-hypothesis="${esc(a.id)}"${state.hypotheses.includes(a.id)?' checked':''}><i class="swatch" style="background:${a.color}"></i><span>${esc(experimentName(a))}<span class="experiment-code">${esc(a.label)}</span></span></label>`).join('');
-    $('coverage-note').textContent=`Verified coverage: ${fmt(D.coverage.runs)} physical runs, ${fmt(D.coverage.checkpoints)} resume checkpoints, generations ${fmt(state.start)}–${fmt(state.end)}. ${fmt(D.coverage.genomes)} source records; zero within-class ${canonicalScore?'canonical ':''}score conflicts at tolerance 1e-9.${canonicalScore?' Original replay-score variation is retained in '+D.coverage.original_score_conflict_classes+' topology classes.':''} Coverage by hypothesis is shown above. Saved semantic exports and native archive members have archive roles; archive order never forms a history.`;
-    $('cost-note').textContent=`Compressed checkpoint inputs: ${(D.coverage.source_bytes/2**30).toFixed(2)} GiB. Population data stays outside this viewer. Source organisms load on demand with a bounded browser cache. Source replay settings and checksums are downloadable.`;
+    $('coverage-note').textContent = `The atlas includes ${fmt(D.coverage.genomes)} source records. Within each form, the ${canonicalScore ? 'canonical ' : ''}scores agree to a tolerance of 1e-9.${canonicalScore ? ' Original replay scores vary within ' + D.coverage.original_score_conflict_classes + ' forms.' : ''} Open Sampling & coverage under Experiments for the breakdown by group.`;
     $('sampling').disabled=!D.manifest.sampling_grids;
     if(D.manifest.sampling_grids?.common){$('common-download').href='data/sampling/common.json';$('common-download').hidden=false;}
     updateScaleNote();
@@ -1272,6 +1352,21 @@ window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable
   $('min-edge').oninput=()=>{state.minEdge=Math.max(1,+$('min-edge').value);requestDraw();};
   $('zoom-in').onclick=()=>zoom(1.5);$('zoom-out').onclick=()=>zoom(1/1.5);
   $('reset').onclick=()=>{Object.assign(state,{k:1,px:0,py:0});requestDraw();};
+  const coverageDialog = $('coverage-dialog');
+  const coverageFrame = $('coverage-table-frame');
+  const expandCoverage = $('expand-coverage');
+  let coverageScroll = [0, 0];
+  expandCoverage.onclick = () => {
+    coverageScroll = [coverageFrame.scrollLeft, coverageFrame.scrollTop];
+    coverageDialog.append(coverageFrame);
+    coverageDialog.showModal();
+    coverageFrame.scrollTo(0, 0);
+  };
+  coverageDialog.addEventListener('close', () => {
+    expandCoverage.after(coverageFrame);
+    coverageFrame.scrollTo(...coverageScroll);
+    expandCoverage.focus({preventScroll: true});
+  });
   $('more-occurrences').onclick=()=>{occurrenceLimit+=30;renderOccurrences();};
   for (const section of [$('detail'), evidence, $('history')]) {
     section.addEventListener('toggle', loadOccurrences);
@@ -1312,7 +1407,11 @@ window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable
   canvas.addEventListener('pointercancel',()=>{drag=null;canvas.style.cursor='crosshair';hidePreview();});
   canvas.addEventListener('lostpointercapture',()=>{drag=null;canvas.style.cursor='crosshair';});
   canvas.addEventListener('pointerleave',hidePreview);
+  document.addEventListener('pointerdown', () => {
+    document.documentElement.toggleAttribute('data-pointer-input', true);
+  }, {capture: true});
   document.addEventListener('keydown',e=>{
+    if (e.key === 'Tab') document.documentElement.removeAttribute('data-pointer-input');
     if(e.key!=='Escape')return;
     hidePreview();
     if(!$('about-atlas').hidden){
