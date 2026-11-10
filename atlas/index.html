@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quadmesh Organism Atlas</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,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">
+  <style>:root{color-scheme:dark;--canvas:#000;--surface:#050505;--raised:#111;--border:#3b3b3b;--strong:#686868;--text:#f6f6f6;--muted:#8f8f8f;--subtle:#606060;--active:#69d68b;--panel-w:336px;--header-h:72px;--technical:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-family:Arial,Helvetica,sans-serif;font-size:16px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--canvas);color:var(--text);line-height:1.45;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+button,input,select{font:inherit}
+button,input,select,a,summary,.help-anchor{outline-offset:3px}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible,.help-anchor:focus-visible,canvas:focus-visible{outline:2px solid var(--text)}
+a{color:var(--text);text-underline-offset:3px}
+button{cursor:pointer}
+button,select,input[type=number],input[type=search]{min-width:0;min-height:36px;padding:7px 9px;border:1px solid var(--strong);border-radius:4px;background:var(--canvas);color:var(--text);font-size:14px}
+select,input[type=number],input[type=search]{padding:6px 8px;border-color:var(--border);background:var(--surface)}
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 5.5 8 10.5 13 5.5' fill='none' stroke='%23f6f6f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 8px center;
+  background-size: 14px;
+  background-repeat: no-repeat;
+}
+@media (forced-colors: active) {
+  select { appearance: auto; background-image: none; padding-right: 8px; }
+}
+button:hover{background:var(--text);color:var(--canvas)}
+button[aria-pressed=true]{color:#000;background:var(--text);border-color:var(--text)}
+button:disabled,input:disabled,select:disabled{opacity:.4;cursor:default}
+input[type=range],input[type=checkbox]{accent-color:var(--text)}
+input[type=range]{min-width:0;cursor:pointer}
+.site-header{position:relative;flex:none;border-bottom:1px solid var(--border);background:var(--canvas);z-index:20}
+.site-header-row{min-height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 28px}
+.brand-lockup{min-width:0;display:flex;align-items:baseline;gap:20px;white-space:nowrap}
+.brand-name{font-size:clamp(34px,3.2vw,52px);font-weight:700;line-height:1;letter-spacing:-.05em;text-decoration:none}
+.brand-description{overflow:hidden;color:var(--muted);font:clamp(13px,1.35vw,20px) var(--technical);letter-spacing:.19em;text-overflow:ellipsis}
+.header-nav{display:flex;align-items:center;gap:32px;font-size:clamp(18px,1.65vw,26px);white-space:nowrap}
+.header-nav :is(.header-link,.header-action){min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;line-height:normal;text-decoration:none}
+.header-nav .header-action[aria-expanded=true]{color:var(--muted)}
+.header-nav .header-link[aria-current=page]{color:var(--active);text-decoration:underline;text-underline-offset:4px}
+.header-nav :is(.header-link,.header-action):hover{background:var(--text);color:var(--canvas)}
+.about-panel{width:100%;max-height:min(360px,42dvh);padding:22px 28px 26px;overflow:auto;overscroll-behavior:contain;border-top:1px solid var(--border);color:var(--muted);font-size:clamp(15px,1.3vw,18px);line-height:1.5}
+.about-content h2{margin:0 0 8px;color:var(--text);font-size:20px}
+.about-content p{margin:0 0 8px}
+.about-content details[open]>summary{margin-bottom:8px}
+#main{flex:1;min-height:0;display:grid;grid-template-columns:var(--panel-w) minmax(0,1fr)}
+#atlas-file-notice{margin:24px 28px}
+#ui-panel{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;border-right:1px solid var(--border);padding:24px 22px 32px;scrollbar-color:var(--strong) transparent;scrollbar-width:thin}
+h3{font-size:15px;font-weight:400;margin:12px 0}
+.selected-organism-title{min-height:46px;display:flex;align-items:center;margin:0 0 10px;font-size:24px;line-height:1.2;font-weight:400}
+.control{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,156px);align-items:center;gap:10px;margin:12px 0;font-size:14px}
+.control label{color:var(--muted)}
+.control select,.control input{width:100%}
+.wide-value{grid-template-columns:minmax(0,1fr);gap:6px}
+.checkbox-label{display:flex;align-items:center;gap:8px;font-size:14px;margin:16px 0 4px;cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;margin:0;flex-shrink:0}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex: none;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.5 3 10.5 8 5.5 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  forced-color-adjust: none;
+}
+details[open]>summary:after{transform:rotate(90deg)}
+summary:hover{color:#fff}
+.panel-disclosure summary{user-select:none}
+.panel-disclosure>summary{min-height:48px;padding-right:2px;font-size:25px;font-weight:700;line-height:1.05}
+.panel-disclosure>summary::after{width:18px;height:18px}
+.panel-disclosure>summary .technical{margin-left:auto}
+.subsection{margin-top:14px}
+.subsection>summary{font-size:13px;color:var(--muted);min-height:30px}
+.subsection[open]>summary{color:var(--text)}
+#ui-panel .subsection{margin-top:2px}
+#ui-panel details:not(.panel-disclosure)>summary{position:relative;min-height:31px;margin:0;padding:4px 2px 4px 28px;color:var(--text);font-size:19px;font-weight:400;line-height:1.2}
+#ui-panel details>summary:hover{background:var(--text);color:var(--canvas)}
+#ui-panel summary:hover :is(.technical,.incoming,.outgoing){color:inherit}
+.disclosure-body{padding-top:10px}
+.note{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0;overflow-wrap:anywhere}
+.technical{font:11px/1.6 var(--technical);color:var(--muted);overflow-wrap:anywhere}
+.panel-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.panel-actions button{min-height:32px;padding:4px 8px;font-size:12px}
+.panel-actions p{flex-basis:100%;margin:0}
+.hypothesis-choices{display:grid;gap:4px;margin:14px 0}
+.hypothesis-choices label{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;cursor:pointer}
+.hypothesis-choices input{margin-top:2px}
+.hypothesis-choices .swatch{margin-top:5px;flex:none}
+.experiment-code{margin-left:5px;color:var(--muted);font:11px var(--technical);white-space:nowrap}
+fieldset.cohort{display:block;min-width:0;border:0;padding:0;margin:16px 0}
+.cohort legend{font-size:13px;color:var(--muted);padding:0;margin-bottom:8px}
+.segmented{display:inline-flex;border:1px solid var(--strong);border-radius:4px;overflow:hidden}
+.segmented button{border:0;border-radius:0;min-width:48px}
+.segmented button+button{border-left:1px solid var(--strong)}
+.edge-opacity-control{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.edge-opacity-control label{grid-column:1/-1}
+.edge-opacity-control input{width:100%;margin:0}
+.edge-opacity-control output{font:11px var(--technical);min-width:32px;text-align:right}
+.state-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font:11px/1.5 var(--technical);color:var(--muted)}
+.outgoing{color:var(--active)}.incoming{color:#b78cff}
+.organism-frame{border:1px solid var(--border);border-radius:5px;background:var(--surface);overflow:hidden}
+#organism{width:100%;height:168px;display:block}
+.fitness-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 10px 0 4px;
+}
+.fitness-score {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.fitness-score strong {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.fitness-score .field-help { width: min(240px, 80vw); }
+#structure,#drawing-caption,#form-filtered{margin:4px 0}
+#form-filtered{color:var(--text)}
+.organism-evidence>.disclosure-body{padding:8px 0 0 28px}
+#ui-panel .organism-evidence details>summary{padding-inline-start:16px;font-size:17px}
+.organism-evidence .evidence-item>:not(summary){margin-inline-start:16px}
+.identity-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;margin:0 0 10px;color:var(--muted);font-size:12px}
+.identity-row code{min-width:0;color:var(--text);font:11px var(--technical);text-align:right;overflow:hidden;text-overflow:ellipsis}
+.detail-group{padding-bottom:8px}
+.detail-group-heading{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:var(--muted);font-size:12px}
+.with-help{position:relative}
+.help-anchor{justify-self:start;cursor:help}
+.field-help{position:absolute;inset:auto 0 calc(100% + 4px);z-index:10;padding:8px 10px;border:1px solid var(--strong);border-radius:5px;background:var(--raised);color:var(--text);font-size:12px;visibility:hidden;pointer-events:none}
+.with-help:has(>.help-anchor:is(:hover,:focus-visible),>input:focus-visible)>.field-help{visibility:visible}
+body:has(select:open) .field-help{display:none}
+@media(hover:none){.with-help:has(>.help-anchor:focus,>input:focus)>.field-help{visibility:visible}}
+#form-transitions{margin-top:8px}
+#form-transitions summary>span{position:absolute;inset-inline-start:2px;top:50%;transform:translateY(-50%)}
+.counts{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:12px;margin:12px 0}
+.counts dt{color:var(--muted)}.counts dd{margin:0;font:11px var(--technical)}
+.seed-group{margin:10px 0}.seed-group>p{margin:4px 0}.seed-buttons{display:flex;flex-wrap:wrap;gap:6px}
+.seed-buttons button{min-width:38px;min-height:30px;padding:4px 6px;font:12px var(--technical)}
+.seed-group details{margin-top:6px}
+.connection{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;border-bottom:1px solid var(--border);padding:8px 0;font-size:12px}
+.connection button{border:0;padding:0;min-height:26px;text-decoration:underline;text-underline-offset:3px;text-align:left}
+.connection small{display:block;font-size:10px;color:var(--muted)}.prob{text-align:right;font-family:var(--technical)}
+.contribution{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.empty{font-size:12px;color:var(--muted)}
+.table-frame{overflow:auto;max-height:340px;margin-top:10px;border:1px solid var(--border);border-radius:5px}
+.search-label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted)}
+#form-search{width:100%}
+table{border-collapse:collapse;width:100%;font-size:11px}
+th,td{padding:8px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:400}
+td button{border:0;min-height:26px;padding:0;font-size:12px;text-decoration:underline}
+tr[aria-selected=true]{background:#102017}
+#coverage-table{min-width:600px}
+#occurrences{max-height:300px;overflow:auto;margin-top:8px}
+#occurrences button{display:block;width:100%;border:0;border-bottom:1px solid var(--border);border-radius:0;text-align:left;font:11px/1.6 var(--technical);padding:8px 2px;overflow-wrap:anywhere}
+#more-topologies,#more-occurrences{width:100%;margin-top:10px}
+.organism-evidence #more-occurrences{width:calc(100% - 16px)}
+#source-json{font:10px/1.6 var(--technical);max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+#genome-download{font-size:12px}
+#source-variants{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+#source-variants button{font-size:11px;min-height:28px}
+.downloads{display:grid;gap:10px;font-size:12px;margin:14px 0}
+.workspace{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto}
+.map-frame{min-width:0;min-height:0;position:relative;overflow:hidden;background:var(--canvas)}
+#map{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.map-key{position:absolute;right:20px;top:18px;max-width:min(360px,45%);padding:8px 10px;background:#000d;pointer-events:none;font:10px var(--technical);color:var(--muted)}
+.map-key-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+  color: #ccc;
+  font-size: 11px;
+}
+.legend{display:flex;flex-wrap:wrap;gap:5px 10px;margin:0;font:10px/1.5 var(--technical)}
+.legend>span{white-space:nowrap}
+.swatch{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:baseline}
+.bottom-panel{border-top:1px solid var(--border);padding:12px 24px 9px;background:var(--canvas)}
+.timeline{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;align-items:center;gap:28px}
+.from-control{display:flex;align-items:center;gap:10px;font-size:13px}
+.from-control label,.through-control label{color:var(--muted)}
+.through-control{display:grid;gap:5px}
+.through-control>div{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px}
+.through-control output{font:12px var(--technical);color:var(--text)}
+.through-control input{width:100%;margin:0;height:22px}
+.map-toolbar{display:flex;align-items:center;gap:8px}
+.map-toolbar button{font-size:16px;min-width:34px}
+.map-toolbar #reset{font-size:13px;margin-left:6px;padding-inline:12px}
+#zoom-value{min-width:38px;text-align:center;font:11px var(--technical);color:var(--muted)}
+#tooltip{position:fixed;z-index:30;pointer-events:none;width:268px;max-width:calc(100vw - 16px);border:1px solid var(--strong);border-radius:5px;background:#0a0a0af5;color:var(--text);padding:12px}
+.preview-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13px}
+.preview-heading strong{font-weight:400}.preview-heading span{font:11px var(--technical);color:var(--muted)}
+#preview-organism{display:block;width:100%;height:198px}
+#preview-info{margin:0;font:10px/1.6 var(--technical);color:var(--muted)}
+@media(max-width:1100px){:root{--panel-w:320px}.timeline{gap:16px}.bottom-panel{padding-inline:18px}.map-toolbar{gap:4px}#ui-panel{padding-inline:18px}.control:not(.wide-value){grid-template-columns:minmax(0,1fr) minmax(0,142px)}}
+@media(max-width:1100px){#map-section>.disclosure-body>.control{grid-template-columns:minmax(0,1fr) minmax(0,158px)}}
+@media(max-width:980px){.site-header-row,.about-panel{padding-inline:18px}.brand-description{display:none}}
+@media(max-width:980px){.timeline{grid-template-columns:auto minmax(0,1fr);gap:12px}.map-toolbar{grid-column:1/-1;justify-content:center}.from-control select{max-width:80px}}
+@media(max-width:760px){
+  body{height:auto;min-height:100dvh;overflow:visible}
+  .header-nav{gap:20px}
+  #main{display:block}
+  #ui-panel{border-right:0;border-bottom:1px solid var(--border);overflow:visible}
+  .workspace{grid-template-rows:max(380px,62dvh) auto}
+  .timeline{grid-template-columns:auto minmax(0,1fr);gap:12px}
+  .map-toolbar{grid-column:1/-1;justify-content:center}
+  .bottom-panel{padding:10px 14px}
+  .map-key{top:12px;right:12px;max-width:52%}
+  .from-control{font-size:12px}
+  .from-control select{max-width:80px}
+  .preview-heading{font-size:12px}
+  #tooltip{width:236px;padding:10px}
+  #preview-organism{height:166px}
+}
+@media(max-width:520px){.site-header-row{flex-wrap:wrap;gap:8px 16px;padding-block:12px}.header-nav{flex-wrap:wrap;gap:4px 12px;font-size:16px}}
+@media(max-height:650px) and (min-width:761px){.bottom-panel{padding-top:9px;padding-bottom:6px}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-row">
+    <div class="brand-lockup">
+      <a class="brand-name" href="../index.html" aria-label="GUCA simulator">GUCA</a>
+      <span class="brand-description">graph unfolding cellular automata</span>
+    </div>
+    <nav class="header-nav" aria-label="GUCA">
+      <a class="header-link" href="#atlas-map" aria-current="page">Atlas</a>
+      <button type="button" id="about-toggle" class="header-action" aria-expanded="false" aria-controls="about-atlas">About</button>
+      <a class="header-link" href="https://github.com/roma-goodok/guca" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+  <section id="about-atlas" class="about-panel" aria-label="About this atlas" hidden>
+    <div class="about-content">
+      <h2>How to read the map</h2>
+      <p>Each point is one organism form. Its height follows <span id="height-metric">atlas fitness</span>. Larger circles show forms that appear in more runs. The legend explains the ring colors. Horizontal distance does not measure similarity.</p>
+      <p>Each arrow shows a change of champion between consecutive checkpoints in one run or island. Parent-child relationships require separate evidence. If a filter hides a form, the map omits its arrows. The atlas uses saved champions and archive records.</p>
+      <details class="subsection"><summary>Research notes &amp; definitions</summary>
+        <p id="scope" class="note"></p><p id="score-contract" class="note" hidden></p>
+        <p class="note">The data covers a sample of forms. A repeated form can persist between snapshots. Its unseen duration is unknown.</p>
+        <p class="note">Four q6.35 restarts form one declared unit with four separate histories. For each arrow, the source form determines the denominator.</p>
+        <p class="note"><code>P(B | departure from A) = count(A → B) / Σ count(A → C), C ≠ A.</code> A form needs an observed departure to have an outgoing probability. Sampling cadence can hide intermediate forms. Repeated events can come from the same experimental unit.</p>
+        <p class="note">The atlas matches forms by graph structure, including disconnected components. Vertex numbers and states can vary within one form. The default drawing shows one observed example. Source records show their own saved states. The atlas uses individual scores.</p>
+        <p class="note">Equalized height combines 30% normalized raw fitness and 70% normalized mean rank across all topology classes. Equal scores share a height. Filters keep the scale fixed. Axis labels, thresholds and exports use raw fitness.</p>
+        <p class="note">Champion, archive and historical-record roles stay separate. One topology at one run, island and generation counts once, even if multiple sources identify it. Visits restart after a different observed form or a history gap.</p>
+        <p id="coverage-note" class="note"></p><p id="cost-note" class="note"></p>
+      </details>
+      <details class="subsection"><summary>Downloads &amp; reproducibility</summary>
+        <p class="note">Downloads contain the full dataset.</p>
+        <div class="downloads"><a href="data/topologies.csv" download>Topologies CSV</a><a href="data/transitions.csv" download>All transitions CSV</a><a id="common-download" download hidden>8 shared checkpoints summary</a><a href="data/observations.json" download>Observation evidence</a><a href="data/provenance.json" download>Provenance</a><a href="data/manifest.json" download>Frozen manifest</a><a href="README.md">Reproduction recipe</a></div>
+      </details>
+    </div>
+  </section>
+</header>
+<p id="atlas-file-notice" hidden>Open the <a href="../../research-assets/organisms-and-forms/quadmesh-organism-atlas/quadmesh-organism-atlas-isl1-post-pl3-v1.html">offline Atlas</a> to use a local file.</p>
+<main id="main">
+  <aside id="ui-panel" aria-label="Atlas settings and selected organism">
+    <details id="detail" class="sidebar-section panel-disclosure" name="atlas-sidebar" open>
+      <summary>Organism</summary>
+      <div class="disclosure-body">
+        <h3 id="form-title" class="selected-organism-title">Select an organism</h3>
+        <div class="organism-frame"><svg id="organism" viewBox="0 0 320 260" role="img" aria-label="Selected topology"></svg></div>
+        <div class="fitness-scores">
+          <div class="fitness-score with-help">
+            <span id="fitness-label" class="help-anchor" tabindex="0" aria-describedby="atlas-fitness-help">Atlas fitness</span>
+            <strong id="fitness">—</strong>
+            <span class="field-help" id="atlas-fitness-help" role="tooltip">A fixed structural score used to place forms vertically. It is separate from fitness recorded during an evolutionary run.</span>
+          </div>
+          <div id="original-score-field" class="fitness-score" hidden>
+            <span>Original replay score</span>
+            <strong id="original-score"></strong>
+          </div>
+        </div>
+        <p id="drawing-caption" class="note" hidden></p>
+        <p id="structure" class="technical"></p>
+        <p id="form-filtered" class="note" hidden>Hidden by fitness filter</p>
+        <div id="form-transitions" hidden>
+          <details class="subsection evidence-item">
+            <summary><span class="incoming" aria-hidden="true">←</span> Forms before</summary>
+            <p class="note">Purple arrows show changes to this form. Each percentage is the share of changes from the listed form that led here.</p>
+            <div id="incoming"></div>
+          </details>
+          <details class="subsection evidence-item">
+            <summary><span class="outgoing" aria-hidden="true">→</span> Forms after</summary>
+            <p class="note">Green arrows show changes from this form. Each percentage is the share of changes from this form that led to the listed form.</p>
+            <div id="outgoing"></div>
+          </details>
+        </div>
+        <details class="subsection organism-evidence"><summary>Details &amp; evidence</summary><div class="disclosure-body">
+          <div class="identity-row with-help">
+            <span class="help-anchor" tabindex="0" aria-describedby="topology-id-help">Topology ID</span><code id="form-id"></code>
+            <span class="field-help" id="topology-id-help" role="tooltip">A stable internal identifier for this exact graph structure. It is useful for data exports and reproducibility.</span>
+          </div>
+          <div class="detail-group">
+            <div class="detail-group-heading with-help">
+              <span class="help-anchor" tabindex="0" aria-describedby="vertex-states-help">Vertex states</span>
+              <span class="field-help" id="vertex-states-help" role="tooltip">Colors show saved vertex states. The same form can have different states in other runs.</span>
+            </div>
+            <div id="state-legend" class="state-legend" aria-label="Organism states"></div>
+          </div>
+          <div id="seed-section" hidden>
+            <details class="subsection evidence-item">
+              <summary id="seed-title">Runs with this form</summary>
+              <p id="form-runs" class="note"></p>
+              <div id="seed-list"></div>
+              <p class="note">Select a seed to highlight its run. A seed is the starting number for the random generator.</p>
+            </details>
+          </div>
+          <details class="subsection evidence-item"><summary>Counts &amp; contributions</summary><dl id="counts" class="counts"></dl><div id="contributions"></div></details>
+          <details id="history" class="subsection evidence-item">
+            <summary>Occurrences &amp; source organisms</summary>
+            <div id="occurrences"></div>
+            <button id="more-occurrences" hidden>Show more observations</button>
+            <div id="source-organism" hidden><h3>Source organism</h3><p id="source-caption" class="note"></p><a id="genome-download" download>Download exact record and replay settings</a><details class="subsection"><summary>Record data</summary><pre id="source-json"></pre></details></div>
+          </details>
+        </div></details>
+      </div>
+    </details>
+    <details id="cohort-section" class="sidebar-section panel-disclosure" name="atlas-sidebar">
+      <summary>Experiments</summary>
+      <div class="disclosure-body">
+        <div id="hypothesis-choices" class="hypothesis-choices"></div>
+        <details class="subsection"><summary>Sampling &amp; coverage</summary><div class="disclosure-body">
+          <fieldset class="control cohort"><legend>Units per group (up to)</legend><div class="segmented"><button id="limit24" aria-pressed="false">24</button><button id="limit48" aria-pressed="true">48</button></div></fieldset>
+          <div class="control wide-value"><label for="sampling">Saved generations</label><select id="sampling"><option value="all">All available</option><option value="common">8 shared checkpoints</option></select></div>
+          <p id="sampling-note" class="note"></p>
+          <p class="note">Frequencies describe observed forms. They do not rank methods. Equal seed numbers in different hypotheses identify independent runs.</p>
+          <p class="note" id="group-context">Mutation: q4.57 is the generic P2000 reference. q4.55 adds activity-aware operators. q4.58 lowers mutation exposure. Architecture: q6.35 keeps four P500 restarts independent. q6.36–q6.40 connect four P500 islands with two random migrants every 500 / 200 / 100 / 50 / 10 generations. q6.38 is the interval reference. All hypotheses use a total population budget of 2000.</p>
+          <div class="table-frame"><table id="coverage-table"><thead><tr><th>Mechanism / hypothesis</th><th>Role / difference</th><th>Units</th><th>Runs</th><th>Histories</th><th>Saved cuts / expected</th></tr></thead><tbody id="coverage-body"></tbody></table></div>
+        </div></details>
+      </div>
+    </details>
+    <details id="map-section" class="sidebar-section panel-disclosure" name="atlas-sidebar">
+      <summary>Map</summary>
+      <div class="disclosure-body">
+        <div class="control"><label for="color">Color by</label><select id="color"><option value="hypothesis">Experiment group</option><option value="state_count">State count</option><option value="max_len">Max genome length</option><option value="island_count">Islands per run</option><option value="migration_interval">Migration interval</option></select></div>
+        <div class="control"><label for="edges">Links</label><select id="edges"><option value="all">All transitions</option><option value="near">Selected form only</option><option value="off">Off</option></select></div>
+        <p id="trace-key" class="note" hidden>⇢ Highlighted run</p>
+        <details class="subsection"><summary>More map settings</summary><div class="disclosure-body">
+          <div class="control"><label for="fitness-scale">Vertical scale</label><select id="fitness-scale"><option value="equalized">Equalized</option><option value="linear">Linear</option></select></div>
+          <p id="scale-note" class="note"></p>
+          <label class="checkbox-label"><input id="show-organisms" type="checkbox" checked>Show organisms when zoomed in</label>
+          <div id="edge-opacity-control" class="edge-opacity-control"><label for="edge-opacity">Background link opacity</label><input id="edge-opacity" type="range" min="0" max="100" step="5" value="30" aria-valuetext="30%"><output id="edge-opacity-value" for="edge-opacity">30%</output></div>
+          <div id="link-count-control" class="control with-help">
+            <label class="help-anchor" for="min-edge">Minimum link count</label>
+            <input type="number" id="min-edge" value="1" min="1" step="1" aria-describedby="min-edge-help">
+            <span class="field-help" id="min-edge-help" role="tooltip">Show a link only if this transition was observed at least this many times.</span>
+          </div>
+        </div></details>
+        <details class="subsection"><summary>Selection stats</summary><p class="note">Appearance and transition counts refer to the selected runs and generations. The fitness filter changes how many forms the map shows.</p><dl id="selection-stats" class="counts"></dl></details>
+      </div>
+    </details>
+    <details class="sidebar-section panel-disclosure" id="filters" name="atlas-sidebar"><summary>Filters <span id="filter-count" class="technical" hidden></span></summary><div class="disclosure-body filter-body">
+      <div class="control with-help" hidden><label class="help-anchor" tabindex="0" aria-describedby="states-help" for="state_count">States</label><select id="state_count" aria-describedby="states-help"></select><span class="field-help" id="states-help" role="tooltip">How many states a vertex can take in a run.</span></div>
+      <div class="control with-help" hidden><label class="help-anchor" tabindex="0" aria-describedby="length-help" for="max_len">Max genome length</label><select id="max_len" aria-describedby="length-help"></select><span class="field-help" id="length-help" role="tooltip">The maximum number of rules a genome can contain in a run.</span></div>
+      <div class="control with-help"><label class="help-anchor" tabindex="0" aria-describedby="islands-help" for="island_count">Islands per run</label><select id="island_count" aria-describedby="islands-help"></select><span class="field-help" id="islands-help" role="tooltip">An island is a separate population within one run.</span></div>
+      <div class="control with-help wide-value"><label class="help-anchor" tabindex="0" aria-describedby="migration-help" for="migration_interval">Migration interval</label><select id="migration_interval" aria-describedby="migration-help"></select><span class="field-help" id="migration-help" role="tooltip">How often islands exchange individuals, measured in generations.</span></div>
+      <div class="control with-help"><label class="help-anchor" for="min-fit">Minimum atlas fitness</label><input type="number" id="min-fit" placeholder="Any" step="any" aria-describedby="fitness-help"><span class="field-help" id="fitness-help" role="tooltip">Show forms with this atlas fitness or higher.</span></div>
+      <div id="active-filters" class="panel-actions" hidden><p id="filter-summary" class="note"></p><button id="clear-filters" type="button">Clear filters</button></div>
+    </div></details>
+    <details id="trace-controls" class="sidebar-section panel-disclosure" name="atlas-sidebar"><summary>Highlight a run</summary><div class="disclosure-body">
+      <div class="control wide-value"><label for="path-hypothesis">Experiment group</label><select id="path-hypothesis"></select></div>
+      <div class="control with-help"><label class="help-anchor" tabindex="0" aria-describedby="seed-help" for="path">Run</label><select id="path" aria-describedby="seed-help"><option value="">Choose a run</option></select><span class="field-help" id="seed-help" role="tooltip">A seed is the starting number for the random generator in a run.</span></div>
+      <div id="path-island-control" class="control" hidden><label for="path-island">Island</label><select id="path-island"><option value="*">All islands</option></select></div>
+      <div id="trace-selection" class="panel-actions" hidden><p id="path-label" class="note"></p><button id="clear-highlight" type="button">Clear highlight</button></div>
+    </div></details>
+    <details id="topology-list" class="sidebar-section panel-disclosure" name="atlas-sidebar">
+      <summary>Browse forms</summary>
+      <div class="disclosure-body">
+        <label for="form-search" class="search-label">Find a form</label>
+        <input id="form-search" type="search" placeholder="Form number, e.g. F791" autocomplete="off">
+        <p id="list-count" class="note" role="status"></p>
+        <div id="form-table" class="table-frame"><table><thead><tr><th scope="col">Form</th><th scope="col">Atlas fitness</th><th scope="col">Runs</th></tr></thead><tbody id="node-list"></tbody></table></div>
+        <button id="more-topologies" type="button" hidden>Show next 100</button>
+      </div>
+    </details>
+  </aside>
+  <section id="atlas-map" class="workspace" aria-label="Evolution map">
+    <div class="map-frame">
+      <canvas id="map" tabindex="0" aria-label="Topology map. Hover a point to preview its organism. Click to select. Use plus and minus to zoom, arrows to pan, and Home to fit. Browse forms in the left panel for keyboard selection."></canvas>
+      <div class="map-key">
+        <div class="map-key-heading">
+          <span id="legend-title">Experiment group</span>
+          <span id="status" class="technical" role="status">Loading atlas…</span>
+        </div>
+        <p id="legend" class="legend" aria-label="Color legend"></p>
+      </div>
+    </div>
+    <div class="bottom-panel">
+      <section class="timeline" aria-label="Generation range">
+        <div class="from-control"><label for="start">From</label><select id="start"></select></div>
+        <div class="through-control"><div><label for="end">Through generation</label><output for="end" id="end-value">15,000</output></div><input id="end" type="range" min="500" max="15000" step="500" value="15000"></div>
+        <div class="map-toolbar" aria-label="Map zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-value" aria-label="Zoom level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="reset">Fit map</button></div>
+      </section>
+    </div>
+  </section>
+</main>
+<div id="tooltip" role="tooltip" hidden><div class="preview-heading"><strong id="preview-title"></strong><span id="preview-fitness"></span></div><svg id="preview-organism" viewBox="0 0 320 260" role="img" aria-label="Hovered organism"></svg><p id="preview-info"></p></div>
+<script id="atlas-site-index" type="application/json">{"base":"payload-3a3a54c3ccc790d9","files":{"README.md":"text/markdown;charset=utf-8","checksums.json":"application/json","data/configurations.json":"application/json","data/histories.json":"application/json","data/manifest.json":"application/json","data/observations.json":"application/json","data/original-score-conflicts.json":"application/json","data/overview.json":"application/json","data/profiles.json":"application/json","data/provenance.json":"application/json","data/quadmesh_metric_catalog.csv":"text/csv;charset=utf-8","data/quadmesh_metric_catalog.json":"application/json","data/sampling/all.json":"application/json","data/sampling/common.json":"application/json","data/topologies.csv":"text/csv;charset=utf-8","data/topologies.json":"application/json","data/topology-scores.json":"application/json","data/transition-events.json":"application/json","data/transitions.csv":"text/csv;charset=utf-8","data/transitions.json":"application/json"},"fileCount":14325}</script>
+<script>
+/* Shared loader for the offline HTML and the static website. */
+(() => {
+  'use strict';
+  const siteElement = document.getElementById('atlas-site-index');
+  const site = siteElement ? JSON.parse(siteElement.textContent) : null;
+  const indexElement = document.getElementById('atlas-file-index');
+  const dataElement = document.getElementById('atlas-file-data');
+  const index = indexElement ? JSON.parse(indexElement.textContent) : null;
+  const packed = dataElement?.textContent;
+  indexElement?.remove();
+  dataElement?.remove();
+  const pending = new Map();
+  const pendingShards = new Map();
+  const shards = new Map();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  async function inflate(stream) {
+    if (!window.DecompressionStream) {
+      throw new Error('This atlas needs a browser with gzip decompression.');
+    }
+    return new Uint8Array(await new Response(stream.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  }
+
+  function shardFor(path) {
+    const detail = /^data\/details\/t-([0-9a-f]{2})[0-9a-f]+\.js$/.exec(path);
+    if (detail) return 'details-' + (parseInt(detail[1], 16) % 16) + '.json.gz';
+    const genome = /^data\/genomes\/g-([0-9a-f]{2})[0-9a-f]+\.json$/.exec(path);
+    if (genome) return 'genomes-' + (parseInt(genome[1], 16) % 64) + '.json.gz';
+    return null;
+  }
+
+  async function fetchCompressed(path) {
+    const response = await fetch(site.base + '/' + path);
+    if (!response.ok || !response.body) throw new Error('Unable to load ' + path + ' (' + response.status + ').');
+    return inflate(response.body);
+  }
+
+  async function readShard(path) {
+    if (shards.has(path)) {
+      const records = shards.get(path);
+      shards.delete(path);
+      shards.set(path, records);
+      return records;
+    }
+    if (!pendingShards.has(path)) {
+      pendingShards.set(path, (async () => {
+        try {
+          const records = JSON.parse(decoder.decode(await fetchCompressed(path)));
+          shards.set(path, records);
+          if (shards.size > 2) shards.delete(shards.keys().next().value);
+          return records;
+        } finally {
+          pendingShards.delete(path);
+        }
+      })());
+    }
+    return pendingShards.get(path);
+  }
+
+  async function read(path) {
+    if (site) {
+      if (Object.hasOwn(site.files, path)) return fetchCompressed(path + '.gz');
+      const shard = shardFor(path);
+      if (shard) {
+        const records = await readShard(shard);
+        if (Object.hasOwn(records, path)) return encoder.encode(records[path]);
+      }
+      throw new Error('Missing atlas file: ' + path);
+    }
+    if (!Object.hasOwn(index, path)) throw new Error('Missing embedded file: ' + path);
+    const [offset, length] = index[path];
+    const binary = atob(packed.slice(offset, offset + length));
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    return inflate(new Blob([bytes]).stream());
+  }
+
+  async function load(kind, id) {
+    const store = kind === 'details' ? window.AtlasDetails : window.AtlasGenomes;
+    if (store[id]) return store[id];
+    const key = kind + '/' + id;
+    if (!pending.has(key)) pending.set(key, (async () => {
+      try {
+        const path = 'data/' + key + (kind === 'details' ? '.js' : '.json');
+        let text = decoder.decode(await read(path));
+        if (kind === 'details') {
+          const prefix = "window.AtlasDetails['" + id + "']=";
+          if (!text.startsWith(prefix) || !text.trimEnd().endsWith(';')) {
+            throw new Error('Invalid atlas detail: ' + id);
+          }
+          text = text.slice(prefix.length).trimEnd().slice(0, -1);
+        }
+        const value = JSON.parse(text);
+        store[id] = value;
+        const keys = Object.keys(store), limit = kind === 'details' ? 8 : 16;
+        for (const old of keys.slice(0, Math.max(0, keys.length - limit))) {
+          if (old !== id) delete store[old];
+        }
+        return value;
+      } finally {
+        pending.delete(key);
+      }
+    })());
+    return pending.get(key);
+  }
+
+  document.addEventListener('click', async event => {
+    const link = event.target.closest('a[href]');
+    const path = link?.getAttribute('href');
+    if (!path) return;
+    let type = index?.[path]?.[2];
+    if (site && Object.hasOwn(site.files, path)) type = site.files[path];
+    if (site && link.hasAttribute('download') && shardFor(path)) type = 'application/json';
+    if (!type) return;
+    event.preventDefault();
+    if (link.hasAttribute('aria-busy')) return;
+    link.setAttribute('aria-busy', 'true');
+    try {
+      const bytes = await read(path);
+      const url = URL.createObjectURL(new Blob([bytes], {type}));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = path.split('/').at(-1);
+      document.body.append(download);
+      download.click();
+      download.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (error) {
+      window.alert('Unable to download the atlas file. ' + error.message);
+    } finally {
+      link.removeAttribute('aria-busy');
+    }
+  }, true);
+
+  window.AtlasPortable = {read, load, fileCount: site ? site.fileCount : Object.keys(index).length,
+    contract: site ? 'organism-atlas-site-gzip-v1' : 'organism-atlas-portable-gzip-v1'};
+})();
+
+(async () => {
+try {
+const fileNotice = document.getElementById('atlas-file-notice');
+if (fileNotice && location.protocol === 'file:') {
+  fileNotice.hidden = false;
+  document.getElementById('main').hidden = true;
+  document.getElementById('about-toggle').hidden = true;
+  return;
+}
+window.ATLAS_DATA=JSON.parse(new TextDecoder().decode(await window.AtlasPortable.read('data/overview.json')));
+/* Scientific aggregation, shared by the browser and Node acceptance checks. */
+(function(root){
+  'use strict';
+  function aggregate(observations, profiles, options={}) {
+    const counts=new Map(), selected=new Set(), perArm=new Map(),units=new Map(),perArmUnits=new Map();
+    for(const p of profiles){
+      const key=JSON.stringify([p.hypothesis,p.unit_id||p.run_id]);
+      if(!units.has(key))units.set(key,[]);
+      units.get(key).push(p);
+    }
+    for(const members of [...units.values()].sort((a,b)=>(a[0].unit_order??0)-(b[0].unit_order??0))){
+      const p=members[0];
+      if(members.length!==(p.unit_members||1))throw new Error('Incomplete declared portfolio');
+      if(options.hypothesis && p.hypothesis!==options.hypothesis) continue;
+      if(options.hypotheses && !options.hypotheses.includes(p.hypothesis)) continue;
+      if(options.state_count && p.state_count!==+options.state_count) continue;
+      if(options.max_len && p.max_len!==+options.max_len) continue;
+      if(options.island_count && p.island_count!==+options.island_count) continue;
+      if(options.migration_interval && String(p.migration_interval??'Not applicable')!==String(options.migration_interval))continue;
+      const n=perArmUnits.get(p.hypothesis)||0;
+      if(n >= (options.limit||48)) continue;
+      for(const member of members)selected.add(member.run_id);
+      perArmUnits.set(p.hypothesis,n+1);
+      perArm.set(p.hypothesis,(perArm.get(p.hypothesis)||0)+members.length);
+    }
+    const grid=options.grid?new Map(options.grid.map((g,i)=>[g,i])):null;
+    const rows=observations.filter(o=>selected.has(o.run_id) &&
+      (!grid||grid.has(o.generation)) &&
+      o.generation >= (options.start??-Infinity) && o.generation <= (options.end??Infinity));
+    const streams=new Map(), events=[], profileByRun=new Map(profiles.map(p=>[p.run_id,p]));
+    function stat(id){
+      if(!counts.has(id)) counts.set(id,{id,runs:new Set(),observations:0,
+        champion_observations:0,archive_observations:0,record_observations:0,
+        visits:0,arrivals:0,retained:0,categories:new Map(),units:new Set(),portfolios:new Map(),hypotheses:new Map()});
+      return counts.get(id);
+    }
+    for(const row of rows){
+      const n=stat(row.topology_id); n.runs.add(row.run_id); n.observations++;
+      const p=profileByRun.get(row.run_id),unit=JSON.stringify([p.hypothesis,p.unit_id||p.run_id]);
+      n.units.add(unit);
+      if(!n.hypotheses.has(p.hypothesis))n.hypotheses.set(p.hypothesis,{runs:new Set(),units:new Set()});
+      n.hypotheses.get(p.hypothesis).runs.add(p.run_id);n.hypotheses.get(p.hypothesis).units.add(unit);
+      if(p.unit_members>1){if(!n.portfolios.has(p.unit_id))n.portfolios.set(p.unit_id,new Set());n.portfolios.get(p.unit_id).add(p.run_id);}
+      const category=String(p[options.color||'hypothesis']??'Not applicable');
+      if(!n.categories.has(category)) n.categories.set(category,new Set());
+      n.categories.get(category).add(row.run_id);
+      for(const role of row.roles) if(role+'_observations' in n) n[role+'_observations']++;
+      if(row.roles.includes('champion')){
+        const key=JSON.stringify([row.run_id,row.island_id]);
+        if(!streams.has(key)) streams.set(key,[]);
+        streams.get(key).push(row);
+      }
+    }
+    let retained=0,gaps=0;
+    for(const sequence of streams.values()){
+      sequence.sort((a,b)=>a.generation-b.generation); let previous=null;
+      if(new Set(sequence.map(r=>r.generation)).size!==sequence.length)
+        throw new Error('Conflicting champions at one run/island/generation');
+      for(const row of sequence){
+        if(previous && (grid?grid.get(row.generation)-grid.get(previous.generation)!==1:
+          options.step && row.generation-previous.generation!==options.step)){previous=null;gaps++;}
+        if(!previous || previous.topology_id!==row.topology_id){
+          stat(row.topology_id).visits++;
+          if(previous)stat(row.topology_id).arrivals++;
+          if(previous) events.push({run_id:row.run_id,island_id:row.island_id,
+            source:previous.topology_id,target:row.topology_id,
+            from_generation:previous.generation,to_generation:row.generation,
+            gap:row.generation-previous.generation});
+        }else{stat(row.topology_id).retained++;retained++;}
+        previous=row;
+      }
+    }
+    const edges=new Map(),departures=new Map();
+    for(const e of events){
+      departures.set(e.source,(departures.get(e.source)||0)+1);
+      const key=JSON.stringify([e.source,e.target]);
+      if(!edges.has(key))edges.set(key,{source:e.source,target:e.target,count:0,
+        runs:new Set(),gap_min:Infinity,gap_max:0});
+      const edge=edges.get(key);edge.count++;edge.runs.add(e.run_id);
+      edge.gap_min=Math.min(edge.gap_min,e.gap);edge.gap_max=Math.max(edge.gap_max,e.gap);
+    }
+    const selectedProfiles=profiles.filter(p=>selected.has(p.run_id)),coverage={};
+    for(const p of selectedProfiles){
+      if(!coverage[p.hypothesis])coverage[p.hypothesis]={units:perArmUnits.get(p.hypothesis),runs:0,streams:0,cuts:0,expected_cuts:0};
+      const c=coverage[p.hypothesis];c.runs++;c.streams+=p.island_count||1;
+      const expected=(options.grid||options.generations||[]).filter(g=>g>=(options.start??-Infinity)&&g<=(options.end??Infinity));
+      c.expected_cuts+=expected.length;c.cuts+=expected.filter(g=>(p.available_generations||expected).includes(g)).length;
+    }
+    return {nodes:[...counts.values()].map(n=>({...n,run_count:n.runs.size,unit_count:n.units.size,
+      units:[...n.units],portfolios:[...n.portfolios].map(([id,runs])=>({id,runs:[...runs].sort()})),
+      hypotheses:[...n.hypotheses].map(([id,h])=>({id,runs:h.runs.size,units:h.units.size})),
+      runs:[...n.runs].sort(),categories:[...n.categories].map(([label,runs])=>({label,count:runs.size}))})),
+      edges:[...edges.values()].map(e=>({...e,run_count:e.runs.size,runs:[...e.runs].sort(),
+        departures:departures.get(e.source),probability:e.count/departures.get(e.source)})),
+      rows,events,retained,gaps,run_count:selected.size,per_arm:Object.fromEntries(perArm),
+      unit_count:[...perArmUnits.values()].reduce((a,b)=>a+b,0),
+      stream_count:selectedProfiles.reduce((sum,p)=>sum+(p.island_count||1),0),coverage,
+      selected_runs:[...selected]};
+  }
+  const api={aggregate};root.AtlasMath=api;
+  if(typeof module!=='undefined' && module.exports)module.exports=api;
+})(globalThis);
+
+/* Display-only transforms. Raw scores, graph identities and counts stay intact. */
+(function(root){
+  'use strict';
+  const COLORS={outgoing:'#69d68b',incoming:'#b78cff',path:'#f6f6f6',context:'#f6f6f6'};
+  const VERTEX_RADIUS={canvas:1.4/2.5,svg:3.4/2.5};
+  function interpolate(x,xs,ys){
+    if(x<=xs[0])return ys[0];
+    if(x>=xs.at(-1))return ys.at(-1);
+    let lo=0,hi=xs.length-1;
+    while(hi-lo>1){const mid=(lo+hi)>>1;if(xs[mid]<=x)lo=mid;else hi=mid;}
+    return ys[lo]+(ys[hi]-ys[lo])*(x-xs[lo])/(xs[hi]-xs[lo]);
+  }
+  function fitnessScale(values,mode='equalized'){
+    const sorted=values.slice().sort((a,b)=>a-b);
+    if(sorted.some(v=>!Number.isFinite(v)))throw Error('Non-finite display fitness');
+    if(!['equalized','linear'].includes(mode))throw Error('Unknown fitness scale');
+    const min=sorted[0]??0,max=sorted.at(-1)??0;
+    if(min===max)return {min,max,mode,knots:[[min,.5]],to:()=>.5,from:()=>min};
+    const scores=[],ranks=[];
+    for(let i=0;i<sorted.length;){let j=i+1;while(j<sorted.length&&sorted[j]===sorted[i])j++;
+      scores.push(sorted[i]);ranks.push((i+j-1)/2);i=j;}
+    const rankMin=ranks[0],rankSpan=ranks.at(-1)-rankMin;
+    const positions=scores.map((f,i)=>{
+      const linear=(f-min)/(max-min),rank=(ranks[i]-rankMin)/rankSpan;
+      return mode==='linear'?linear:.3*linear+.7*rank;
+    });
+    return {min,max,mode,knots:scores.map((f,i)=>[f,positions[i]]),
+      to:f=>interpolate(f,scores,positions),from:y=>interpolate(y,positions,scores)};
+  }
+  function glyph(runCount,zoom,showOrganisms,selected=false){
+    const radius=Math.max(3,4*Math.sqrt(runCount))*Math.min(1.5,Math.sqrt(zoom));
+    const miniature=showOrganisms&&zoom>=2.4,size=miniature?Math.min(72,28*zoom):0;
+    const badgeRadius=miniature?Math.max(radius,size*.68):0;
+    return {radius,miniature,size,badgeRadius,hitRadius:miniature?badgeRadius:radius+5,
+      selectionRadius:(miniature?badgeRadius:radius)+4,
+      boundary:{kind:'circle',extent:(miniature?badgeRadius:radius)+(selected?8:5)}};
+  }
+  function layoutGlyphs(items,gap=10){
+    const result=new Map(items.map(item=>[item.id,item.glyph])),badges=[];
+    const candidates=items.filter(item=>item.glyph.miniature).sort((a,b)=>
+      Number(b.selected)-Number(a.selected)||(b.priority||0)-(a.priority||0)||
+      b.runCount-a.runCount||a.id.localeCompare(b.id));
+    for(const item of candidates){
+      const extent=item.selected?item.glyph.selectionRadius:item.glyph.badgeRadius;
+      if(badges.some(other=>Math.hypot(item.x-other.x,item.y-other.y)<extent+other.extent+gap)){
+        const radius=Math.min(item.glyph.radius,5);
+        result.set(item.id,{...item.glyph,radius,miniature:false,size:0,badgeRadius:0,
+          hitRadius:radius+5,selectionRadius:radius+4,boundary:{kind:'circle',extent:radius+5}});
+      }else badges.push({x:item.x,y:item.y,extent});
+    }
+    return result;
+  }
+  function edgeStyle(edge,selected,pathEdges,contextOpacity=.3){
+    const outgoing=edge.source===selected,incoming=edge.target===selected;
+    const onPath=pathEdges.has(edge.source+'>'+edge.target),adjacent=outgoing||incoming;
+    return {color:outgoing?COLORS.outgoing:incoming?COLORS.incoming:onPath?COLORS.path:COLORS.context,
+      alpha:adjacent||onPath?1:contextOpacity,
+      width:(adjacent?2.5:1+Math.min(2,Math.log2(Math.max(1,edge.count||1))*.4))+(onPath?1:0),
+      dash:onPath?[6,4]:[],layer:adjacent?2:onPath?1:0,
+      direction:outgoing?'outgoing':incoming?'incoming':'context',onPath};
+  }
+  function boundaryPoint(center,toward,boundary){
+    const dx=toward[0]-center[0],dy=toward[1]-center[1];
+    const divisor=boundary.kind==='box'?Math.max(Math.abs(dx),Math.abs(dy)):Math.hypot(dx,dy);
+    const ratio=boundary.extent/(divisor||1);
+    return [center[0]+dx*ratio,center[1]+dy*ratio];
+  }
+  function edgeGeometry(a,b,sourceBoundary,targetBoundary){
+    const dx=b[0]-a[0],dy=b[1]-a[1],distance=Math.hypot(dx,dy);
+    if(distance<1e-9)return null;
+    // Reversing the edge reverses its normal, separating reciprocal arrows.
+    const bend=Math.max(16,sourceBoundary.extent+targetBoundary.extent-distance/2+16);
+    const control=[(a[0]+b[0])/2-dy/distance*bend,(a[1]+b[1])/2+dx/distance*bend];
+    const start=boundaryPoint(a,control,sourceBoundary),end=boundaryPoint(b,control,targetBoundary);
+    return {start,end,control,angle:Math.atan2(end[1]-control[1],end[0]-control[0])};
+  }
+  const api={COLORS,VERTEX_RADIUS,fitnessScale,glyph,layoutGlyphs,edgeStyle,edgeGeometry};
+  root.AtlasDisplay=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(globalThis);
+
+/* Offline Canvas atlas. Scientific aggregation is isolated in math.js. */
+(() => {
+  'use strict';
+  const D=window.ATLAS_DATA,V=window.AtlasDisplay, $=id=>document.getElementById(id);
+  const fmt=n=>Number(n).toLocaleString('en-US'), fit=n=>Number(n).toFixed(3);
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const canonicalScore=D.manifest.scorer_contract==='atlas-quadmesh-canonical-v1';
+  const fitnessName=canonicalScore?'Atlas fitness':'Bonus-free fitness';
+  const topology=new Map(D.topologies.map(t=>[t.id,t]));
+  const profiles=new Map(D.profiles.map(p=>[p.run_id,p]));
+  const palette=['#e8ae52','#72b7ff','#ed7a9e','#b8a0ed','#70c1b3','#d8d467','#ec936c','#a7c7e7','#cf9fbd'];
+  const arms=D.manifest.hypotheses||[...new Set(D.profiles.map(p=>p.hypothesis))].map((id,i)=>({id,label:id,mechanism:D.profiles.find(p=>p.hypothesis===id).description,color:palette[i%palette.length]}));
+  const fields=['state_count','max_len','island_count','migration_interval'];
+  const fieldNames={hypothesis:'Experiment group',state_count:'States',max_len:'Max genome length',island_count:'Islands per run',migration_interval:'Migration interval'};
+  const colorMaps=Object.fromEntries(['hypothesis',...fields].map(field=>[field,new Map([...new Set(D.profiles.map(p=>String(p[field]??'Not applicable')))].sort().map((label,i)=>[label,field==='hypothesis'?(arms.find(a=>a.id===label)?.color||palette[i%palette.length]):palette[i%palette.length]]))]));
+  const state={limit:48,color:'hypothesis',start:D.manifest.generations[0],
+    end:D.manifest.generations.at(-1),step:D.manifest.expected_step,
+    selected:null,path:'',pathHypothesis:'',pathIsland:'*',sampling:'all',hypotheses:arms.map(arm=>arm.id),
+    grid:D.manifest.generations,generations:D.manifest.generations,
+    links:'all',edgeOpacity:.3,fitnessScale:'equalized',showOrganisms:true,
+    minFit:-Infinity,minEdge:1,k:1,px:0,py:0};
+  let stats,visible=[],hitTargets=[],details=null,occurrenceLimit=20,listLimit=100,width=800,height=600;
+  let selectionToken=0,sourceToken=0,raf=0,drag=null,initialized=false,previewId=null;
+  let pendingHistory = null;
+  const evidence = document.querySelector('.organism-evidence');
+  const canvas=$('map'),ctx=canvas.getContext('2d');
+  const allY=D.topologies.map(t=>t.fitness);
+  const extent=formExtent(D.topologies);
+  let panExtent=extent;
+  const scales={equalized:V.fitnessScale(allY),linear:V.fitnessScale(allY,'linear')};
+  let yScale=scales.equalized;
+  window.AtlasDetails={};window.AtlasGenomes={};const loading=new Map();
+  function lazy(kind,id){
+    if(window.AtlasPortable)return window.AtlasPortable.load(kind,id);
+    const store=kind==='details'?window.AtlasDetails:window.AtlasGenomes;
+    if(store[id])return Promise.resolve(store[id]);
+    const key=kind+'/'+id;
+    if(!loading.has(key))loading.set(key,new Promise((resolve,reject)=>{
+      const s=document.createElement('script');s.src='data/'+key+'.js';
+      s.onload=()=>{s.remove();loading.delete(key);const value=store[id];
+        const keys=Object.keys(store),limit=kind==='details'?8:16;
+        for(const old of keys.slice(0,Math.max(0,keys.length-limit)))if(old!==id)delete store[old];
+        resolve(value);};
+      s.onerror=()=>{s.remove();loading.delete(key);reject(new Error('Missing local detail: '+key));};
+      document.head.append(s);
+    }));return loading.get(key);
+  }
+  function categoryColor(label){
+    return colorMaps[state.color].get(String(label))||'#c7c7c7';
+  }
+  function parameterLabel(field,value){
+    if(field==='hypothesis')return arms.find(arm=>arm.id===value)?.label||value;
+    if(field==='migration_interval')return value==='Not applicable'?'No migration':`Every ${fmt(value)} generations`;
+    return value;
+  }
+  function experimentName(arm){
+    const names={
+      'q4.55':'Activity-aware mutation',
+      'q4.57':'Standard mutation',
+      'q4.58':'Less frequent standard mutation',
+      'q6.35':'Four independent restarts',
+    };
+    const profile=D.profiles.find(p=>p.hypothesis===arm.id);
+    if(Number(profile?.migration_interval)>0){
+      return `${fmt(profile.island_count)} islands · migration every ${fmt(profile.migration_interval)} generations`;
+    }
+    return names[arm.label]||arm.mechanism;
+  }
+  function formExtent(forms){
+    let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+    for(const {x,fitness} of forms){
+      xmin=Math.min(xmin,x);xmax=Math.max(xmax,x);
+      ymin=Math.min(ymin,fitness);ymax=Math.max(ymax,fitness);
+    }
+    return {xmin,xmax,ymin,ymax};
+  }
+  function baseX(x){return 72+(x-extent.xmin)/(extent.xmax-extent.xmin||1)*(width-112);}
+  function baseY(fitness){return 42+(1-yScale.to(fitness))*(height-90);}
+  function point(t){return [baseX(t.x)*state.k+state.px,baseY(t.fitness)*state.k+state.py];}
+  function mapBounds(inset=0){
+    const left=57,right=width-12,top=26,bottom=height-20;
+    const insetX=Math.min(inset,Math.max(0,(right-left)/4));
+    const insetY=Math.min(inset,Math.max(0,(bottom-top)/4));
+    return {left:left+insetX,right:right-insetX,top:top+insetY,bottom:bottom-insetY};
+  }
+  const edgeSpace=56;
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  function limitOffset(offset,first,last,start,end){
+    // If the forms fit, keep both ends inside the view. Otherwise keep the view between them.
+    const atStart=start-first*state.k,atEnd=end-last*state.k;
+    return clamp(offset,Math.min(atStart,atEnd),Math.max(atStart,atEnd));
+  }
+  function keepPanInBounds(){
+    if(state.k<=1){
+      const {left,right,top,bottom}=mapBounds();
+      state.px=(left+right)/2*(1-state.k);
+      state.py=(top+bottom)/2*(1-state.k);
+      return;
+    }
+    const {left,right,top,bottom}=mapBounds(edgeSpace);
+    state.px=limitOffset(state.px,baseX(panExtent.xmin),baseX(panExtent.xmax),left,right);
+    state.py=limitOffset(state.py,baseY(panExtent.ymax),baseY(panExtent.ymin),top,bottom);
+  }
+  function revealForm(form){
+    if(state.k<=1||form.fitness<state.minFit)return;
+    const [x,y]=point(form);
+    const {left,right,top,bottom}=mapBounds(edgeSpace);
+    state.px+=clamp(x,left,right)-x;
+    state.py+=clamp(y,top,bottom)-y;
+  }
+  function hidePreview(){previewId=null;$('tooltip').hidden=true;}
+  function requestDraw(){
+    keepPanInBounds();
+    hidePreview();
+    if(!raf)raf=requestAnimationFrame(()=>{raf=0;draw();});
+  }
+  function setOptions(){
+    document.title=D.manifest.title||'Quadmesh Organism Atlas';
+    $('height-metric').textContent=fitnessName.toLowerCase();$('fitness-label').textContent=fitnessName;
+    $('score-contract').hidden=!canonicalScore;
+    $('score-contract').textContent=`Atlas fitness v1 scores an exact canonical topology with bonus-free QuadMesh. It is independent of labels, states and input order. This is a fixed embedding convention, not the fitness used during evolution. Original replay scores and recorded experimental fitness remain available in every source record. Original replay-score variation occurs in ${D.coverage.original_score_conflict_classes} forms.`;
+    for(const field of fields){
+      const values=[...new Set(D.profiles.map(p=>p[field]??'Not applicable'))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+      const filter=$(field),useful=values.length>1;
+      filter.closest('.control').hidden=!useful;
+      $('color').querySelector(`[value="${field}"]`).hidden=!useful;
+      filter.innerHTML='<option value="">All</option>'+values.map(v=>`<option value="${esc(v)}">${esc(parameterLabel(field,v))}</option>`).join('');
+      filter.addEventListener('change',()=>{state[field]=filter.value;recompute();});
+    }
+    $('start').innerHTML=D.manifest.generations.map(g=>`<option value="${g}">${fmt(g)}</option>`).join('');
+    Object.assign($('end'),{min:state.start,max:state.end,step:state.step,value:state.end});
+    $('scope').textContent=`${arms.length} hypotheses · ${fmt(D.coverage.runs)} physical runs · ${fmt(D.coverage.checkpoints)} saved checkpoints. Four states and maximum genome length 128 are constant. Corrected-v2 mutation; verified post-PL-1 runtime. No legacy-v1 or SPB runs.`;
+    if(D.manifest.schema_version!==2){$('scope').textContent=D.manifest.scope;$('group-context').hidden=true;}
+    $('hypothesis-choices').innerHTML=arms.map(a=>`<label><input type="checkbox" data-hypothesis="${esc(a.id)}"${state.hypotheses.includes(a.id)?' checked':''}><i class="swatch" style="background:${a.color}"></i><span>${esc(experimentName(a))}<span class="experiment-code">${esc(a.label)}</span></span></label>`).join('');
+    $('coverage-note').textContent=`Verified coverage: ${fmt(D.coverage.runs)} physical runs, ${fmt(D.coverage.checkpoints)} resume checkpoints, generations ${fmt(state.start)}–${fmt(state.end)}. ${fmt(D.coverage.genomes)} source records; zero within-class ${canonicalScore?'canonical ':''}score conflicts at tolerance 1e-9.${canonicalScore?' Original replay-score variation is retained in '+D.coverage.original_score_conflict_classes+' topology classes.':''} Coverage by hypothesis is shown above. Saved semantic exports and native archive members have archive roles; archive order never forms a history.`;
+    $('cost-note').textContent=`Compressed checkpoint inputs: ${(D.coverage.source_bytes/2**30).toFixed(2)} GiB. Population data stays outside this viewer. Source organisms load on demand with a bounded browser cache. Source replay settings and checksums are downloadable.`;
+    $('sampling').disabled=!D.manifest.sampling_grids;
+    if(D.manifest.sampling_grids?.common){$('common-download').href='data/sampling/common.json';$('common-download').hidden=false;}
+    updateScaleNote();
+  }
+  function updateScaleNote(){
+    $('scale-note').textContent=state.fitnessScale==='equalized'
+      ?'Equalized spreads dense areas vertically so nearby points are easier to see. Labels show the original atlas fitness.'
+      :'On the linear scale, equal differences in atlas fitness have equal vertical distances.';
+  }
+  function renderSelectionStats(){
+    const total=fmt(stats.nodes.length),shown=fmt(visible.length);
+    $('status').textContent=visible.length===stats.nodes.length
+      ?`${shown} ${visible.length===1?'form':'forms'} shown`
+      :`${shown} of ${total} forms shown`;
+    const rows=[
+      ['Forms in the selection',stats.nodes.length],
+      ['Forms shown',visible.length],
+      ['Saved appearances',stats.rows.length],
+      ['Champion changes',stats.events.length],
+      ['Champion repeats',stats.retained],
+      ['Experimental units',stats.unit_count],
+      ['Runs',stats.run_count],
+      ['Population or island histories',stats.stream_count],
+    ];
+    $('selection-stats').innerHTML=rows.map(([label,count])=>`<dt>${label}</dt><dd>${fmt(count)}</dd>`).join('');
+
+    const filters=fields.filter(field=>state[field]).map(field=>field==='migration_interval'
+      ?parameterLabel(field,state[field])
+      :`${fieldNames[field]}: ${state[field]}`);
+    if(Number.isFinite(state.minFit))filters.push(`Atlas fitness ≥ ${fmt(state.minFit)}`);
+    $('active-filters').hidden=filters.length===0;
+    $('filter-count').hidden=filters.length===0;
+    $('filter-count').textContent=`${filters.length} active`;
+    $('filter-summary').textContent=filters.join(' · ');
+  }
+  function recompute(){
+    const t=performance.now();state.grid=D.manifest.sampling_grids?.[state.sampling]||D.manifest.generations;
+    stats=AtlasMath.aggregate(D.observations,D.profiles,state);
+    stats.byId=new Map(stats.nodes.map(n=>[n.id,n]));
+    visible=stats.nodes.filter(n=>topology.get(n.id).fitness>=state.minFit);
+    panExtent=visible.length?formExtent(visible.map(n=>topology.get(n.id))):extent;
+    if(!stats.byId.has(state.selected))state.selected=visible.slice().sort((a,b)=>b.run_count-a.run_count||topology.get(b.id).fitness-topology.get(a.id).fitness)[0]?.id||null;
+    renderSelectionStats();
+    const labels=[...new Set(visible.flatMap(n=>n.categories.map(c=>c.label)))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    $('legend-title').textContent=fieldNames[state.color];
+    $('legend').innerHTML=labels.map(label=>`<span><i class="swatch" style="background:${categoryColor(label)}"></i>${esc(parameterLabel(state.color,label))}</span>`).join('');
+    $('end-value').textContent=fmt(state.end);
+    const selectedRuns=new Set(stats.selected_runs);
+    if(!selectedRuns.has(state.path))state.path='';
+    renderPathOptions();
+    $('sampling-note').textContent=state.sampling==='common'
+      ?'Use the same eight checkpoints for each group: 500, 1,000, 2,000, 3,000, 5,000, 7,500, 10,000 and 15,000. Changes between checkpoints may go unobserved.'
+      :'All available: the expected grid is every 500 generations. Missing checkpoints break a history. The first 24 q4.55 runs have only eight cuts; frequencies reflect this uneven coverage.';
+    if(D.manifest.schema_version!==2)$('sampling-note').textContent=`All available: the expected grid is every ${state.step} generations. Missing checkpoints break a history.`;
+    $('coverage-body').innerHTML=arms.map(a=>{const c=stats.coverage[a.id]||{units:0,runs:0,streams:0,cuts:0,expected_cuts:0};return `<tr><td>${esc(a.mechanism)}<br><span class="technical">${esc(a.id)}</span></td><td>${esc(a.role||'reference')}<br><span class="note">${esc(a.difference||'One-arm scope')}${a.reference?' · reference '+esc(a.reference):''}</span></td><td>${c.units}</td><td>${c.runs}</td><td>${c.streams}</td><td>${fmt(c.cuts)} / ${fmt(c.expected_cuts)}${c.cuts<c.expected_cuts?'<br><strong>Missing '+fmt(c.expected_cuts-c.cuts)+'</strong>':''}</td></tr>`;}).join('');
+    listLimit=100;
+    renderList();renderDetail();requestDraw();
+    window.AtlasDebug.lastFilterMs=performance.now()-t;
+  }
+  function renderList(){
+    const search=$('form-search').value.trim().toLowerCase().replace(/^(?:form\s+)?f?(?=\d)/,'');
+    const matches=visible.filter(n=>topology.get(n.id).label.toLowerCase().replace(/^f(?=\d)/,'').startsWith(search));
+    const listed=Math.min(listLimit,matches.length);
+    $('list-count').textContent=matches.length
+      ?`${fmt(listed)} of ${fmt(matches.length)} ${search?'matches listed':'listed'}`
+      :search?'No matching forms in the current selection.':'No forms to list.';
+    $('form-table').hidden=listed===0;
+    $('node-list').innerHTML=matches.sort((a,b)=>topology.get(b.id).fitness-topology.get(a.id).fitness).slice(0,listLimit).map(n=>{
+      const t=topology.get(n.id);return `<tr aria-selected="${n.id===state.selected}"><td><button data-id="${esc(n.id)}" aria-label="Select form ${esc(t.label)}">${esc(t.label)}</button></td><td>${fit(t.fitness)}</td><td>${fmt(n.run_count)}</td></tr>`;
+    }).join('');
+    const next=Math.min(100,matches.length-listed);
+    $('more-topologies').hidden=next===0;
+    $('more-topologies').textContent=`Show next ${fmt(next)}`;
+  }
+  function renderPathOptions(){
+    const allowed=new Set(stats.selected_runs),available=arms.filter(a=>D.profiles.some(p=>p.hypothesis===a.id&&allowed.has(p.run_id)));
+    if(state.path)state.pathHypothesis=profiles.get(state.path).hypothesis;
+    if(!available.some(a=>a.id===state.pathHypothesis))state.pathHypothesis=available[0]?.id||'';
+    $('path-hypothesis').innerHTML=available.map(a=>`<option value="${esc(a.id)}">${esc(a.label)} · ${esc(experimentName(a))}</option>`).join('');
+    $('path-hypothesis').value=state.pathHypothesis;
+    $('path-hypothesis').disabled=available.length===0;
+    $('path').innerHTML='<option value="">Choose a run</option>'+D.profiles.filter(p=>allowed.has(p.run_id)&&p.hypothesis===state.pathHypothesis).map(p=>`<option value="${esc(p.run_id)}">Seed ${p.seed}${p.unit_members>1?' · restart '+(p.member_index+1):''}</option>`).join('');
+    $('path').value=state.path;
+    $('path').disabled=available.length===0;
+    const profile=profiles.get(state.path),count=profile?.island_count||1;
+    $('path-island').innerHTML='<option value="*">'+(count>1?'All islands':'One population')+'</option>'+(count>1?Array.from({length:count},(_,i)=>`<option value="${i}">Island ${i}</option>`).join(''):'');
+    if(count===1||(state.pathIsland!=='*'&&+state.pathIsland>=count))state.pathIsland='*';
+    $('path-island').value=state.pathIsland;
+    $('path-island-control').hidden=count===1;
+    $('trace-selection').hidden=!profile;
+    if(profile){
+      const group=parameterLabel('hypothesis',profile.hypothesis);
+      const restart=profile.unit_members>1?` · restart ${profile.member_index+1}`:'';
+      $('path-label').textContent=`${group} · seed ${profile.seed}${restart}`;
+    }
+  }
+  function select(id, reveal = false, {openOrganism = true} = {}) {
+    if (!stats.byId.has(id)) return;
+    state.selected = id;
+    if (reveal) revealForm(topology.get(id));
+    if (openOrganism) $('detail').open = true;
+    const list = $('node-list');
+    list.querySelector('tr[aria-selected="true"]')?.setAttribute('aria-selected', 'false');
+    const row = list.querySelector(`button[data-id="${CSS.escape(id)}"]`)?.closest('tr');
+    row?.setAttribute('aria-selected', 'true');
+    renderDetail();
+    requestDraw();
+    if (openOrganism) $('detail').scrollIntoView({block:'nearest'});
+  }
+  function drawGraph(g,xy,cx,cy,size){
+    ctx.lineWidth=.8;
+    for(const [a,b]of g.edges){
+      const [x1,y1]=[cx+xy[a][0]*size,cy+xy[a][1]*size], [x2,y2]=[cx+xy[b][0]*size,cy+xy[b][1]*size];
+      const left=D.state_colors[g.states[a]]||'#ddd',right=D.state_colors[g.states[b]]||'#ddd';
+      if(left===right)ctx.strokeStyle=left;
+      else{const gradient=ctx.createLinearGradient(x1,y1,x2,y2);gradient.addColorStop(0,left);gradient.addColorStop(1,right);ctx.strokeStyle=gradient;}
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
+    xy.forEach(([x,y],i)=>{ctx.fillStyle=D.state_colors[g.states[i]]||'#ddd';ctx.beginPath();ctx.arc(cx+x*size,cy+y*size,V.VERTEX_RADIUS.canvas,0,Math.PI*2);ctx.fill();});
+  }
+  function drawAxis(){
+    const top=Math.max(28,42*state.k+state.py),bottom=Math.min(height-24,(height-48)*state.k+state.py);
+    const ticks=[];
+    if(yScale.min===yScale.max){const y=point({x:extent.xmin,fitness:yScale.min})[1];if(y>=28&&y<=height-24)ticks.push({y,value:yScale.min});}
+    else if(bottom>=top){
+      const count=Math.floor((bottom-top)/64);
+      for(let i=0;i<=count;i++){const y=count?top+(bottom-top)*i/count:(top+bottom)/2;
+        ticks.push({y,value:yScale.from(1-((y-state.py)/state.k-42)/(height-90))});}
+    }
+    let last='';const drawn=[];
+    for(const tick of ticks){const label=fit(tick.value);if(label===last)continue;last=label;
+      ctx.strokeStyle='#242424';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(56,tick.y);ctx.lineTo(width-12,tick.y);ctx.stroke();
+      ctx.fillStyle='#8f8f8f';ctx.fillText(label,48,tick.y);drawn.push({...tick,label});}
+    window.AtlasDebug.axisTicks=drawn;
+  }
+  function draw(){
+    const started=performance.now(),dpr=window.devicePixelRatio||1;ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,width,height);ctx.fillStyle='#000';ctx.fillRect(0,0,width,height);hitTargets=[];
+    ctx.font='11px Menlo, monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.setLineDash([]);drawAxis();
+    ctx.fillStyle='#8f8f8f';ctx.textAlign='left';ctx.fillText(canonicalScore?'ATLAS FITNESS':'FITNESS',12,15);
+    const {left,right,top,bottom}=mapBounds();
+    ctx.save();ctx.beginPath();ctx.rect(left,top,right-left,bottom-top);ctx.clip();
+    const ids=new Set(visible.map(n=>n.id));
+    const onPath=r=>r.run_id===state.path&&(state.pathIsland==='*'||r.island_id===+state.pathIsland);
+    const pathIds=new Set(stats.rows.filter(r=>onPath(r)&&r.roles.includes('champion')).map(r=>r.topology_id));
+    const pathEdges=new Set(stats.events.filter(onPath).map(e=>e.source+'>'+e.target));
+    const adjacentIds=new Set(stats.edges.flatMap(e=>e.source===state.selected?[e.target]:e.target===state.selected?[e.source]:[]));
+    const screenItems=visible.map(n=>{
+      const t=topology.get(n.id),[x,y]=point(t),selected=n.id===state.selected;
+      return {id:n.id,n,t,x,y,selected,runCount:n.run_count,
+        priority:pathIds.has(n.id)?2:adjacentIds.has(n.id)?1:0,
+        glyph:V.glyph(n.run_count,state.k,state.showOrganisms,selected)};
+    }).filter(item=>item.x>=20&&item.x<=width+40&&item.y>=0&&item.y<=height+40);
+    const displayGlyphs=V.layoutGlyphs(screenItems);
+    const shape=n=>displayGlyphs.get(n.id)||V.glyph(n.run_count,state.k,false,n.id===state.selected);
+    const badges=screenItems.filter(item=>displayGlyphs.get(item.id).miniature);
+    const contextClip=new Path2D();contextClip.rect(left,top,right-left,bottom-top);
+    for(const item of badges){
+      const glyph=displayGlyphs.get(item.id),radius=(item.selected?glyph.selectionRadius:glyph.badgeRadius)+3;
+      contextClip.moveTo(item.x+radius,item.y);contextClip.arc(item.x,item.y,radius,0,Math.PI*2);
+    }
+    const contextFade=badges.length?Math.min(1,2.4/state.k):1;
+    const edges=stats.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)&&e.count>=state.minEdge&&
+      ((state.links==='all')||(state.links==='near'&&(e.source===state.selected||e.target===state.selected))))
+      .map(e=>({edge:e,style:V.edgeStyle(e,state.selected,pathEdges,state.edgeOpacity)})).sort((a,b)=>a.style.layer-b.style.layer);
+    const drawnEdges=[];
+    ctx.save();ctx.clip(contextClip,'evenodd');
+    for(const {edge:e,style} of edges){
+      const a=point(topology.get(e.source)),b=point(topology.get(e.target));
+      const geometry=V.edgeGeometry(a,b,shape(stats.byId.get(e.source)).boundary,shape(stats.byId.get(e.target)).boundary);
+      if(!geometry)continue;const {start,end,control,angle}=geometry;
+      ctx.globalAlpha=style.alpha*(style.layer===0?contextFade:1);ctx.strokeStyle=style.color;ctx.lineWidth=style.width;ctx.setLineDash(style.dash);
+      ctx.beginPath();ctx.moveTo(...start);ctx.quadraticCurveTo(...control,...end);ctx.stroke();
+      ctx.fillStyle=style.color;ctx.beginPath();ctx.moveTo(...end);ctx.lineTo(end[0]-7*Math.cos(angle-.45),end[1]-7*Math.sin(angle-.45));ctx.lineTo(end[0]-7*Math.cos(angle+.45),end[1]-7*Math.sin(angle+.45));ctx.closePath();ctx.fill();
+      drawnEdges.push({source:e.source,target:e.target,...style,...geometry});
+    }
+    ctx.restore();
+    ctx.globalAlpha=1;ctx.setLineDash([]);
+    window.AtlasDebug.renderedEdges=drawnEdges;window.AtlasDebug.renderedGlyphs=[];
+    const ordered=screenItems.sort((a,b)=>Number(a.selected)-Number(b.selected)||
+      Number(displayGlyphs.get(a.id).miniature)-Number(displayGlyphs.get(b.id).miniature)||b.runCount-a.runCount);
+    for(const {n,t,x,y,selected:chosen} of ordered){
+      const glyph=shape(n),r=glyph.radius,{miniature,size,badgeRadius}=glyph;
+      const adjacent=adjacentIds.has(n.id);
+      ctx.globalAlpha=state.path&&!pathIds.has(n.id)&&!chosen&&!adjacent?.2:1;
+      ctx.save();if(!miniature)ctx.clip(contextClip,'evenodd');
+      if(!miniature){ctx.fillStyle='#080808';ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);ctx.fill();}
+      const total=n.categories.reduce((sum,c)=>sum+c.count,0);let angle=-Math.PI/2;
+      for(const c of n.categories){const end=angle+c.count/total*Math.PI*2;ctx.strokeStyle=categoryColor(c.label);ctx.lineWidth=miniature?1.5:Math.max(2,r*.4);ctx.beginPath();ctx.arc(x,y,miniature?badgeRadius:Math.max(2,r-ctx.lineWidth/2),angle,end);ctx.stroke();angle=end;}
+      ctx.restore();
+      if(miniature){
+        const reach=Math.max(...t.xy.map(([gx,gy])=>Math.hypot(gx,gy)),.01);
+        const graphSize=Math.min(size,(badgeRadius-7)/reach);
+        ctx.save();ctx.beginPath();ctx.arc(x,y,badgeRadius-5,0,Math.PI*2);ctx.clip();
+        drawGraph(t.graph,t.xy,x,y,graphSize);ctx.restore();
+      }
+      if(chosen){ctx.strokeStyle='#69d68b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,glyph.selectionRadius,0,Math.PI*2);ctx.stroke();}
+      hitTargets.push({id:n.id,x,y,r:glyph.hitRadius,miniature});
+      window.AtlasDebug.renderedGlyphs.push({id:n.id,x,y,...glyph});
+    }
+    ctx.globalAlpha=1;ctx.restore();
+    if(!visible.length){ctx.fillStyle='#8f8f8f';ctx.font='16px Arial';ctx.textAlign='center';ctx.fillText('No forms in this selection',width/2,height/2);}
+    $('zoom-value').textContent=Math.round(state.k*100)+'%';
+    $('trace-key').hidden=state.links==='off'||!state.path;
+    $('edge-opacity-control').hidden=state.links!=='all';
+    $('link-count-control').hidden=state.links==='off';
+    window.AtlasDebug.lastDrawMs=performance.now()-started;
+  }
+  function organismSVG(graph,xy,target,title){
+    const stateColors=D.state_colors;
+    const pos=xy.map(([x,y])=>[160+x*216,130+y*216]);
+    const gradients=[];
+    const edges=graph.edges.map(([a,b],i)=>{
+      const coordinates=`x1="${pos[a][0]}" y1="${pos[a][1]}" x2="${pos[b][0]}" y2="${pos[b][1]}"`;
+      const left=stateColors[graph.states[a]]||'#ddd',right=stateColors[graph.states[b]]||'#ddd';
+      let stroke=left;
+      if(left!==right){const id=target+'-edge-'+i;stroke=`url(#${id})`;
+        gradients.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" ${coordinates}><stop offset="0" stop-color="${left}"/><stop offset="1" stop-color="${right}"/></linearGradient>`);}
+      return `<line ${coordinates} stroke="${stroke}" stroke-width="1.2"/>`;
+    }).join('');
+    return '<title>'+esc(title)+'</title><defs>'+gradients.join('')+'</defs>'+edges+pos.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${V.VERTEX_RADIUS.svg}" fill="${stateColors[graph.states[i]]||'#ddd'}"><title>Vertex ${i} · state ${esc(graph.states[i])}</title></circle>`).join('');
+  }
+  function renderSVG(graph,xy,source=false){
+    const stateColors=D.state_colors;
+    $('organism').innerHTML=organismSVG(graph,xy,'organism',source?'Source organism with saved states':'Topology representative with observed states');
+    $('state-legend').innerHTML=[...new Set(graph.states)].sort().map(s=>`<span><i class="swatch" style="background:${stateColors[s]||'#ddd'}"></i>${esc(s)}</span>`).join('');
+  }
+  function connections(outgoing){
+    const edges=stats.edges.filter(e=>outgoing?e.source===state.selected:e.target===state.selected).sort((a,b)=>b.count-a.count);
+    if(!edges.length)return '<p class="empty">No observed '+(outgoing?'departure':'incoming change')+' in this selection.</p>';
+    return edges.map(e=>{const t=topology.get(outgoing?e.target:e.source);return `<div class="connection"><div><button data-id="${t.id}">${outgoing?'→':'←'} ${t.label} · ${fit(t.fitness)}</button><small>${e.count} change${e.count===1?'':'s'} · ${e.run_count} run${e.run_count===1?'':'s'} · Δg ${e.gap_min}${e.gap_max===e.gap_min?'':'–'+e.gap_max}</small></div><div class="prob">${(100*e.probability).toFixed(1)}%<small>${e.count} / ${e.departures} departures</small></div></div>`;}).join('');
+  }
+  function renderSeeds(){
+    const n=stats.byId.get(state.selected);
+    $('seed-section').hidden=!n;$('seed-list').innerHTML='';
+    if(!n)return;
+    $('form-runs').textContent=`Seen in ${fmt(n.run_count)} ${n.run_count===1?'run':'runs'}`;
+    const groups=new Map();
+    const runs=n.runs.map(id=>profiles.get(id)).sort((a,b)=>a.hypothesis.localeCompare(b.hypothesis,undefined,{numeric:true})||a.seed-b.seed||a.run_id.localeCompare(b.run_id));
+    for(const p of runs){if(!groups.has(p.hypothesis))groups.set(p.hypothesis,[]);groups.get(p.hypothesis).push(p);}
+    const buttons=group=>group.map(p=>`<button data-run-id="${esc(p.run_id)}" aria-pressed="${state.path===p.run_id}" aria-label="Trace seed ${esc(p.seed)}, run ${esc(p.run_id)}" title="${esc(p.run_id)}${p.unit_members>1?' · portfolio '+p.unit_order+' · member '+(p.member_index+1):''}">${esc(p.seed)}</button>`).join('');
+    $('seed-list').innerHTML=[...groups].map(([hypothesis,group])=>`<div class="seed-group"><p class="technical">${esc(hypothesis)} · ${group.length} runs</p><div class="seed-buttons" role="group" aria-label="Observed seeds for ${esc(hypothesis)}">${buttons(group.slice(0,8))}</div>${group.length>8?`<details><summary>${group.length-8} more seeds</summary><div class="seed-buttons">${buttons(group.slice(8))}</div></details>`:''}</div>`).join('');
+  }
+  function traceRun(id){
+    state.path=id;state.pathIsland='*';renderPathOptions();
+    renderSeeds();requestDraw();
+  }
+  function renderScores(atlasFitness, originalScore = '') {
+    $('fitness').textContent = Number.isFinite(atlasFitness) ? fit(atlasFitness) : '—';
+    $('original-score-field').hidden = !originalScore;
+    $('original-score').textContent = originalScore;
+  }
+  function renderDetail(){
+    ++selectionToken;
+    ++sourceToken;
+    details = null;
+    occurrenceLimit = 20;
+    $('source-organism').hidden = true;
+    $('occurrences').replaceChildren();
+    $('more-occurrences').hidden = true;
+    const t=topology.get(state.selected),n=stats.byId.get(state.selected);
+    $('drawing-caption').hidden=true;
+    $('form-filtered').hidden=!t||!n||t.fitness>=state.minFit;
+    $('form-transitions').hidden=!n;
+    evidence.hidden=!n;
+    renderSeeds();
+    if(!t||!n){$('form-title').textContent='No organism selected';$('form-id').textContent='';$('form-id').removeAttribute('title');$('organism').innerHTML='';renderScores();$('structure').textContent='';for(const id of ['counts','contributions','outgoing','incoming','occurrences','state-legend'])$(id).innerHTML='';$('more-occurrences').hidden=true;return;}
+    $('form-title').textContent='Form '+t.label;$('form-id').textContent=t.id.slice(2,10);$('form-id').title=t.id;
+    let originalScore = '';
+    if (canonicalScore) {
+      originalScore = fit(t.original_fitness_min);
+      if (t.original_fitness_max - t.original_fitness_min > 1e-9) originalScore += '–' + fit(t.original_fitness_max);
+    }
+    renderScores(t.fitness, originalScore);
+    $('structure').textContent=`${t.graph.nodes} vertices · ${t.graph.edges.length} edges`;
+    renderSVG(t.graph,t.xy);
+    $('counts').innerHTML=[['Physical runs',n.run_count],['Declared units',n.unit_count],['Restart portfolios',n.portfolios.length],['Saved appearances',n.observations],['Champion appearances',n.champion_observations],['Archive presence',n.archive_observations],['Record presence',n.record_observations],['Visits (including first)',n.visits],['Arrivals from another form',n.arrivals],['Consecutive repeats',n.retained]].map(([key,v])=>`<dt>${key}</dt><dd>${fmt(v)}</dd>`).join('');
+    $('contributions').innerHTML=`<table aria-label="Parameter contributions"><thead><tr><th>${fieldNames[state.color]}</th><th>Runs</th><th>Share</th></tr></thead><tbody>`+n.categories.map(c=>`<tr><td><i class="swatch" style="background:${categoryColor(c.label)}"></i>${esc(parameterLabel(state.color,c.label))}</td><td>${c.count}</td><td>${(100*c.count/n.run_count).toFixed(0)}%</td></tr>`).join('')+'</tbody></table>';
+    $('contributions').innerHTML+=`<details><summary>Hypothesis &amp; portfolio contributions</summary><table><thead><tr><th>Hypothesis</th><th>Runs</th><th>Units</th></tr></thead><tbody>${n.hypotheses.map(h=>`<tr><td>${esc(h.id)}</td><td>${h.runs}</td><td>${h.units}</td></tr>`).join('')}</tbody></table>${n.portfolios.map(p=>`<p class="contribution"><span>${esc(p.id)}</span> · ${p.runs.length} of 4 members observed</p>`).join('')}</details>`;
+    $('outgoing').innerHTML=connections(true);$('incoming').innerHTML=connections(false);
+    loadOccurrences();
+  }
+  async function loadOccurrences() {
+    const token = selectionToken;
+    if (!$('detail').open || evidence.hidden || !evidence.open || !$('history').open
+      || details || pendingHistory === token) return;
+    pendingHistory = token;
+    $('occurrences').textContent = 'Loading observations…';
+    try {
+      const rows = await lazy('details', state.selected);
+      if (token !== selectionToken) return;
+      const allowed = new Set(stats.rows.map(row => row.id));
+      details = rows.filter(row => allowed.has(row.id));
+      renderOccurrences();
+    } catch (error) {
+      if (token === selectionToken) $('occurrences').textContent = error.message;
+    } finally {
+      if (pendingHistory === token) pendingHistory = null;
+    }
+  }
+  function renderOccurrences(){
+    if(!details)return;
+    if (!details.length) {
+      $('occurrences').textContent = 'No observations for this selection.';
+      return;
+    }
+    let lastHypothesis='';
+    $('occurrences').innerHTML=details.slice(0,occurrenceLimit).map((o,i)=>{const p=profiles.get(o.run_id),heading=p.hypothesis===lastHypothesis?'':`<h3>${esc(p.hypothesis)}</h3>`;lastHypothesis=p.hypothesis;return heading+`<button data-observation="${i}">Seed ${esc(p.seed)} · ${esc(o.run_id)}${o.island_id===null?'':' · island '+o.island_id}<br>g ${fmt(o.generation)} · ${esc(o.roles.join(' + '))} · ${o.variants.length} source${o.variants.length===1?'':'s'}</button>`;}).join('');
+    $('more-occurrences').hidden=details.length<=occurrenceLimit;
+  }
+  async function showSource(index,variantIndex=0){
+    const observation = details?.[index];
+    const variant = observation?.variants[variantIndex];
+    if (!variant) return;
+    const token = ++sourceToken;
+    window.AtlasDebug.sourceLoaded=null;
+    $('source-organism').hidden=false;$('source-caption').textContent='Loading source organism…';
+    $('genome-download').hidden = true;
+    $('source-json').textContent = '';
+    try{const g=await lazy('genomes',variant.genome_id);if(token!==sourceToken)return;
+      renderSVG(g.graph,g.xy,true);
+      const profile=profiles.get(observation.run_id);
+      const island=observation.island_id===null?'':` · island ${observation.island_id}`;
+      $('drawing-caption').textContent=`Saved record · ${parameterLabel('hypothesis',profile.hypothesis)} · seed ${profile.seed}${island} · generation ${fmt(observation.generation)} · ${variant.role}`;
+      $('drawing-caption').hidden=false;
+      $('source-caption').textContent=`Seed ${profiles.get(observation.run_id).seed} · ${observation.run_id}${observation.island_id===null?'':' · island '+observation.island_id}, generation ${fmt(observation.generation)}. ${variant.selection.replaceAll('_',' ')}. ${variant.tied_leaders===null?'':variant.tied_leaders+' tied leaders; '}recorded fitness ${variant.recorded_fitness===null?'unavailable':fit(variant.recorded_fitness)}. Colored vertices show saved states (hover for labels).`;
+      if (canonicalScore) renderScores(g.atlas_fitness, fit(g.original_bonus_free_fitness));
+      const links=observation.variants.map((v,i)=>`<button data-variant="${i}" data-index="${index}" aria-pressed="${i===variantIndex}">${esc(v.role)} ${i+1}</button>`).join(' ');
+      let holder=$('source-variants');if(!holder){holder=document.createElement('div');holder.id='source-variants';$('source-caption').after(holder);}holder.innerHTML=links;
+      $('genome-download').href=`data/genomes/${variant.genome_id}.json`;
+      $('genome-download').hidden = false;
+      $('source-json').textContent=JSON.stringify({source:variant.source,genome_id:g.id,selection:variant.selection,population_index:variant.population_index,machine:g.machine,states:g.states},null,2);
+      window.AtlasDebug.sourceLoaded=variant.genome_id;
+    }catch(error){if(token===sourceToken)$('source-caption').textContent=error.message;}
+  }
+  function resize(){const rect=canvas.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=window.devicePixelRatio||1;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);requestDraw();}
+  function zoom(factor,x=width/2,y=height/2){const k=Math.min(16,Math.max(.65,state.k*factor)),ratio=k/state.k;state.px=x-(x-state.px)*ratio;state.py=y-(y-state.py)*ratio;state.k=k;requestDraw();}
+  function hit(x,y){return hitTargets.filter(p=>Math.hypot(p.x-x,p.y-y)<=p.r).sort((a,b)=>
+    Number(b.miniature)-Number(a.miniature)||Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];}
+  function local(e){const r=canvas.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];}
+  function showPreview(target,event){
+    if(!target){hidePreview();return;}
+    if(!topology.has(target.id)||!stats.byId.has(target.id)){hidePreview();return;}
+    const tip=$('tooltip');
+    if(previewId!==target.id){
+      const t=topology.get(target.id),n=stats.byId.get(target.id);
+      $('preview-title').textContent='Form '+t.label;
+      $('preview-fitness').textContent=fitnessName+' '+fit(t.fitness);
+      $('preview-organism').innerHTML=organismSVG(t.graph,t.xy,'preview',`Form ${t.label}, observed representative`);
+      $('preview-info').textContent=`${t.graph.nodes} vertices · ${t.graph.edges.length} edges · ${fmt(n.run_count)} run${n.run_count===1?'':'s'}`;
+      previewId=target.id;
+    }
+    tip.hidden=false;
+    const box=tip.getBoundingClientRect(),gap=18,margin=8;
+    let left=event.clientX+gap,top=event.clientY-box.height/2;
+    if(left+box.width>window.innerWidth-margin)left=event.clientX-gap-box.width;
+    left=Math.max(margin,Math.min(left,window.innerWidth-box.width-margin));
+    top=Math.max(margin,Math.min(top,window.innerHeight-box.height-margin));
+    tip.style.left=left+'px';tip.style.top=top+'px';
+  }
+  window.AtlasDebug={state,get stats(){return stats;},get positions(){return D.topologies.map(t=>({id:t.id,x:t.x,fitness:t.fitness,y:yScale.to(t.fitness)}));},get scale(){return yScale;},get hitTargets(){return hitTargets;},select,zoom,recompute};
+  setOptions();
+  for(const count of [24,48])$('limit'+count).onclick=()=>{state.limit=count;for(const n of[24,48])$('limit'+n).setAttribute('aria-pressed',String(n===count));recompute();};
+  $('color').onchange=()=>{state.color=$('color').value;recompute();};
+  $('edges').onchange=()=>{state.links=$('edges').value;requestDraw();};
+  $('edge-opacity').oninput=()=>{
+    state.edgeOpacity=+$('edge-opacity').value/100;
+    const label=$('edge-opacity').value+'%';
+    $('edge-opacity-value').textContent=label;$('edge-opacity').setAttribute('aria-valuetext',label);
+    document.documentElement.style.setProperty('--edge-opacity',state.edgeOpacity);requestDraw();
+  };
+  $('fitness-scale').onchange=()=>{state.fitnessScale=$('fitness-scale').value;yScale=scales[state.fitnessScale];updateScaleNote();requestDraw();};
+  $('show-organisms').onchange=()=>{state.showOrganisms=$('show-organisms').checked;requestDraw();};
+  $('path').onchange=()=>traceRun($('path').value);
+  $('clear-highlight').onclick=()=>{$('path').focus();traceRun('');};
+  $('path-hypothesis').onchange=()=>{state.pathHypothesis=$('path-hypothesis').value;state.path='';state.pathIsland='*';renderPathOptions();renderSeeds();requestDraw();};
+  $('path-island').onchange=()=>{state.pathIsland=$('path-island').value;renderPathOptions();requestDraw();};
+  $('sampling').onchange=()=>{state.sampling=$('sampling').value;recompute();};
+  $('hypothesis-choices').onchange=()=>{
+    state.hypotheses=[...document.querySelectorAll('[data-hypothesis]:checked')].map(input=>input.dataset.hypothesis);
+    recompute();
+  };
+  $('start').onchange=()=>{state.start=+$('start').value;if(state.end<state.start){state.end=state.start;$('end').value=state.end;}recompute();};
+  $('end').oninput=()=>{state.end=+$('end').value;if(state.start>state.end){state.start=state.end;$('start').value=state.start;}recompute();};
+  $('min-fit').oninput=()=>{state.minFit=$('min-fit').value===''?-Infinity:+$('min-fit').value;recompute();};
+  $('clear-filters').onclick=()=>{
+    for(const field of fields)state[field]=$(field).value='';
+    state.minFit=-Infinity;
+    $('min-fit').value='';
+    $('min-fit').focus();
+    recompute();
+  };
+  $('min-edge').oninput=()=>{state.minEdge=Math.max(1,+$('min-edge').value);requestDraw();};
+  $('zoom-in').onclick=()=>zoom(1.5);$('zoom-out').onclick=()=>zoom(1/1.5);
+  $('reset').onclick=()=>{Object.assign(state,{k:1,px:0,py:0});requestDraw();};
+  $('more-occurrences').onclick=()=>{occurrenceLimit+=30;renderOccurrences();};
+  for (const section of [$('detail'), evidence, $('history')]) {
+    section.addEventListener('toggle', loadOccurrences);
+  }
+  $('form-search').oninput=()=>{
+    listLimit=100;
+    $('form-table').scrollTop=0;
+    renderList();
+  };
+  $('more-topologies').onclick=()=>{
+    const firstNew=listLimit;
+    listLimit+=100;
+    renderList();
+    $('node-list').rows[firstNew]?.querySelector('button').focus();
+  };
+  function setAboutOpen(open){
+    $('about-atlas').hidden=!open;
+    $('about-toggle').setAttribute('aria-expanded',String(open));
+  }
+  $('about-toggle').onclick=()=>setAboutOpen($('about-atlas').hidden);
+  document.addEventListener('click',e=>{
+    if(!$('about-atlas').hidden&&!e.target.closest('.site-header'))setAboutOpen(false);
+  });
+  document.addEventListener('click', e => {
+    const button = e.target.closest('button');
+    if (!button) return;
+    if (button.dataset.id) {
+      select(button.dataset.id, true, {openOrganism: !button.closest('#node-list')});
+    }
+    if (button.dataset.runId) traceRun(state.path === button.dataset.runId ? '' : button.dataset.runId);
+    if (button.dataset.observation !== undefined) showSource(+button.dataset.observation);
+    if (button.dataset.variant !== undefined) showSource(+button.dataset.index, +button.dataset.variant);
+  });
+  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(-e.deltaY*.0015),...local(e));},{passive:false});
+  canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;const [x,y]=local(e);drag={x,y,startX:x,startY:y,moved:false};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';hidePreview();});
+  canvas.addEventListener('pointermove',e=>{const [x,y]=local(e);if(drag){state.px+=x-drag.x;state.py+=y-drag.y;drag.moved ||= Math.hypot(x-drag.startX,y-drag.startY)>4;drag.x=x;drag.y=y;requestDraw();return;}if(e.pointerType==='touch')return;showPreview(hit(x,y),e);});
+  canvas.addEventListener('pointerup',e=>{if(!drag)return;const moved=drag.moved;drag=null;canvas.style.cursor='crosshair';if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!moved){const h=hit(...local(e));if(h)select(h.id);}});
+  canvas.addEventListener('pointercancel',()=>{drag=null;canvas.style.cursor='crosshair';hidePreview();});
+  canvas.addEventListener('lostpointercapture',()=>{drag=null;canvas.style.cursor='crosshair';});
+  canvas.addEventListener('pointerleave',hidePreview);
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    hidePreview();
+    if(!$('about-atlas').hidden){
+      setAboutOpen(false);
+      $('about-toggle').focus();
+    }
+  });
+  document.addEventListener('scroll',hidePreview,true);
+  window.addEventListener('blur',hidePreview);
+  canvas.addEventListener('keydown',e=>{const moves={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};if(moves[e.key]){e.preventDefault();state.px+=moves[e.key][0];state.py+=moves[e.key][1];requestDraw();}else if(['+','=','-'].includes(e.key)){e.preventDefault();zoom(e.key==='-'?1/1.4:1.4);}else if(e.key==='Home'){e.preventDefault();$('reset').click();}});
+  new ResizeObserver(resize).observe(canvas);resize();recompute();initialized=true;
+  window.AtlasDebug.ready=initialized;
+  window.AtlasDebug.openMs=performance.now();
+})();
+
+} catch(error) {document.getElementById('status').textContent='Unable to open atlas: '+error.message; console.error(error);}
+})();
+
+</script>
+</body></html>

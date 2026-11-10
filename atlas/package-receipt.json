@@ -1,0 +1,16 @@
+{
+  "contract": "organism-atlas-site-gzip-v1",
+  "interface_revision": "guca-compact-sidebar-v15",
+  "html": {
+    "file": "index.html",
+    "bytes": 101126,
+    "sha256": "305a4bcd792923615d01d0825e995435b3a1b45c4be5c67c13cd4a156afd89e2"
+  },
+  "source_payload_sha256": "67126f01413321a58eee23680048fb792f080ecb4417a52c284a919b39541aa8",
+  "source_files_verified": 14325,
+  "asset_directory": "payload-3a3a54c3ccc790d9",
+  "asset_count": 100,
+  "asset_sha256": "3a3a54c3ccc790d9b854f7c214f8491f10ccd707b16e707b7c0c06ace6ec9496",
+  "overview_bytes": 1995012,
+  "initial_bytes": 2096138
+}

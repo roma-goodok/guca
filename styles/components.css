@@ -3,6 +3,7 @@
 .header-action {
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -402,17 +403,6 @@
   display: none;
 }
 
-.advanced-shell > summary span {
-  display: inline-block;
-  font-size: 32px;
-  font-weight: 300;
-  transition: transform 150ms ease;
-}
-
-.advanced-shell[open] > summary span {
-  transform: rotate(90deg);
-}
-
 .advanced-content {
   display: grid;
   gap: 2px;
@@ -447,17 +437,42 @@ details.block > summary::-webkit-details-marker {
   display: none;
 }
 
+.advanced-shell > summary::after,
 details.block > summary::after {
-  content: "›";
-  flex: 0 0 auto;
-  font-size: 22px;
-  font-weight: 300;
-  line-height: 1;
-  transition: transform 140ms ease;
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex: none;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.5 3 10.5 8 5.5 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  forced-color-adjust: none;
 }
 
+.advanced-shell > summary::after {
+  width: 18px;
+  height: 18px;
+}
+
+.advanced-shell[open] > summary::after,
 details.block[open] > summary::after {
   transform: rotate(90deg);
+}
+
+.advanced-shell select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 5.5 8 10.5 13 5.5' fill='none' stroke='%23f6f6f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 8px center;
+  background-size: 14px;
+  background-repeat: no-repeat;
+}
+
+@media (forced-colors: active) {
+  .advanced-shell select {
+    appearance: auto;
+    background-image: none;
+    padding-right: 8px;
+  }
 }
 
 .advanced-subgroup-content {
